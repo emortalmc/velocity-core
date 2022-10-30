@@ -27,27 +27,27 @@ public class FriendCommand {
                     <light_purple>------ Friend Help ------
                     <click:suggest_command:'/friend add '>/friend add <name></click>
                     <click:suggest_command:'/friend remove '>/friend remove <name></click>
-                    <click:suggest_command:'/friend deny '>/friend deny <name></click>
                     <click:suggest_command:'/friend requests '>/friend requests <incoming/outgoing> [page]</click>
-                    <click:suggest_command:'/friend purgerequests '>/friend purgerequests <incoming/outgoing></click>
-                    <click:suggest_command:'/friend pending'>/friend pending</click>
+                    <click:suggest_command:'/friend purge requests '>/friend purgerequests <incoming/outgoing></click>
                     -----------------------"""//todo purge requests
     );
 
     private final FriendGrpc.FriendFutureStub friendService;
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
 
-    private final FriendListSub friendListSub;
     private final FriendAddSub friendAddSub;
-    private final FriendRemoveSub friendRemoveSub;
     private final FriendDenySubs friendDenySubs;
+    private final FriendListSub friendListSub;
+    private final FriendRemoveSub friendRemoveSub;
+    private final FriendRequestPurgeSub friendRequestPurgeSub;
     private final FriendRequestsSub friendRequestsSub;
 
     public FriendCommand(ProxyServer proxyServer, FriendCache friendCache, GrpcStubManager stubManager) {
-        this.friendListSub = new FriendListSub(stubManager.getMcPlayerService(), stubManager.getPlayerTrackerService(), friendCache);
         this.friendAddSub = new FriendAddSub(stubManager.getMcPlayerService(), stubManager.getFriendService(), friendCache);
-        this.friendRemoveSub = new FriendRemoveSub(stubManager.getMcPlayerService(), stubManager.getFriendService(), friendCache);
         this.friendDenySubs = new FriendDenySubs(stubManager.getMcPlayerService(), stubManager.getFriendService());
+        this.friendListSub = new FriendListSub(stubManager.getMcPlayerService(), stubManager.getPlayerTrackerService(), friendCache);
+        this.friendRemoveSub = new FriendRemoveSub(stubManager.getMcPlayerService(), stubManager.getFriendService(), friendCache);
+        this.friendRequestPurgeSub = new FriendRequestPurgeSub(stubManager.getFriendService());
         this.friendRequestsSub = new FriendRequestsSub(stubManager.getFriendService(), stubManager.getMcPlayerService());
 
         proxyServer.getCommandManager().register(this.createCommand());
@@ -82,6 +82,16 @@ public class FriendCommand {
                                         .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", IntegerArgumentType.integer(1))
                                                 .executes(this.friendRequestsSub::executeOutgoing)
                                         ))
+                        )
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("purge")
+                                .then(LiteralArgumentBuilder.<CommandSource>literal("requests")
+                                        .then(LiteralArgumentBuilder.<CommandSource>literal("incoming")
+                                                .executes(this.friendRequestPurgeSub::executeIncoming)
+                                        )
+                                        .then(LiteralArgumentBuilder.<CommandSource>literal("outgoing")
+                                                .executes(this.friendRequestPurgeSub::executeOutgoing)
+                                        )
+                                )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("add")
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
