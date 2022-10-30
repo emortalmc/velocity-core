@@ -1,4 +1,4 @@
-package cc.towerdefence.velocity.api.event;
+package cc.towerdefence.velocity.api.event.friend;
 
 import java.util.UUID;
 

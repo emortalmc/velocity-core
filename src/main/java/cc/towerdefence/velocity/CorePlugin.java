@@ -1,7 +1,11 @@
 package cc.towerdefence.velocity;
 
-import cc.towerdefence.velocity.cache.FriendCache;
+import cc.towerdefence.velocity.friends.FriendCache;
 import cc.towerdefence.velocity.cache.SessionCache;
+import cc.towerdefence.velocity.friends.commands.FriendCommand;
+import cc.towerdefence.velocity.friends.listeners.FriendAddListener;
+import cc.towerdefence.velocity.friends.listeners.FriendRemovalListener;
+import cc.towerdefence.velocity.friends.listeners.FriendRequestListener;
 import cc.towerdefence.velocity.grpc.service.GrpcServerContainer;
 import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
 import cc.towerdefence.velocity.listener.AgonesListener;
@@ -29,7 +33,7 @@ public class CorePlugin {
     private final GrpcStubManager stubManager = new GrpcStubManager();
     private final GrpcServerContainer grpcServerContainer;
 
-    private final FriendCache friendCache = new FriendCache();
+    private final FriendCache friendCache = new FriendCache(this.stubManager.getFriendService());
     private final SessionCache sessionCache = new SessionCache();
 
     @Inject
@@ -43,10 +47,18 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, new AgonesListener(this.stubManager.getAgonesService(),
                 this.stubManager.getStandardAgonesService(), this.stubManager.getAlphaAgonesService())
         );
+
+        this.proxy.getEventManager().register(this, this.friendCache);
         this.proxy.getEventManager().register(this, new LobbySelectorListener(this.stubManager.getServerDiscoveryService(), this.proxy));
         this.proxy.getEventManager().register(this, new McPlayerListener(this.stubManager.getMcPlayerService(), this.sessionCache));
         this.proxy.getEventManager().register(this, new PlayerTrackerListener(this.stubManager.getPlayerTrackerService()));
         this.proxy.getEventManager().register(this, new PrivateMessageListener(this.proxy));
+
+        this.proxy.getEventManager().register(this, new FriendAddListener(this.friendCache, this.proxy));
+        this.proxy.getEventManager().register(this, new FriendRemovalListener(this.friendCache));
+        this.proxy.getEventManager().register(this, new FriendRequestListener(this.proxy));
+
+        new FriendCommand(this.proxy, this.friendCache, this.stubManager);
     }
 
     @Subscribe
