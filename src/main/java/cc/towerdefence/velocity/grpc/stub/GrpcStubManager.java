@@ -3,6 +3,7 @@ package cc.towerdefence.velocity.grpc.stub;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.PlayerTrackerGrpc;
+import cc.towerdefence.api.service.PrivateMessageGrpc;
 import cc.towerdefence.api.service.ServerDiscoveryGrpc;
 import cc.towerdefence.velocity.CorePlugin;
 import dev.agones.sdk.SDKGrpc;
@@ -17,6 +18,7 @@ public class GrpcStubManager {
     private final @NotNull McPlayerGrpc.McPlayerFutureStub mcPlayerService;
     private final @NotNull FriendGrpc.FriendFutureStub friendService;
     private final @NotNull ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService;
+    private final @NotNull PrivateMessageGrpc.PrivateMessageFutureStub privateMessageService;
 
     private final SDKGrpc.SDKFutureStub agonesService;
     private final SDKGrpc.SDKStub standardAgonesService;
@@ -48,6 +50,12 @@ public class GrpcStubManager {
                 .build();
         this.serverDiscoveryService = ServerDiscoveryGrpc.newFutureStub(serverDiscoveryChannel);
 
+        ManagedChannel privateMessageChannel = ManagedChannelBuilder.forAddress("private-message.towerdefence.svc", 9090)
+                .defaultLoadBalancingPolicy("round_robin")
+                .usePlaintext()
+                .build();
+        this.privateMessageService = PrivateMessageGrpc.newFutureStub(privateMessageChannel);
+
         ManagedChannel agonesChannel = ManagedChannelBuilder.forAddress("localhost", AGONES_GRPC_PORT)
                 .usePlaintext()
                 .build();
@@ -71,6 +79,10 @@ public class GrpcStubManager {
 
     public @NotNull ServerDiscoveryGrpc.ServerDiscoveryFutureStub getServerDiscoveryService() {
         return serverDiscoveryService;
+    }
+
+    public PrivateMessageGrpc.PrivateMessageFutureStub getPrivateMessageService() {
+        return privateMessageService;
     }
 
     public SDKGrpc.SDKFutureStub getAgonesService() {

@@ -3,7 +3,7 @@ package cc.towerdefence.velocity.friends;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
 import cc.towerdefence.api.utils.GrpcTimestampConverter;
-import cc.towerdefence.velocity.utils.FunctionalFutureCallback;
+import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.velocitypowered.api.event.Subscribe;
@@ -11,7 +11,6 @@ import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

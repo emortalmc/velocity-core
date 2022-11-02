@@ -3,14 +3,16 @@ package cc.towerdefence.velocity.friends.commands;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
-import cc.towerdefence.api.service.McPlayerProto;
-import cc.towerdefence.velocity.utils.FunctionalFutureCallback;
+import cc.towerdefence.api.utils.resolvers.PlayerResolver;
+import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import io.grpc.Status;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
@@ -48,45 +50,42 @@ public class FriendDenySubs {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);
 
-        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
-                McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build()
-        );
-        Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
-                playerResponse -> {
-                    String correctedUsername = playerResponse.getCurrentUsername(); // this will have correct capitalisation
-                    UUID targetId = UUID.fromString(playerResponse.getId());
+        PlayerResolver.retrievePlayerData(targetUsername, cachedMcPlayer -> {
+            String correctedUsername = cachedMcPlayer.username(); // this will have correct capitalisation
+            UUID targetId = cachedMcPlayer.uuid();
 
-                    ListenableFuture<FriendProto.DenyFriendRequestResponse> denyResponseFuture = this.friendService.denyFriendRequest(
-                            FriendProto.DenyFriendRequestRequest.newBuilder()
-                                    .setIssuerId(player.getUniqueId().toString())
-                                    .setTargetId(targetId.toString())
-                                    .build()
-                    );
+            ListenableFuture<FriendProto.DenyFriendRequestResponse> denyResponseFuture = this.friendService.denyFriendRequest(
+                    FriendProto.DenyFriendRequestRequest.newBuilder()
+                            .setIssuerId(player.getUniqueId().toString())
+                            .setTargetId(targetId.toString())
+                            .build()
+            );
 
-                    Futures.addCallback(denyResponseFuture, FunctionalFutureCallback.create(
-                            denyResponse -> {
-                                player.sendMessage(switch (denyResponse.getResult()) {
-                                    case DENIED ->
-                                            MINI_MESSAGE.deserialize(deniedMessage, Placeholder.parsed("username", correctedUsername));
-                                    case NO_REQUEST ->
-                                            MINI_MESSAGE.deserialize(noRequestMessage, Placeholder.parsed("username", correctedUsername));
-                                    case UNRECOGNIZED -> {
-                                        LOGGER.error("Unrecognised request deny response: {}", denyResponse);
-                                        yield Component.text("An error occurred");
-                                    }
-                                });
-                            },
-                            error -> {
-                                LOGGER.error("Failed to deny friend request", error);
-                                player.sendMessage(Component.text("Failed to deny friend request for " + correctedUsername));
+            Futures.addCallback(denyResponseFuture, FunctionalFutureCallback.create(
+                    denyResponse -> {
+                        player.sendMessage(switch (denyResponse.getResult()) {
+                            case DENIED ->
+                                    MINI_MESSAGE.deserialize(deniedMessage, Placeholder.parsed("username", correctedUsername));
+                            case NO_REQUEST ->
+                                    MINI_MESSAGE.deserialize(noRequestMessage, Placeholder.parsed("username", correctedUsername));
+                            case UNRECOGNIZED -> {
+                                LOGGER.error("Unrecognised request deny response: {}", denyResponse);
+                                yield Component.text("An error occurred");
                             }
-                    ), ForkJoinPool.commonPool());
-                },
-                throwable -> {
-                    LOGGER.error("Failed to get player by username: ", throwable);
-                    player.sendMessage(Component.text("An error occurred while trying to deny a friend request."));
-                }
-        ), ForkJoinPool.commonPool());
+                        });
+                    },
+                    error -> {
+                        LOGGER.error("Failed to deny friend request", error);
+                        player.sendMessage(Component.text("Failed to deny friend request for " + correctedUsername));
+                    }), ForkJoinPool.commonPool());
+        }, errorStatus -> {
+            if (errorStatus.getCode() == Status.Code.NOT_FOUND) {
+                player.sendMessage(Component.text("Could not find player " + targetUsername, NamedTextColor.RED));
+            } else {
+                LOGGER.error("Failed to retrieve player UUID", errorStatus.asRuntimeException());
+                player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
+            }
+        });
         return 1;
     }
 }

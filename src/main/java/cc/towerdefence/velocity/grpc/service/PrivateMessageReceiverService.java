@@ -21,7 +21,7 @@ public class PrivateMessageReceiverService extends VelocityPrivateMessageGrpc.Ve
     @Override
     public void receiveMessage(VelocityPrivateMessageProto.PrivateMessage request, StreamObserver<Empty> responseObserver) {
         this.server.getEventManager().fire(
-                new PrivateMessageReceivedEvent(request.getSenderUsername(), UUID.fromString(request.getReceiverId()), request.getMessage())
+                new PrivateMessageReceivedEvent(request.getSenderUsername(), UUID.fromString(request.getRecipientId()), request.getMessage())
         );
         responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();

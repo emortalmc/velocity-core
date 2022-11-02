@@ -28,12 +28,9 @@ public class FriendCommand {
                     <click:suggest_command:'/friend add '>/friend add <name></click>
                     <click:suggest_command:'/friend remove '>/friend remove <name></click>
                     <click:suggest_command:'/friend requests '>/friend requests <incoming/outgoing> [page]</click>
-                    <click:suggest_command:'/friend purge requests '>/friend purgerequests <incoming/outgoing></click>
+                    <click:suggest_command:'/friend purge requests '>/friend purge requests <incoming/outgoing></click>
                     -----------------------"""//todo purge requests
     );
-
-    private final FriendGrpc.FriendFutureStub friendService;
-    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
 
     private final FriendAddSub friendAddSub;
     private final FriendDenySubs friendDenySubs;
@@ -51,9 +48,6 @@ public class FriendCommand {
         this.friendRequestsSub = new FriendRequestsSub(stubManager.getFriendService(), stubManager.getMcPlayerService());
 
         proxyServer.getCommandManager().register(this.createCommand());
-
-        this.friendService = stubManager.getFriendService();
-        this.mcPlayerService = stubManager.getMcPlayerService();
     }
 
     private int executeBase(CommandContext<CommandSource> context) {

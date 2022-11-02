@@ -2,8 +2,8 @@ package cc.towerdefence.velocity.listener;
 
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
+import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.cache.SessionCache;
-import cc.towerdefence.velocity.utils.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Empty;

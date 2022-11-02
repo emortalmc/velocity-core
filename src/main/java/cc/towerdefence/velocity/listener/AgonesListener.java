@@ -1,7 +1,7 @@
 package cc.towerdefence.velocity.listener;
 
 import cc.towerdefence.api.agonessdk.AgonesUtils;
-import cc.towerdefence.velocity.utils.FunctionalFutureCallback;
+import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.velocitypowered.api.event.Subscribe;

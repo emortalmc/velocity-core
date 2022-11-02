@@ -3,16 +3,18 @@ package cc.towerdefence.velocity.friends.commands;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
-import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.utils.GrpcTimestampConverter;
+import cc.towerdefence.api.utils.resolvers.PlayerResolver;
+import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.friends.FriendCache;
-import cc.towerdefence.velocity.utils.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import io.grpc.Status;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
@@ -45,54 +47,52 @@ public class FriendAddSub {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);
 
-        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
-                McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build()
-        );
-        Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
-                playerResponse -> {
-                    String correctedUsername = playerResponse.getCurrentUsername(); // this will have correct capitalisation
-                    UUID targetId = UUID.fromString(playerResponse.getId());
+        PlayerResolver.retrievePlayerData(targetUsername, cachedMcPlayer -> {
+            String correctedUsername = cachedMcPlayer.username();
+            UUID targetId = cachedMcPlayer.uuid();
 
-                    ListenableFuture<FriendProto.AddFriendResponse> friendResponseFuture = this.friendService.addFriend(
-                            FriendProto.AddFriendRequest.newBuilder()
-                                    .setIssuerId(player.getUniqueId().toString())
-                                    .setIssuerUsername(player.getUsername())
-                                    .setTargetId(targetId.toString())
-                                    .build()
-                    );
+            ListenableFuture<FriendProto.AddFriendResponse> friendResponseFuture = this.friendService.addFriend(
+                    FriendProto.AddFriendRequest.newBuilder()
+                            .setIssuerId(player.getUniqueId().toString())
+                            .setIssuerUsername(player.getUsername())
+                            .setTargetId(targetId.toString())
+                            .build()
+            );
 
-                    Futures.addCallback(friendResponseFuture, FunctionalFutureCallback.create(
-                            friendResponse -> {
-                                player.sendMessage(switch (friendResponse.getResult()) {
-                                    case FRIEND_ADDED -> {
-                                        this.friendCache.add(player.getUniqueId(), new FriendCache.CachedFriend(targetId, GrpcTimestampConverter.reverse(friendResponse.getFriendsSince())));
-                                        yield MINI_MESSAGE.deserialize(FRIEND_ADDED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
-                                    }
-                                    case ALREADY_FRIENDS ->
-                                            MINI_MESSAGE.deserialize(ALREADY_FRIENDS_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
-                                    case REQUEST_SENT ->
-                                            MINI_MESSAGE.deserialize(SENT_REQUEST_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
-                                    case PRIVACY_BLOCKED ->
-                                            MINI_MESSAGE.deserialize(PRIVACY_BLOCKED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
-                                    case ALREADY_REQUESTED ->
-                                            MINI_MESSAGE.deserialize(ALREADY_REQUESTED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
-                                    case UNRECOGNIZED -> {
-                                        LOGGER.error("Unrecognised friend response: {}", friendResponse);
-                                        yield Component.text("An error occurred");
-                                    }
-                                });
-                            },
-                            error -> {
-                                LOGGER.error("Failed to send friend request", error);
-                                player.sendMessage(Component.text("Failed to send friend request to " + correctedUsername));
+            Futures.addCallback(friendResponseFuture, FunctionalFutureCallback.create(
+                    friendResponse -> {
+                        player.sendMessage(switch (friendResponse.getResult()) {
+                            case FRIEND_ADDED -> {
+                                this.friendCache.add(player.getUniqueId(), new FriendCache.CachedFriend(targetId, GrpcTimestampConverter.reverse(friendResponse.getFriendsSince())));
+                                yield MINI_MESSAGE.deserialize(FRIEND_ADDED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
                             }
-                    ), ForkJoinPool.commonPool());
-                },
-                throwable -> {
-                    LOGGER.error("Failed to get player by username: ", throwable);
-                    player.sendMessage(Component.text("An error occurred while trying to add a friend."));
-                }
-        ), ForkJoinPool.commonPool());
+                            case ALREADY_FRIENDS ->
+                                    MINI_MESSAGE.deserialize(ALREADY_FRIENDS_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
+                            case REQUEST_SENT ->
+                                    MINI_MESSAGE.deserialize(SENT_REQUEST_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
+                            case PRIVACY_BLOCKED ->
+                                    MINI_MESSAGE.deserialize(PRIVACY_BLOCKED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
+                            case ALREADY_REQUESTED ->
+                                    MINI_MESSAGE.deserialize(ALREADY_REQUESTED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
+                            case UNRECOGNIZED -> {
+                                LOGGER.error("Unrecognised friend response: {}", friendResponse);
+                                yield Component.text("An error occurred");
+                            }
+                        });
+                    },
+                    error -> {
+                        LOGGER.error("Failed to send friend request", error);
+                        player.sendMessage(Component.text("Failed to send friend request to " + correctedUsername));
+                    }
+            ), ForkJoinPool.commonPool());
+        }, errorStatus -> {
+            if (errorStatus.getCode() == Status.Code.NOT_FOUND) {
+                player.sendMessage(Component.text("Could not find player " + targetUsername, NamedTextColor.RED));
+            } else {
+                LOGGER.error("Failed to retrieve player UUID", errorStatus.asRuntimeException());
+                player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
+            }
+        });
         return 1;
     }
 }

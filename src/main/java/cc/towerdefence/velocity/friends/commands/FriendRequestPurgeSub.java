@@ -2,7 +2,7 @@ package cc.towerdefence.velocity.friends.commands;
 
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
-import cc.towerdefence.velocity.utils.FunctionalFutureCallback;
+import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
