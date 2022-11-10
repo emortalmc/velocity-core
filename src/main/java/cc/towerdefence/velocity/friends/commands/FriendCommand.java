@@ -1,11 +1,7 @@
 package cc.towerdefence.velocity.friends.commands;
 
-import cc.towerdefence.api.service.FriendGrpc;
-import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.velocity.friends.FriendCache;
 import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -17,6 +13,9 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
+import static com.mojang.brigadier.arguments.StringArgumentType.string;
 
 public class FriendCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
@@ -62,18 +61,18 @@ public class FriendCommand {
                         .executes(this::executeBase)
                         .then(LiteralArgumentBuilder.<CommandSource>literal("list")
                                 .executes(this.friendListSub::execute)
-                                .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", IntegerArgumentType.integer(1))
+                                .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", integer(1))
                                         .executes(this.friendListSub::execute)
                                 ))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("requests")
                                 .then(LiteralArgumentBuilder.<CommandSource>literal("incoming")
                                         .executes(this.friendRequestsSub::executeIncoming)
-                                        .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", IntegerArgumentType.integer(1))
+                                        .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", integer(1))
                                                 .executes(this.friendRequestsSub::executeIncoming)
                                         ))
                                 .then(LiteralArgumentBuilder.<CommandSource>literal("outgoing")
                                         .executes(this.friendRequestsSub::executeOutgoing)
-                                        .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", IntegerArgumentType.integer(1))
+                                        .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", integer(1))
                                                 .executes(this.friendRequestsSub::executeOutgoing)
                                         ))
                         )
@@ -88,22 +87,22 @@ public class FriendCommand {
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("add")
-                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
                                         .executes(this.friendAddSub::execute)
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("remove")
-                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
                                         .executes(this.friendRemoveSub::execute)
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("deny")
-                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
                                         .executes(this.friendDenySubs::executeDeny)
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("revoke")
-                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
                                         .executes(this.friendDenySubs::executeRevoke)
                                 )
                         )

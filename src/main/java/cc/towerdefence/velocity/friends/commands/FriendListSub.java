@@ -1,5 +1,6 @@
 package cc.towerdefence.velocity.friends.commands;
 
+import cc.towerdefence.api.model.common.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.service.PlayerTrackerGrpc;
@@ -109,7 +110,7 @@ public class FriendListSub {
     private void retrieveStatuses(List<FriendCache.CachedFriend> friends, Consumer<List<FriendStatus>> callback) {
         Map<UUID, FriendStatus> statuses = new ConcurrentHashMap<>();
         for (FriendCache.CachedFriend friend : friends) statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
-        ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.PlayersRequest.newBuilder()
+        ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(PlayerProto.PlayersRequest.newBuilder()
                 .addAllPlayerIds(friends.stream().map(FriendCache.CachedFriend::playerId).map(UUID::toString).toList())
                 .build());
 
@@ -123,7 +124,7 @@ public class FriendListSub {
                     }
 
                     ListenableFuture<PlayerTrackerProto.GetPlayerServersResponse> playerServersResponseFuture =
-                            this.playerTrackerService.getPlayerServers(PlayerTrackerProto.GetPlayerServersRequest.newBuilder()
+                            this.playerTrackerService.getPlayerServers(PlayerProto.PlayersRequest.newBuilder()
                                     .addAllPlayerIds(statuses.values().stream().filter(FriendStatus::isOnline).map(FriendStatus::getUuid).map(UUID::toString).toList())
                                     .build());
 

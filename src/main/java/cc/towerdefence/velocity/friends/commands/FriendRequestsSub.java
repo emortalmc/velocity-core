@@ -1,5 +1,6 @@
 package cc.towerdefence.velocity.friends.commands;
 
+import cc.towerdefence.api.model.common.PlayerProto;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
@@ -81,7 +82,7 @@ public class FriendRequestsSub {
                         else return friendPlayer.getTargetId();
                     }).toList();
 
-                    ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.PlayersRequest.newBuilder()
+                    ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(PlayerProto.PlayersRequest.newBuilder()
                             .addAllPlayerIds(friendIds).build());
 
                     Futures.addCallback(playersResponseFuture, FunctionalFutureCallback.create(

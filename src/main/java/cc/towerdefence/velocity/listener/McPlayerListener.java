@@ -14,6 +14,7 @@ import com.velocitypowered.api.proxy.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.concurrent.ForkJoinPool;
 
 public class McPlayerListener {
@@ -30,6 +31,7 @@ public class McPlayerListener {
     @Subscribe
     public void onJoin(PostLoginEvent event) {
         Player player = event.getPlayer();
+        Instant joinTime = Instant.now();
 
         ListenableFuture<McPlayerProto.PlayerLoginResponse> future = this.mcPlayerService.onPlayerLogin(McPlayerProto.PlayerLoginRequest.newBuilder()
                 .setPlayerId(String.valueOf(player.getUniqueId()))
@@ -37,7 +39,7 @@ public class McPlayerListener {
                 .build());
 
         Futures.addCallback(future, FunctionalFutureCallback.create(
-                response -> this.sessionCache.put(player.getUniqueId(), response.getSessionId()),
+                response -> this.sessionCache.put(player.getUniqueId(), new SessionCache.CachedSession(response.getSessionId(), joinTime)),
                 error -> LOGGER.warn("Failed to register McPlayer session for {}: {}", player.getUniqueId(), error)
         ), ForkJoinPool.commonPool());
     }
@@ -48,7 +50,7 @@ public class McPlayerListener {
 
         ListenableFuture<Empty> future = this.mcPlayerService.onPlayerDisconnect(McPlayerProto.PlayerDisconnectRequest.newBuilder()
                 .setPlayerId(String.valueOf(player.getUniqueId()))
-                .setSessionId(this.sessionCache.remove(player.getUniqueId()))
+                .setSessionId(this.sessionCache.remove(player.getUniqueId()).sessionId())
                 .build());
 
         Futures.addCallback(future, FunctionalFutureCallback.create(

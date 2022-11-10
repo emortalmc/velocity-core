@@ -1,5 +1,6 @@
 package cc.towerdefence.velocity.friends;
 
+import cc.towerdefence.api.model.common.PlayerProto;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
 import cc.towerdefence.api.utils.GrpcTimestampConverter;
@@ -51,7 +52,7 @@ public class FriendCache {
     public void onPlayerLogin(PostLoginEvent event) {
         String playerId = event.getPlayer().getUniqueId().toString();
         ListenableFuture<FriendProto.FriendListResponse> response = this.friendService
-                .getFriendList(FriendProto.PlayerRequest.newBuilder().setIssuerId(playerId).build());
+                .getFriendList(PlayerProto.PlayerRequest.newBuilder().setPlayerId(playerId).build());
 
         Futures.addCallback(response, FunctionalFutureCallback.create(
                 result -> {

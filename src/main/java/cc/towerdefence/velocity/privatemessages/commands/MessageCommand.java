@@ -1,5 +1,6 @@
 package cc.towerdefence.velocity.privatemessages.commands;
 
+import cc.towerdefence.api.model.common.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.service.PrivateMessageGrpc;
@@ -49,7 +50,7 @@ public class MessageCommand {
 
     public int sendMessage(Player player, String targetUsername, String message) {
         ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
-                McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build()
+                PlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build()
         );
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(

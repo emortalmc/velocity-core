@@ -1,5 +1,6 @@
 package cc.towerdefence.velocity.friends.commands;
 
+import cc.towerdefence.api.model.common.PlayerProto;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
@@ -42,7 +43,7 @@ public class FriendRemoveSub {
         String targetUsername = context.getArgument("username", String.class);
 
         ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService
-                .getPlayerByUsername(McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build());
+                .getPlayerByUsername(PlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build());
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
                 playerResponse -> {

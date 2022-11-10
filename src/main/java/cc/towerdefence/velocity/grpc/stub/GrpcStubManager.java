@@ -2,6 +2,7 @@ package cc.towerdefence.velocity.grpc.stub;
 
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.McPlayerGrpc;
+import cc.towerdefence.api.service.PermissionServiceGrpc;
 import cc.towerdefence.api.service.PlayerTrackerGrpc;
 import cc.towerdefence.api.service.PrivateMessageGrpc;
 import cc.towerdefence.api.service.ServerDiscoveryGrpc;
@@ -19,6 +20,7 @@ public class GrpcStubManager {
     private final @NotNull FriendGrpc.FriendFutureStub friendService;
     private final @NotNull ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService;
     private final @NotNull PrivateMessageGrpc.PrivateMessageFutureStub privateMessageService;
+    private final @NotNull PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
 
     private final SDKGrpc.SDKFutureStub agonesService;
     private final SDKGrpc.SDKStub standardAgonesService;
@@ -56,6 +58,12 @@ public class GrpcStubManager {
                 .build();
         this.privateMessageService = PrivateMessageGrpc.newFutureStub(privateMessageChannel);
 
+        ManagedChannel permissionChannel = ManagedChannelBuilder.forAddress("permission.towerdefence.svc", 9090)
+                .defaultLoadBalancingPolicy("round_robin")
+                .usePlaintext()
+                .build();
+        this.permissionService = PermissionServiceGrpc.newFutureStub(permissionChannel);
+
         ManagedChannel agonesChannel = ManagedChannelBuilder.forAddress("localhost", AGONES_GRPC_PORT)
                 .usePlaintext()
                 .build();
@@ -81,8 +89,12 @@ public class GrpcStubManager {
         return serverDiscoveryService;
     }
 
-    public PrivateMessageGrpc.PrivateMessageFutureStub getPrivateMessageService() {
+    public @NotNull PrivateMessageGrpc.PrivateMessageFutureStub getPrivateMessageService() {
         return privateMessageService;
+    }
+
+    public @NotNull PermissionServiceGrpc.PermissionServiceFutureStub getPermissionService() {
+        return permissionService;
     }
 
     public SDKGrpc.SDKFutureStub getAgonesService() {
