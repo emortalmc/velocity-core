@@ -10,6 +10,7 @@ import com.google.protobuf.Empty;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
+import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.proxy.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,7 @@ public class McPlayerListener {
     }
 
     @Subscribe
-    public void onJoin(PostLoginEvent event) {
+    public void onJoin(ServerPostConnectEvent event) {
         Player player = event.getPlayer();
         Instant joinTime = Instant.now();
 

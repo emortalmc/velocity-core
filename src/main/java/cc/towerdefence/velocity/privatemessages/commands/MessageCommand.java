@@ -1,13 +1,15 @@
 package cc.towerdefence.velocity.privatemessages.commands;
 
-import cc.towerdefence.api.model.common.PlayerProto;
+import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.service.PrivateMessageGrpc;
 import cc.towerdefence.api.service.PrivateMessageProto;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
+import cc.towerdefence.velocity.listener.OtpEventListener;
 import cc.towerdefence.velocity.privatemessages.LastMessageCache;
+import cc.towerdefence.velocity.utils.CommandUtils;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -16,6 +18,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.event.command.PlayerAvailableCommandsEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import io.grpc.Status;
@@ -35,11 +38,13 @@ public class MessageCommand {
 
     private static final String MESSAGE_FORMAT = "<dark_purple>(<light_purple>You -> <username><dark_purple>) <light_purple><message>";
 
+    private final OtpEventListener otpEventListener;
     private final LastMessageCache lastMessageCache;
     private final PrivateMessageGrpc.PrivateMessageFutureStub privateMessageService;
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
 
-    public MessageCommand(ProxyServer proxy, LastMessageCache lastMessageCache, GrpcStubManager stubManager) {
+    public MessageCommand(ProxyServer proxy, OtpEventListener otpEventListener, LastMessageCache lastMessageCache, GrpcStubManager stubManager) {
+        this.otpEventListener = otpEventListener;
         this.lastMessageCache = lastMessageCache;
         this.privateMessageService = stubManager.getPrivateMessageService();
         this.mcPlayerService = stubManager.getMcPlayerService();
@@ -124,6 +129,7 @@ public class MessageCommand {
     private BrigadierCommand createMessageCommand() {
         return new BrigadierCommand(
                 LiteralArgumentBuilder.<CommandSource>literal("message")
+                        .requires(CommandUtils.isPlayer())
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("receiver", StringArgumentType.word())
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("message", StringArgumentType.greedyString())
                                         .executes(this::onMessageExecute)
@@ -135,6 +141,7 @@ public class MessageCommand {
     public BrigadierCommand createReplyCommand() {
         return new BrigadierCommand(
                 LiteralArgumentBuilder.<CommandSource>literal("reply")
+                        .requires(CommandUtils.isPlayer())
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("message", StringArgumentType.greedyString())
                                 .executes(this::onReplyExecute)
                         )

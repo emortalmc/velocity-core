@@ -1,11 +1,12 @@
 package cc.towerdefence.velocity.listener;
 
-import cc.towerdefence.api.model.common.PlayerProto;
+import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.service.ServerDiscoveryGrpc;
 import cc.towerdefence.api.service.ServerDiscoveryProto;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
+import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Empty;
@@ -15,6 +16,7 @@ import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
+import io.grpc.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,12 +29,14 @@ public class LobbySelectorListener {
     private final ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService;
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
     private final ProxyServer proxy;
+    private final OtpEventListener otpEventListener;
 
-    public LobbySelectorListener(ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService,
-                                 McPlayerGrpc.McPlayerFutureStub mcPlayerService, ProxyServer proxy) {
-        this.serverDiscoveryService = serverDiscoveryService;
-        this.mcPlayerService = mcPlayerService;
+    public LobbySelectorListener(GrpcStubManager stubManager, ProxyServer proxy,
+                                 OtpEventListener otpEventListener) {
+        this.serverDiscoveryService = stubManager.getServerDiscoveryService();
+        this.mcPlayerService = stubManager.getMcPlayerService();
         this.proxy = proxy;
+        this.otpEventListener = otpEventListener;
     }
 
     @Subscribe
@@ -47,16 +51,27 @@ public class LobbySelectorListener {
                         this.sendToLobbyServer(event, continuation);
                     else
                         this.sendToOtpServer(event, continuation);
-
-
                 },
-                throwable -> continuation.resumeWithException(throwable)
+                throwable -> {
+                    Status status = Status.fromThrowable(throwable);
+                    if (status == Status.NOT_FOUND) this.sendToLobbyServer(event, continuation);
+                    else continuation.resumeWithException(throwable);
+                }
         ), ForkJoinPool.commonPool());
-
     }
 
     private void sendToOtpServer(PlayerChooseInitialServerEvent event, Continuation continuation) {
+        this.otpEventListener.getRestrictedPlayers().add(event.getPlayer().getUniqueId());
 
+        ListenableFuture<ServerDiscoveryProto.ConnectableServer> otpServerFuture = this.serverDiscoveryService.getSuggestedOtpServer(Empty.getDefaultInstance());
+
+        Futures.addCallback(otpServerFuture, FunctionalFutureCallback.create(
+                server -> {
+                    this.connectPlayerToServer(event, server);
+                    continuation.resume();
+                },
+                continuation::resumeWithException
+        ), ForkJoinPool.commonPool());
     }
 
     private void sendToLobbyServer(PlayerChooseInitialServerEvent event, Continuation continuation) {
@@ -65,16 +80,18 @@ public class LobbySelectorListener {
         Futures.addCallback(lobbyServerFuture, FunctionalFutureCallback.create(
                 lobbyServer -> {
                     ServerDiscoveryProto.ConnectableServer connectableServer = lobbyServer.getConnectableServer();
-                    RegisteredServer registeredServer = this.proxy.getServer(connectableServer.getId()).orElseGet(() -> {
-                        InetSocketAddress address = new InetSocketAddress(connectableServer.getAddress(), connectableServer.getPort());
-                        return this.proxy.registerServer(new ServerInfo(connectableServer.getId(), address));
-                    });
-                    event.setInitialServer(registeredServer);
+                    this.connectPlayerToServer(event, connectableServer);
                     continuation.resume();
                 },
-                throwable -> {
-                    continuation.resumeWithException(throwable);
-                }
+                continuation::resumeWithException
         ), ForkJoinPool.commonPool());
+    }
+
+    private void connectPlayerToServer(PlayerChooseInitialServerEvent event, ServerDiscoveryProto.ConnectableServer connectableServer) {
+        RegisteredServer registeredServer = this.proxy.getServer(connectableServer.getId()).orElseGet(() -> {
+            InetSocketAddress address = new InetSocketAddress(connectableServer.getAddress(), connectableServer.getPort());
+            return this.proxy.registerServer(new ServerInfo(connectableServer.getId(), address));
+        });
+        event.setInitialServer(registeredServer);
     }
 }

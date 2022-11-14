@@ -1,6 +1,6 @@
 package cc.towerdefence.velocity.friends.commands;
 
-import cc.towerdefence.api.model.common.PlayerProto;
+import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
 import cc.towerdefence.api.service.McPlayerGrpc;

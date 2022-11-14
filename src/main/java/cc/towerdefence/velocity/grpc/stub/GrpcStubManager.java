@@ -2,6 +2,8 @@ package cc.towerdefence.velocity.grpc.stub;
 
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.McPlayerGrpc;
+import cc.towerdefence.api.service.McPlayerSecurityGrpc;
+import cc.towerdefence.api.service.McPlayerSecurityProto;
 import cc.towerdefence.api.service.PermissionServiceGrpc;
 import cc.towerdefence.api.service.PlayerTrackerGrpc;
 import cc.towerdefence.api.service.PrivateMessageGrpc;
@@ -17,6 +19,7 @@ public class GrpcStubManager {
 
     private final @NotNull PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService;
     private final @NotNull McPlayerGrpc.McPlayerFutureStub mcPlayerService;
+    private final @NotNull McPlayerSecurityGrpc.McPlayerSecurityFutureStub mcPlayerSecurityService;
     private final @NotNull FriendGrpc.FriendFutureStub friendService;
     private final @NotNull ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService;
     private final @NotNull PrivateMessageGrpc.PrivateMessageFutureStub privateMessageService;
@@ -39,6 +42,12 @@ public class GrpcStubManager {
                 .usePlaintext()
                 .build();
         this.mcPlayerService = McPlayerGrpc.newFutureStub(mcPlayerChannel);
+
+        ManagedChannel mcPlayerSecurityChannel = ManagedChannelBuilder.forAddress("mc-player-security.towerdefence.svc", 9090)
+                .defaultLoadBalancingPolicy("round_robin")
+                .usePlaintext()
+                .build();
+        this.mcPlayerSecurityService = McPlayerSecurityGrpc.newFutureStub(mcPlayerSecurityChannel);
 
         ManagedChannel friendChannel = ManagedChannelBuilder.forAddress("friend-manager.towerdefence.svc", 9090)
                 .defaultLoadBalancingPolicy("round_robin")
@@ -79,6 +88,10 @@ public class GrpcStubManager {
 
     public @NotNull McPlayerGrpc.McPlayerFutureStub getMcPlayerService() {
         return mcPlayerService;
+    }
+
+    public @NotNull McPlayerSecurityGrpc.McPlayerSecurityFutureStub getMcPlayerSecurityService() {
+        return mcPlayerSecurityService;
     }
 
     public @NotNull FriendGrpc.FriendFutureStub getFriendService() {

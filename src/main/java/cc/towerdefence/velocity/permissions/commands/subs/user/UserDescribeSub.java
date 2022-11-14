@@ -1,6 +1,6 @@
 package cc.towerdefence.velocity.permissions.commands.subs.user;
 
-import cc.towerdefence.api.model.common.PlayerProto;
+import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.PermissionProto;
 import cc.towerdefence.api.service.PermissionServiceGrpc;
 import cc.towerdefence.api.utils.resolvers.PlayerResolver;

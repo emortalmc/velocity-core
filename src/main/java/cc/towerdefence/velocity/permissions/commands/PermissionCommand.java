@@ -1,6 +1,7 @@
 package cc.towerdefence.velocity.permissions.commands;
 
 import cc.towerdefence.api.service.PermissionServiceGrpc;
+import cc.towerdefence.velocity.listener.OtpEventListener;
 import cc.towerdefence.velocity.permissions.PermissionCache;
 import cc.towerdefence.velocity.permissions.commands.subs.role.RoleCreateSub;
 import cc.towerdefence.velocity.permissions.commands.subs.role.RoleDescribeSub;
@@ -14,6 +15,7 @@ import cc.towerdefence.velocity.permissions.commands.subs.role.RoleSetUsernameSu
 import cc.towerdefence.velocity.permissions.commands.subs.user.UserDescribeSub;
 import cc.towerdefence.velocity.permissions.commands.subs.user.UserRoleAddSub;
 import cc.towerdefence.velocity.permissions.commands.subs.user.UserRoleRemoveSub;
+import cc.towerdefence.velocity.utils.CommandUtils;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -62,6 +64,7 @@ public class PermissionCommand {
             ------------------------------------""");
 
     private final PermissionCache permissionCache;
+    private final OtpEventListener otpEventListener;
 
     private final RoleListSub roleListSub;
     private final RoleCreateSub roleCreateSub;
@@ -77,8 +80,9 @@ public class PermissionCommand {
     private final UserRoleRemoveSub userRoleRemoveSub;
     private final UserDescribeSub userDescribeSub;
 
-    public PermissionCommand(ProxyServer proxy, PermissionServiceGrpc.PermissionServiceFutureStub permissionService, PermissionCache permissionCache) {
+    public PermissionCommand(ProxyServer proxy, PermissionServiceGrpc.PermissionServiceFutureStub permissionService, PermissionCache permissionCache, OtpEventListener otpEventListener) {
         this.permissionCache = permissionCache;
+        this.otpEventListener = otpEventListener;
 
         this.roleListSub = new RoleListSub(permissionCache);
         this.roleCreateSub = new RoleCreateSub(permissionService, permissionCache);
@@ -124,6 +128,7 @@ public class PermissionCommand {
         return new BrigadierCommand(
                 LiteralArgumentBuilder.<CommandSource>literal("perm")
                         .executes(this::executeBaseHelp)
+                        .requires(source -> source.hasPermission("command.permission"))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("listroles")
                                 .executes(this.roleListSub::execute)
                         )

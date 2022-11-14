@@ -1,6 +1,6 @@
 package cc.towerdefence.velocity.permissions;
 
-import cc.towerdefence.api.model.common.PlayerProto;
+import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.PermissionProto;
 import cc.towerdefence.api.service.PermissionServiceGrpc;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
@@ -34,13 +34,16 @@ import java.util.stream.Collectors;
 
 public class PermissionCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionCache.class);
+
     private final Map<String, Role> roleCache = Collections.synchronizedMap(new LinkedHashMap<>());
     private final Map<UUID, User> userCache = new ConcurrentHashMap<>();
 
     private final PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
+    private final Set<PermissionBlocker> permissionBlockers;
 
-    public PermissionCache(GrpcStubManager stubManager) {
+    public PermissionCache(GrpcStubManager stubManager, PermissionBlocker... permissionBlockers) {
         this.permissionService = stubManager.getPermissionService();
+        this.permissionBlockers = Set.of(permissionBlockers);
 
         this.loadRoles();
     }
@@ -90,6 +93,11 @@ public class PermissionCache {
     }
 
     public Tristate getPermission(UUID id, String permission) {
+        // check permission blockers
+        for (PermissionBlocker permissionBlocker : this.permissionBlockers)
+            if (permissionBlocker.isBlocked(id, permission)) return Tristate.FALSE;
+        // continue for checks if not blocked
+
         User user = this.userCache.get(id);
         if (user == null) {
             return Tristate.UNDEFINED;

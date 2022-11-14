@@ -2,6 +2,8 @@ package cc.towerdefence.velocity.friends.commands;
 
 import cc.towerdefence.velocity.friends.FriendCache;
 import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
+import cc.towerdefence.velocity.listener.OtpEventListener;
+import cc.towerdefence.velocity.utils.CommandUtils;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -31,6 +33,8 @@ public class FriendCommand {
                     -----------------------"""//todo purge requests
     );
 
+    private final OtpEventListener otpEventListener;
+
     private final FriendAddSub friendAddSub;
     private final FriendDenySubs friendDenySubs;
     private final FriendListSub friendListSub;
@@ -38,7 +42,8 @@ public class FriendCommand {
     private final FriendRequestPurgeSub friendRequestPurgeSub;
     private final FriendRequestsSub friendRequestsSub;
 
-    public FriendCommand(ProxyServer proxyServer, FriendCache friendCache, GrpcStubManager stubManager) {
+    public FriendCommand(ProxyServer proxyServer, OtpEventListener otpEventListener, FriendCache friendCache, GrpcStubManager stubManager) {
+        this.otpEventListener = otpEventListener;
         this.friendAddSub = new FriendAddSub(stubManager.getMcPlayerService(), stubManager.getFriendService(), friendCache);
         this.friendDenySubs = new FriendDenySubs(stubManager.getMcPlayerService(), stubManager.getFriendService());
         this.friendListSub = new FriendListSub(stubManager.getMcPlayerService(), stubManager.getPlayerTrackerService(), friendCache);
@@ -57,7 +62,7 @@ public class FriendCommand {
     private BrigadierCommand createCommand() {
         return new BrigadierCommand(
                 LiteralArgumentBuilder.<CommandSource>literal("friend")
-                        .requires(source -> source instanceof Player)
+                        .requires(CommandUtils.isPlayer())
                         .executes(this::executeBase)
                         .then(LiteralArgumentBuilder.<CommandSource>literal("list")
                                 .executes(this.friendListSub::execute)

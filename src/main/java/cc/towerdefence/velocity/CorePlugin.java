@@ -8,12 +8,14 @@ import cc.towerdefence.velocity.friends.commands.FriendCommand;
 import cc.towerdefence.velocity.friends.listeners.FriendAddListener;
 import cc.towerdefence.velocity.friends.listeners.FriendRemovalListener;
 import cc.towerdefence.velocity.friends.listeners.FriendRequestListener;
+import cc.towerdefence.velocity.general.ServerManager;
 import cc.towerdefence.velocity.general.commands.PlaytimeCommand;
 import cc.towerdefence.velocity.grpc.service.GrpcServerContainer;
 import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
 import cc.towerdefence.velocity.listener.AgonesListener;
 import cc.towerdefence.velocity.listener.LobbySelectorListener;
 import cc.towerdefence.velocity.listener.McPlayerListener;
+import cc.towerdefence.velocity.listener.OtpEventListener;
 import cc.towerdefence.velocity.listener.PlayerTrackerListener;
 import cc.towerdefence.velocity.permissions.PermissionCache;
 import cc.towerdefence.velocity.permissions.commands.PermissionCommand;
@@ -62,7 +64,7 @@ public class CorePlugin {
     private final FriendCache friendCache = new FriendCache(this.stubManager.getFriendService());
     private final SessionCache sessionCache = new SessionCache();
     private final LastMessageCache lastMessageCache = new LastMessageCache();
-    private final PermissionCache permissionCache = new PermissionCache(this.stubManager);
+    private PermissionCache permissionCache;
 
     @Inject
     public CorePlugin(ProxyServer server) {
@@ -79,6 +81,11 @@ public class CorePlugin {
                 this.stubManager.getStandardAgonesService(), this.stubManager.getAlphaAgonesService())
         );
 
+        ServerManager serverManager = new ServerManager(this.stubManager.getServerDiscoveryService(), this.proxy);
+        // OTP status affects a lot of functionality, so we need it to be loaded first
+        OtpEventListener otpEventListener = new OtpEventListener(this.stubManager.getMcPlayerSecurityService(), serverManager);
+        this.permissionCache = new PermissionCache(this.stubManager, otpEventListener);
+
         // friends
         this.proxy.getEventManager().register(this, this.friendCache);
         this.proxy.getEventManager().register(this, new FriendAddListener(this.friendCache, this.proxy));
@@ -94,21 +101,22 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, new PermissionCheckListener(this.permissionCache));
 
         // generic
-        this.proxy.getEventManager().register(this, new LobbySelectorListener(this.stubManager.getServerDiscoveryService(), mcPlayerService, this.proxy));
+        this.proxy.getEventManager().register(this, otpEventListener);
+        this.proxy.getEventManager().register(this, new LobbySelectorListener(this.stubManager, this.proxy, otpEventListener));
         this.proxy.getEventManager().register(this, new McPlayerListener(this.stubManager.getMcPlayerService(), this.sessionCache));
         this.proxy.getEventManager().register(this, new PlayerTrackerListener(this.stubManager.getPlayerTrackerService()));
 
         // tablist
         this.proxy.getEventManager().register(this, new TabList(this, this.proxy));
 
-        new FriendCommand(this.proxy, this.friendCache, this.stubManager);
+        new FriendCommand(this.proxy, otpEventListener, this.friendCache, this.stubManager);
 
-        new PermissionCommand(this.proxy, this.stubManager.getPermissionService(), this.permissionCache);
+        new PermissionCommand(this.proxy, this.stubManager.getPermissionService(), this.permissionCache, otpEventListener);
 
-        new MessageCommand(this.proxy, this.lastMessageCache, this.stubManager);
+        new MessageCommand(this.proxy, otpEventListener, this.lastMessageCache, this.stubManager);
 
         // generic
-        new PlaytimeCommand(this.proxy, this.stubManager.getMcPlayerService());
+        new PlaytimeCommand(this.proxy, this.sessionCache, this.stubManager.getMcPlayerService());
 
         this.proxy.getScheduler().buildTask(this, () -> {
             List<PacketStat> packetStats = OUTGOING_PACKET_COUNTER.entrySet().stream()

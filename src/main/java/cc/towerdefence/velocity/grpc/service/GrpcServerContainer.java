@@ -5,6 +5,7 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class GrpcServerContainer {
     private static final int PORT = 9090;
@@ -26,5 +27,10 @@ public class GrpcServerContainer {
 
     public void stop() {
         this.server.shutdownNow();
+        try {
+            this.server.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

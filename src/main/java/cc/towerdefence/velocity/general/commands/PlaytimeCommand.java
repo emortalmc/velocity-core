@@ -1,9 +1,13 @@
 package cc.towerdefence.velocity.general.commands;
 
-import cc.towerdefence.api.model.common.PlayerProto;
+import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
+import cc.towerdefence.api.utils.GrpcTimestampConverter;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
+import cc.towerdefence.velocity.cache.SessionCache;
+import cc.towerdefence.velocity.listener.OtpEventListener;
+import cc.towerdefence.velocity.utils.CommandUtils;
 import cc.towerdefence.velocity.utils.DurationFormatter;
 import cc.towerdefence.velocity.utils.GrpcDurationConverter;
 import com.google.common.util.concurrent.Futures;
@@ -22,6 +26,8 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.ForkJoinPool;
 
 public class PlaytimeCommand {
@@ -32,9 +38,11 @@ public class PlaytimeCommand {
     private static final String PLAYTIME_OTHER_MESSAGE = "<light_purple><name>'s playtime is <playtime>.";
 
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
+    private final SessionCache sessionCache;
 
-    public PlaytimeCommand(ProxyServer proxy, McPlayerGrpc.McPlayerFutureStub mcPlayerService) {
+    public PlaytimeCommand(ProxyServer proxy, SessionCache sessionCache, McPlayerGrpc.McPlayerFutureStub mcPlayerService) {
         this.mcPlayerService = mcPlayerService;
+        this.sessionCache = sessionCache;
 
         proxy.getCommandManager().register(this.createBrigadierCommand());
     }
@@ -48,7 +56,11 @@ public class PlaytimeCommand {
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
                 playerResponse -> {
-                    String playtime = DurationFormatter.formatBigToSmall(GrpcDurationConverter.reverse(playerResponse.getPlayTime()));
+                    SessionCache.CachedSession currentSession = this.sessionCache.get(player.getUniqueId());
+                    Duration currentSessionDuration = Duration.between(currentSession.loginTime(), Instant.now());
+                    Duration totalDuration = GrpcDurationConverter.reverse(playerResponse.getPlayTime()).plus(currentSessionDuration);
+
+                    String playtime = DurationFormatter.formatBigToSmall(totalDuration);
                     Component message = MINI_MESSAGE.deserialize(PLAYTIME_SELF_MESSAGE, Placeholder.unparsed("playtime", playtime));
                     player.sendMessage(message);
                 },
@@ -63,7 +75,7 @@ public class PlaytimeCommand {
 
     private int executePlayTimeTarget(CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
-        String targetName = StringArgumentType.getString(context, "target");
+        String targetName = StringArgumentType.getString(context, "username");
 
         ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
                 PlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetName).build()
@@ -71,8 +83,13 @@ public class PlaytimeCommand {
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
                 playerResponse -> {
+                    McPlayerProto.PlayerSession currentSession = playerResponse.hasCurrentSession() ? playerResponse.getCurrentSession() : null;
+                    Duration currentSessionDuration = currentSession == null ? Duration.ZERO
+                            : Duration.between(GrpcTimestampConverter.reverse(currentSession.getLoginTime()), Instant.now());
+                    Duration totalDuration = currentSessionDuration.plus(GrpcDurationConverter.reverse(playerResponse.getPlayTime()));
+
                     String correctedUsername = playerResponse.getCurrentUsername();
-                    String playtime = DurationFormatter.formatBigToSmall(GrpcDurationConverter.reverse(playerResponse.getPlayTime()));
+                    String playtime = DurationFormatter.formatBigToSmall(totalDuration);
                     Component message = MINI_MESSAGE.deserialize(PLAYTIME_OTHER_MESSAGE,
                             Placeholder.unparsed("playtime", playtime), Placeholder.unparsed("name", correctedUsername));
 
@@ -91,7 +108,8 @@ public class PlaytimeCommand {
         return new BrigadierCommand(
                 LiteralArgumentBuilder.<CommandSource>literal("playtime")
                         .executes(this::executePlayTimeSelf)
-                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
+                        .requires(CommandUtils.isPlayer())
+                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.word())
                                 .executes(this::executePlayTimeTarget)
                         )
         );
