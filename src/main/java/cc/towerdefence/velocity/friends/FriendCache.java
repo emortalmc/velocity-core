@@ -1,8 +1,8 @@
 package cc.towerdefence.velocity.friends;
 
-import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.GrpcTimestampConverter;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -23,8 +23,8 @@ public class FriendCache {
     private final Map<UUID, List<CachedFriend>> friendMap = new ConcurrentHashMap<>();
     private final FriendGrpc.FriendFutureStub friendService;
 
-    public FriendCache(FriendGrpc.FriendFutureStub friendService) {
-        this.friendService = friendService;
+    public FriendCache() {
+        this.friendService = GrpcStubCollection.getFriendService().orElse(null);
     }
 
     public List<CachedFriend> get(UUID playerId) {
@@ -52,7 +52,7 @@ public class FriendCache {
     public void onPlayerLogin(PostLoginEvent event) {
         String playerId = event.getPlayer().getUniqueId().toString();
         ListenableFuture<FriendProto.FriendListResponse> response = this.friendService
-                .getFriendList(PlayerProto.PlayerRequest.newBuilder().setPlayerId(playerId).build());
+                .getFriendList(FriendProto.PlayerRequest.newBuilder().setPlayerId(playerId).build());
 
         Futures.addCallback(response, FunctionalFutureCallback.create(
                 result -> {

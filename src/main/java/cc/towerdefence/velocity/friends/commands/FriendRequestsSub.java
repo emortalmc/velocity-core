@@ -1,6 +1,5 @@
 package cc.towerdefence.velocity.friends.commands;
 
-import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.FriendGrpc;
 import cc.towerdefence.api.service.FriendProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
@@ -39,7 +38,7 @@ public class FriendRequestsSub {
     private static final Component NO_OUTGOING_REQUESTS_MESSAGE = Component.text("You have no outgoing friend requests", NamedTextColor.LIGHT_PURPLE);
     private static final String OUTGOING_MESSAGE_TITLE = "<light_purple>--- Outgoing Requests (Page <page>/<max_page>) ---</light_purple>";
     private static final String OUTGOING_MESSAGE_LINE = "<light_purple><time> ago <dark_purple>- <light_purple><username> <dark_purple>| <red><click:run_command:'/friend revoke <username>'>Revoke</click>";
-    private static final Component OUTGOING_MESSAGE_FOOTER = Component.text("-----------------------------------", NamedTextColor.LIGHT_PURPLE);
+    private static final Component OUTGOING_MESSAGE_FOOTER = Component.text("--------------------------------", NamedTextColor.LIGHT_PURPLE);
 
 
     private final FriendGrpc.FriendFutureStub friendService;
@@ -82,7 +81,7 @@ public class FriendRequestsSub {
                         else return friendPlayer.getTargetId();
                     }).toList();
 
-                    ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(PlayerProto.PlayersRequest.newBuilder()
+                    ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.PlayersRequest.newBuilder()
                             .addAllPlayerIds(friendIds).build());
 
                     Futures.addCallback(playersResponseFuture, FunctionalFutureCallback.create(

@@ -2,6 +2,7 @@ package cc.towerdefence.velocity.listener;
 
 import cc.towerdefence.api.service.PlayerTrackerGrpc;
 import cc.towerdefence.api.service.PlayerTrackerProto;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.CorePlugin;
 import com.google.common.util.concurrent.Futures;
@@ -21,8 +22,8 @@ public class PlayerTrackerListener {
 
     private final PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService;
 
-    public PlayerTrackerListener(PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService) {
-        this.playerTrackerService = playerTrackerService;
+    public PlayerTrackerListener() {
+        this.playerTrackerService = GrpcStubCollection.getPlayerTrackerService().orElse(null);
     }
 
     @Subscribe

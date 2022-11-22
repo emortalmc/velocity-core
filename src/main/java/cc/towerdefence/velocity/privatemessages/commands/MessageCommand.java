@@ -1,13 +1,12 @@
 package cc.towerdefence.velocity.privatemessages.commands;
 
-import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.service.PrivateMessageGrpc;
 import cc.towerdefence.api.service.PrivateMessageProto;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
-import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
-import cc.towerdefence.velocity.listener.OtpEventListener;
+import cc.towerdefence.velocity.general.UsernameSuggestions;
 import cc.towerdefence.velocity.privatemessages.LastMessageCache;
 import cc.towerdefence.velocity.utils.CommandUtils;
 import com.google.common.util.concurrent.Futures;
@@ -18,7 +17,6 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.event.command.PlayerAvailableCommandsEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import io.grpc.Status;
@@ -38,16 +36,17 @@ public class MessageCommand {
 
     private static final String MESSAGE_FORMAT = "<dark_purple>(<light_purple>You -> <username><dark_purple>) <light_purple><message>";
 
-    private final OtpEventListener otpEventListener;
     private final LastMessageCache lastMessageCache;
+    private final UsernameSuggestions usernameSuggestions;
+
     private final PrivateMessageGrpc.PrivateMessageFutureStub privateMessageService;
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
 
-    public MessageCommand(ProxyServer proxy, OtpEventListener otpEventListener, LastMessageCache lastMessageCache, GrpcStubManager stubManager) {
-        this.otpEventListener = otpEventListener;
+    public MessageCommand(ProxyServer proxy, UsernameSuggestions usernameSuggestions, LastMessageCache lastMessageCache) {
+        this.usernameSuggestions = usernameSuggestions;
         this.lastMessageCache = lastMessageCache;
-        this.privateMessageService = stubManager.getPrivateMessageService();
-        this.mcPlayerService = stubManager.getMcPlayerService();
+        this.privateMessageService = GrpcStubCollection.getPrivateMessageService().orElse(null);
+        this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
 
         proxy.getCommandManager().register("msg", this.createMessageCommand(), "message");
         proxy.getCommandManager().register("r", this.createReplyCommand(), "reply");
@@ -55,7 +54,7 @@ public class MessageCommand {
 
     public int sendMessage(Player player, String targetUsername, String message) {
         ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
-                PlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build()
+                McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build()
         );
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
@@ -131,6 +130,7 @@ public class MessageCommand {
                 LiteralArgumentBuilder.<CommandSource>literal("message")
                         .requires(CommandUtils.isPlayer())
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("receiver", StringArgumentType.word())
+                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.ONLINE))
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("message", StringArgumentType.greedyString())
                                         .executes(this::onMessageExecute)
                                 )

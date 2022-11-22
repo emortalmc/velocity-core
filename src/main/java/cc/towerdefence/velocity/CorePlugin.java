@@ -1,6 +1,7 @@
 package cc.towerdefence.velocity;
 
 import cc.towerdefence.api.agonessdk.AgonesUtils;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.resolvers.PlayerResolver;
 import cc.towerdefence.velocity.cache.SessionCache;
 import cc.towerdefence.velocity.friends.FriendCache;
@@ -9,6 +10,7 @@ import cc.towerdefence.velocity.friends.listeners.FriendAddListener;
 import cc.towerdefence.velocity.friends.listeners.FriendRemovalListener;
 import cc.towerdefence.velocity.friends.listeners.FriendRequestListener;
 import cc.towerdefence.velocity.general.ServerManager;
+import cc.towerdefence.velocity.general.UsernameSuggestions;
 import cc.towerdefence.velocity.general.commands.PlaytimeCommand;
 import cc.towerdefence.velocity.grpc.service.GrpcServerContainer;
 import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
@@ -23,6 +25,7 @@ import cc.towerdefence.velocity.permissions.listener.PermissionCheckListener;
 import cc.towerdefence.velocity.privatemessages.LastMessageCache;
 import cc.towerdefence.velocity.privatemessages.PrivateMessageListener;
 import cc.towerdefence.velocity.privatemessages.commands.MessageCommand;
+import cc.towerdefence.velocity.serverlist.ServerPingListener;
 import cc.towerdefence.velocity.tablist.TabList;
 import cc.towerdefence.velocity.utils.ReflectionUtils;
 import com.google.inject.Inject;
@@ -38,6 +41,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -52,6 +57,7 @@ import java.util.concurrent.atomic.AtomicLong;
 )
 public class CorePlugin {
     private static final Map<Integer, AtomicLong> OUTGOING_PACKET_COUNTER = new ConcurrentHashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(CorePlugin.class);
 
     public static final String SERVER_ID = System.getenv("HOSTNAME");
     public static final boolean DEV_ENVIRONMENT = System.getenv("AGONES_SDK_GRPC_PORT") == null;
@@ -61,7 +67,9 @@ public class CorePlugin {
     private final GrpcStubManager stubManager = new GrpcStubManager();
     private final GrpcServerContainer grpcServerContainer;
 
-    private final FriendCache friendCache = new FriendCache(this.stubManager.getFriendService());
+    private final UsernameSuggestions usernameSuggestions = new UsernameSuggestions();
+
+    private final FriendCache friendCache = new FriendCache();
     private final SessionCache sessionCache = new SessionCache();
     private final LastMessageCache lastMessageCache = new LastMessageCache();
     private PermissionCache permissionCache;
@@ -71,19 +79,24 @@ public class CorePlugin {
         this.proxy = server;
         this.grpcServerContainer = new GrpcServerContainer(this.proxy);
 
-        PlayerResolver.setPlayerService(this.stubManager.getMcPlayerService(),
+        PlayerResolver.setPlayerService(GrpcStubCollection.getPlayerService().orElse(null),
                 username -> this.proxy.getPlayer(username).map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername())).orElse(null));
     }
 
     @Subscribe
     public void onProxyInitialize(ProxyInitializeEvent event) {
-        this.proxy.getEventManager().register(this, new AgonesListener(this.stubManager.getAgonesService(),
-                this.stubManager.getStandardAgonesService(), this.stubManager.getAlphaAgonesService())
-        );
 
-        ServerManager serverManager = new ServerManager(this.stubManager.getServerDiscoveryService(), this.proxy);
+        if (this.stubManager.getAgonesService() != null) {
+            this.proxy.getEventManager().register(this, new AgonesListener(this.stubManager.getAgonesService(),
+                    this.stubManager.getStandardAgonesService(), this.stubManager.getAlphaAgonesService())
+            );
+        } else {
+            LOGGER.warn("Agones SDK is not enabled. This is only intended for development purposes.");
+        }
+
+        ServerManager serverManager = new ServerManager(this, this.proxy);
         // OTP status affects a lot of functionality, so we need it to be loaded first
-        OtpEventListener otpEventListener = new OtpEventListener(this.stubManager.getMcPlayerSecurityService(), serverManager);
+        OtpEventListener otpEventListener = new OtpEventListener(serverManager);
         this.permissionCache = new PermissionCache(this.stubManager, otpEventListener);
 
         // friends
@@ -103,36 +116,42 @@ public class CorePlugin {
         // generic
         this.proxy.getEventManager().register(this, otpEventListener);
         this.proxy.getEventManager().register(this, new LobbySelectorListener(this.stubManager, this.proxy, otpEventListener));
-        this.proxy.getEventManager().register(this, new McPlayerListener(this.stubManager.getMcPlayerService(), this.sessionCache));
-        this.proxy.getEventManager().register(this, new PlayerTrackerListener(this.stubManager.getPlayerTrackerService()));
+        this.proxy.getEventManager().register(this, new McPlayerListener(this.sessionCache));
+        this.proxy.getEventManager().register(this, new PlayerTrackerListener());
+
+        // server list
+        this.proxy.getEventManager().register(this, new ServerPingListener());
 
         // tablist
-        this.proxy.getEventManager().register(this, new TabList(this, this.proxy));
+        this.proxy.getEventManager().register(this, new TabList());
 
-        new FriendCommand(this.proxy, otpEventListener, this.friendCache, this.stubManager);
+        new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache);
 
-        new PermissionCommand(this.proxy, this.stubManager.getPermissionService(), this.permissionCache, otpEventListener);
+        new PermissionCommand(this.proxy, this.permissionCache, this.usernameSuggestions);
 
-        new MessageCommand(this.proxy, otpEventListener, this.lastMessageCache, this.stubManager);
+        new MessageCommand(this.proxy, this.usernameSuggestions, this.lastMessageCache);
 
         // generic
-        new PlaytimeCommand(this.proxy, this.sessionCache, this.stubManager.getMcPlayerService());
+        new PlaytimeCommand(this.proxy, this.sessionCache, this.usernameSuggestions);
 
-        this.proxy.getScheduler().buildTask(this, () -> {
-            List<PacketStat> packetStats = OUTGOING_PACKET_COUNTER.entrySet().stream()
-                    .map(entry -> new PacketStat(entry.getKey(), entry.getValue().get()))
-                    .sorted()
-                    .toList();
+        boolean debugPackets = Boolean.parseBoolean(System.getenv("VELOCITY_DEBUG_PACKETS"));
+        if (debugPackets) {
+            this.proxy.getScheduler().buildTask(this, () -> {
+                List<PacketStat> packetStats = OUTGOING_PACKET_COUNTER.entrySet().stream()
+                        .map(entry -> new PacketStat(entry.getKey(), entry.getValue().get()))
+                        .sorted()
+                        .toList();
 
-            StringJoiner joiner = new StringJoiner("\n");
-            joiner.add("Packet Stats:");
+                StringJoiner joiner = new StringJoiner("\n");
+                joiner.add("Packet Stats:");
 
-            for (int i = 0; i < 10 && i < packetStats.size(); i++) {
-                PacketStat packetStat = packetStats.get(i);
-                joiner.add("%s) %s - %s".formatted(i + 1, packetStat.id, packetStat.count));
-            }
-            System.out.println(joiner);
-        }).repeat(10, TimeUnit.SECONDS).schedule();
+                for (int i = 0; i < 10 && i < packetStats.size(); i++) {
+                    PacketStat packetStat = packetStats.get(i);
+                    joiner.add("%s) %s - %s".formatted(i + 1, packetStat.id, packetStat.count));
+                }
+                System.out.println(joiner);
+            }).repeat(10, TimeUnit.SECONDS).schedule();
+        }
     }
 
     private record PacketStat(int id, long count) implements Comparable<PacketStat> {

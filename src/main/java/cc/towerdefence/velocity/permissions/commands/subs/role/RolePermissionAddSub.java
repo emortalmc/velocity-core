@@ -10,7 +10,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
@@ -24,8 +23,8 @@ public class RolePermissionAddSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";
-    private static final String PERMISSION_ADDED = "<green>Permission '<permission>' added to role <role_id>";
-    private static final String PERMISSION_ALREADY_EXISTS = "<red>Permission '<permission>' already exists for <role_id>";
+    private static final String PERMISSION_ADDED = "<green>Permission '<permission>' set to <value> for role <role_id>";
+    private static final String PERMISSION_ALREADY_EXISTS = "<red>Permission '<permission>' already set to <value> for <role_id>";
 
     private final PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
     private final PermissionCache permissionCache;
@@ -39,25 +38,31 @@ public class RolePermissionAddSub {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
         String permission = context.getArgument("permission", String.class);
+        boolean value = context.getArgument("value", Boolean.class);
+        Tristate tristateValue = value ? Tristate.TRUE : Tristate.FALSE;
 
         Optional<PermissionCache.Role> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
 
         PermissionCache.Role role = optionalRole.get();
-        Tristate permissionState = role.getPermissionState(permission);
-        if (permissionState == Tristate.TRUE) {
-            source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_ALREADY_EXISTS, Placeholder.unparsed("role_id", roleId), Placeholder.unparsed("permission", permission)));
+        Tristate oldState = role.getPermissionState(permission);
+        if (oldState == tristateValue) {
+            source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_ALREADY_EXISTS,
+                    Placeholder.unparsed("role_id", roleId),
+                    Placeholder.unparsed("permission", permission),
+                    Placeholder.unparsed("value", String.valueOf(value)))
+            );
             return 1;
         }
 
         PermissionProto.RoleUpdateRequest.Builder requestBuilder = PermissionProto.RoleUpdateRequest.newBuilder()
                 .setId(roleId)
                 .addSetPermissions(PermissionProto.PermissionNode.newBuilder()
-                        .setState(PermissionProto.PermissionNode.PermissionState.ALLOW)
+                        .setState(tristateValue == Tristate.TRUE ? PermissionProto.PermissionNode.PermissionState.ALLOW : PermissionProto.PermissionNode.PermissionState.DENY)
                         .setNode(permission)
                 );
 
-        if (permissionState == Tristate.FALSE) requestBuilder.addUnsetPermissions(permission);
+        if (oldState != Tristate.UNDEFINED) requestBuilder.addUnsetPermissions(permission);
 
         ListenableFuture<PermissionProto.RoleResponse> roleResponseFuture = this.permissionService.updateRole(requestBuilder.build());
 
@@ -66,7 +71,8 @@ public class RolePermissionAddSub {
                     optionalRole.get().getPermissions().add(new PermissionCache.Role.PermissionNode(permission, Tristate.TRUE));
                     source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_ADDED,
                             Placeholder.unparsed("role_id", roleId),
-                            Placeholder.unparsed("permission", permission))
+                            Placeholder.unparsed("permission", permission),
+                            Placeholder.unparsed("value", String.valueOf(value)))
                     );
                 },
                 throwable -> {

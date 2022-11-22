@@ -1,10 +1,10 @@
 package cc.towerdefence.velocity.listener;
 
-import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.service.ServerDiscoveryGrpc;
 import cc.towerdefence.api.service.ServerDiscoveryProto;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
 import com.google.common.util.concurrent.Futures;
@@ -33,15 +33,15 @@ public class LobbySelectorListener {
 
     public LobbySelectorListener(GrpcStubManager stubManager, ProxyServer proxy,
                                  OtpEventListener otpEventListener) {
-        this.serverDiscoveryService = stubManager.getServerDiscoveryService();
-        this.mcPlayerService = stubManager.getMcPlayerService();
+        this.serverDiscoveryService = GrpcStubCollection.getServerDiscoveryService().orElse(null);
+        this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
         this.proxy = proxy;
         this.otpEventListener = otpEventListener;
     }
 
     @Subscribe
     public void onInitialServerChoose(PlayerChooseInitialServerEvent event, Continuation continuation) {
-        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayer(PlayerProto.PlayerRequest.newBuilder()
+        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayer(McPlayerProto.PlayerRequest.newBuilder()
                 .setPlayerId(String.valueOf(event.getPlayer().getUniqueId())).build());
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
@@ -75,7 +75,9 @@ public class LobbySelectorListener {
     }
 
     private void sendToLobbyServer(PlayerChooseInitialServerEvent event, Continuation continuation) {
-        ListenableFuture<ServerDiscoveryProto.LobbyServer> lobbyServerFuture = this.serverDiscoveryService.getSuggestedLobbyServer(Empty.getDefaultInstance());
+        ListenableFuture<ServerDiscoveryProto.LobbyServer> lobbyServerFuture = this.serverDiscoveryService.getSuggestedLobbyServer(
+                ServerDiscoveryProto.ServerRequest.newBuilder().setPlayerCount(1).build()
+        );
 
         Futures.addCallback(lobbyServerFuture, FunctionalFutureCallback.create(
                 lobbyServer -> {

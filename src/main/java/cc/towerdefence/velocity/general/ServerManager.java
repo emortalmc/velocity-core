@@ -2,12 +2,14 @@ package cc.towerdefence.velocity.general;
 
 import cc.towerdefence.api.service.ServerDiscoveryGrpc;
 import cc.towerdefence.api.service.ServerDiscoveryProto;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
+import cc.towerdefence.velocity.CorePlugin;
+import cc.towerdefence.velocity.api.event.server.SwapToTowerDefenceEvent;
+import cc.towerdefence.velocity.api.event.transport.PlayerTransportEvent;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.protobuf.Empty;
-import com.velocitypowered.api.event.Continuation;
-import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
+import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
@@ -16,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 
 public class ServerManager {
@@ -24,13 +27,16 @@ public class ServerManager {
     private final ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService;
     private final ProxyServer proxy;
 
-    public ServerManager(ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService, ProxyServer proxy) {
-        this.serverDiscoveryService = serverDiscoveryService;
+    public ServerManager(CorePlugin plugin, ProxyServer proxy) {
+        this.serverDiscoveryService = GrpcStubCollection.getServerDiscoveryService().orElse(null);
         this.proxy = proxy;
+
+        this.proxy.getEventManager().register(plugin, this);
     }
 
     public void sendToLobbyServer(Player player) {
-        ListenableFuture<ServerDiscoveryProto.LobbyServer> lobbyServerFuture = this.serverDiscoveryService.getSuggestedLobbyServer(Empty.getDefaultInstance());
+        ListenableFuture<ServerDiscoveryProto.LobbyServer> lobbyServerFuture = this.serverDiscoveryService.getSuggestedLobbyServer(
+                ServerDiscoveryProto.ServerRequest.newBuilder().setPlayerCount(1).build());
 
         Futures.addCallback(lobbyServerFuture, FunctionalFutureCallback.create(
                 lobbyServer -> {
@@ -38,6 +44,32 @@ public class ServerManager {
                     this.connectPlayerToServer(player, connectableServer);
                 },
                 throwable -> LOGGER.error("Failed to get lobby server", throwable)
+        ), ForkJoinPool.commonPool());
+    }
+
+    @Subscribe
+    public void handlePlayerTransport(PlayerTransportEvent event) {
+        for (UUID playerId : event.players()) {
+            this.proxy.getPlayer(playerId).ifPresent(player -> {
+                this.connectPlayerToServer(player, event.server());
+            });
+        }
+    }
+
+    @Subscribe
+    public void onTowerDefenceChange(SwapToTowerDefenceEvent event) {
+        this.sendToTowerDefenceServer(event.player(), event.quickJoin());
+    }
+
+    public void sendToTowerDefenceServer(Player player, boolean quickJoin) {
+        ListenableFuture<ServerDiscoveryProto.ConnectableServer> tdServerFuture = this.serverDiscoveryService.getSuggestedTowerDefenceServer(
+                ServerDiscoveryProto.TowerDefenceServerRequest.newBuilder()
+                        .setInProgress(quickJoin)
+                        .build());
+
+        Futures.addCallback(tdServerFuture, FunctionalFutureCallback.create(
+                connectableServer -> this.connectPlayerToServer(player, connectableServer),
+                throwable -> LOGGER.error("Failed to get TD server", throwable)
         ), ForkJoinPool.commonPool());
     }
 

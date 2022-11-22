@@ -26,6 +26,7 @@ public class AgonesListener {
 
     public AgonesListener(SDKGrpc.SDKFutureStub agonesService, SDKGrpc.SDKStub standardAgonesService,
                           dev.agones.sdk.alpha.SDKGrpc.SDKFutureStub alphaAgonesService) {
+
         this.agonesService = agonesService;
         this.standardAgonesService = standardAgonesService;
         this.alphaAgonesService = alphaAgonesService;

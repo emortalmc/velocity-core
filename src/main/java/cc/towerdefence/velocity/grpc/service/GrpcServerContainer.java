@@ -16,6 +16,8 @@ public class GrpcServerContainer {
         this.server = ServerBuilder.forPort(PORT)
                 .addService(new PrivateMessageReceiverService(proxy))
                 .addService(new VelocityFriendService(proxy))
+                .addService(new VelocityServerService(proxy))
+                .addService(new VelocityPlayerTransporterService(proxy))
                 .build();
 
         try {

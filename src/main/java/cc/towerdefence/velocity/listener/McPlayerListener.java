@@ -2,6 +2,7 @@ package cc.towerdefence.velocity.listener;
 
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.cache.SessionCache;
 import com.google.common.util.concurrent.Futures;
@@ -9,7 +10,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Empty;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
-import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.proxy.Player;
 import org.slf4j.Logger;
@@ -24,8 +24,8 @@ public class McPlayerListener {
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
     private final SessionCache sessionCache;
 
-    public McPlayerListener(McPlayerGrpc.McPlayerFutureStub mcPlayerService, SessionCache sessionCache) {
-        this.mcPlayerService = mcPlayerService;
+    public McPlayerListener(SessionCache sessionCache) {
+        this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
         this.sessionCache = sessionCache;
     }
 
@@ -34,7 +34,7 @@ public class McPlayerListener {
         Player player = event.getPlayer();
         Instant joinTime = Instant.now();
 
-        ListenableFuture<McPlayerProto.PlayerLoginResponse> future = this.mcPlayerService.onPlayerLogin(McPlayerProto.PlayerLoginRequest.newBuilder()
+        ListenableFuture<McPlayerProto.PlayerLoginResponse> future = this.mcPlayerService.onPlayerLogin(McPlayerProto.McPlayerLoginRequest.newBuilder()
                 .setPlayerId(String.valueOf(player.getUniqueId()))
                 .setUsername(player.getUsername())
                 .build());
@@ -48,10 +48,12 @@ public class McPlayerListener {
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
         Player player = event.getPlayer();
+        SessionCache.CachedSession cachedSession =this.sessionCache.remove(player.getUniqueId());
+        if (cachedSession == null) return;
 
-        ListenableFuture<Empty> future = this.mcPlayerService.onPlayerDisconnect(McPlayerProto.PlayerDisconnectRequest.newBuilder()
+        ListenableFuture<Empty> future = this.mcPlayerService.onPlayerDisconnect(McPlayerProto.McPlayerDisconnectRequest.newBuilder()
                 .setPlayerId(String.valueOf(player.getUniqueId()))
-                .setSessionId(this.sessionCache.remove(player.getUniqueId()).sessionId())
+                .setSessionId(cachedSession.sessionId())
                 .build());
 
         Futures.addCallback(future, FunctionalFutureCallback.create(

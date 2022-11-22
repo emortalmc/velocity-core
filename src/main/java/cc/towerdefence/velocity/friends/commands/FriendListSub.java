@@ -1,6 +1,5 @@
 package cc.towerdefence.velocity.friends.commands;
 
-import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.service.PlayerTrackerGrpc;
@@ -14,6 +13,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -37,7 +39,7 @@ public class FriendListSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendListSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
-    private static final Component NO_FRIENDS_MESSAGE = Component.text("You have no fiends. Use /friend add <name> to add someone");
+    private static final Component NO_FRIENDS_MESSAGE = MINI_MESSAGE.deserialize("<light_purple>You have no friends. Use /friend add <name> to add someone.");
     private static final String MESSAGE_TITLE = "<light_purple>----- Friends (Page <page>/<max_page>) -----</light_purple>";
     private static final String ONLINE_LINE = "<click:suggest_command:'/message <username> '><green><username> - <server></green></click>";
     private static final String OFFLINE_LINE = "<red><username> - Seen <last_seen></red>";
@@ -83,22 +85,22 @@ public class FriendListSub {
         TextComponent.Builder message = Component.text()
                 .append(
                         MINI_MESSAGE.deserialize(MESSAGE_TITLE,
-                                Placeholder.component("page", Component.text(page)),
-                                Placeholder.component("max_page", Component.text(maxPage)))
+                                Placeholder.unparsed("page", String.valueOf(page)),
+                                Placeholder.unparsed("max_page", String.valueOf(maxPage)))
                 ).append(Component.newline());
 
         for (FriendStatus status : statuses) {
             if (status.isOnline()) {
                 message.append(
                         MINI_MESSAGE.deserialize(ONLINE_LINE,
-                                Placeholder.parsed("username", status.getUsername()),
-                                Placeholder.parsed("server", status.getServerId()))
+                                Placeholder.unparsed("username", status.getUsername()),
+                                Placeholder.unparsed("server", status.getServerId()))
                 );
             } else {
                 message.append(
                         MINI_MESSAGE.deserialize(OFFLINE_LINE,
-                                Placeholder.parsed("username", status.getUsername()),
-                                Placeholder.parsed("last_seen", DurationFormatter.formatShortFromInstant(status.getLastSeen())))
+                                Placeholder.unparsed("username", status.getUsername()),
+                                Placeholder.unparsed("last_seen", DurationFormatter.formatShortFromInstant(status.getLastSeen())))
                 );
             }
             message.append(Component.newline());
@@ -110,7 +112,7 @@ public class FriendListSub {
     private void retrieveStatuses(List<FriendCache.CachedFriend> friends, Consumer<List<FriendStatus>> callback) {
         Map<UUID, FriendStatus> statuses = new ConcurrentHashMap<>();
         for (FriendCache.CachedFriend friend : friends) statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
-        ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(PlayerProto.PlayersRequest.newBuilder()
+        ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.PlayersRequest.newBuilder()
                 .addAllPlayerIds(friends.stream().map(FriendCache.CachedFriend::playerId).map(UUID::toString).toList())
                 .build());
 
@@ -122,9 +124,22 @@ public class FriendListSub {
                         status.setLastSeen(GrpcTimestampConverter.reverse(player.getLastOnline()));
                         status.setOnline(player.getCurrentlyOnline());
                     }
+                    boolean errored = false;
+                    for (Map.Entry<UUID, FriendStatus> statusEntry : statuses.entrySet()) {
+                        if (statusEntry.getValue().getUsername() == null) {
+                            errored = true;
+                            LOGGER.warn("Could not find username for player {}", statusEntry.getKey());
+                            statusEntry.getValue().setUsername(statusEntry.getKey().toString());
+                        }
+                    }
+
+                    if (errored) {
+                        LOGGER.warn("Searched Player IDs: {}", statuses.keySet());
+                        LOGGER.warn("Found Players: {}", response.getPlayersList());
+                    }
 
                     ListenableFuture<PlayerTrackerProto.GetPlayerServersResponse> playerServersResponseFuture =
-                            this.playerTrackerService.getPlayerServers(PlayerProto.PlayersRequest.newBuilder()
+                            this.playerTrackerService.getPlayerServers(PlayerTrackerProto.PlayersRequest.newBuilder()
                                     .addAllPlayerIds(statuses.values().stream().filter(FriendStatus::isOnline).map(FriendStatus::getUuid).map(UUID::toString).toList())
                                     .build());
 
@@ -154,6 +169,9 @@ public class FriendListSub {
         ), ForkJoinPool.commonPool());
     }
 
+    @Getter
+    @Setter
+    @ToString
     private static class FriendStatus implements Comparable<FriendStatus> {
         private final @NotNull UUID uuid;
         private final @NotNull Instant friendsSince;
@@ -172,57 +190,6 @@ public class FriendListSub {
             if (!this.online && o.online) return 1;
             if (!this.online) return o.lastSeen.compareTo(this.lastSeen); // both offline
             return this.username.compareTo(o.username);
-        }
-
-        public @NotNull UUID getUuid() {
-            return uuid;
-        }
-
-        public @NotNull Instant getFriendsSince() {
-            return friendsSince;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public boolean isOnline() {
-            return online;
-        }
-
-        public void setOnline(boolean online) {
-            this.online = online;
-        }
-
-        public String getServerId() {
-            return serverId;
-        }
-
-        public void setServerId(String serverId) {
-            this.serverId = serverId;
-        }
-
-        public Instant getLastSeen() {
-            return lastSeen;
-        }
-
-        public void setLastSeen(Instant lastSeen) {
-            this.lastSeen = lastSeen;
-        }
-
-        @Override
-        public String toString() {
-            return "FriendStatus{" +
-                    "uuid=" + uuid +
-                    ", username='" + username + '\'' +
-                    ", online=" + online +
-                    ", serverId='" + serverId + '\'' +
-                    ", lastSeen=" + lastSeen +
-                    '}';
         }
     }
 }

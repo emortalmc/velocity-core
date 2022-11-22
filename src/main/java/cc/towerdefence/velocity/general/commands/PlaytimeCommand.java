@@ -1,12 +1,12 @@
 package cc.towerdefence.velocity.general.commands;
 
-import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.McPlayerGrpc;
 import cc.towerdefence.api.service.McPlayerProto;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.GrpcTimestampConverter;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.cache.SessionCache;
-import cc.towerdefence.velocity.listener.OtpEventListener;
+import cc.towerdefence.velocity.general.UsernameSuggestions;
 import cc.towerdefence.velocity.utils.CommandUtils;
 import cc.towerdefence.velocity.utils.DurationFormatter;
 import cc.towerdefence.velocity.utils.GrpcDurationConverter;
@@ -38,11 +38,13 @@ public class PlaytimeCommand {
     private static final String PLAYTIME_OTHER_MESSAGE = "<light_purple><name>'s playtime is <playtime>.";
 
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
+    private final UsernameSuggestions usernameSuggestions;
     private final SessionCache sessionCache;
 
-    public PlaytimeCommand(ProxyServer proxy, SessionCache sessionCache, McPlayerGrpc.McPlayerFutureStub mcPlayerService) {
-        this.mcPlayerService = mcPlayerService;
+    public PlaytimeCommand(ProxyServer proxy, SessionCache sessionCache, UsernameSuggestions usernameSuggestions) {
+        this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
         this.sessionCache = sessionCache;
+        this.usernameSuggestions = usernameSuggestions;
 
         proxy.getCommandManager().register(this.createBrigadierCommand());
     }
@@ -51,7 +53,7 @@ public class PlaytimeCommand {
         Player player = (Player) context.getSource();
 
         ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayer(
-                PlayerProto.PlayerRequest.newBuilder().setPlayerId(player.getUniqueId().toString()).build()
+                McPlayerProto.PlayerRequest.newBuilder().setPlayerId(player.getUniqueId().toString()).build()
         );
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
@@ -78,7 +80,7 @@ public class PlaytimeCommand {
         String targetName = StringArgumentType.getString(context, "username");
 
         ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
-                PlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetName).build()
+                McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetName).build()
         );
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
@@ -110,6 +112,7 @@ public class PlaytimeCommand {
                         .executes(this::executePlayTimeSelf)
                         .requires(CommandUtils.isPlayer())
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.word())
+                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.NONE))
                                 .executes(this::executePlayTimeTarget)
                         )
         );

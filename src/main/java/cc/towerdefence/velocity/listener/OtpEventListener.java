@@ -2,6 +2,7 @@ package cc.towerdefence.velocity.listener;
 
 import cc.towerdefence.api.service.McPlayerSecurityGrpc;
 import cc.towerdefence.api.service.McPlayerSecurityProto;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.general.ServerManager;
 import cc.towerdefence.velocity.permissions.PermissionBlocker;
@@ -47,8 +48,8 @@ public class OtpEventListener implements PermissionBlocker {
 
     private final Set<UUID> restrictedPlayers = new HashSet<>();
 
-    public OtpEventListener(McPlayerSecurityGrpc.McPlayerSecurityFutureStub mcPlayerSecurityService, ServerManager serverManager) {
-        this.mcPlayerSecurityService = mcPlayerSecurityService;
+    public OtpEventListener(ServerManager serverManager) {
+        this.mcPlayerSecurityService = GrpcStubCollection.getPlayerSecurityService().orElse(null);
         this.serverManager = serverManager;
     }
 

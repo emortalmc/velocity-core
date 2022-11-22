@@ -1,15 +1,18 @@
 package cc.towerdefence.velocity.friends.commands;
 
+import cc.towerdefence.api.service.FriendGrpc;
+import cc.towerdefence.api.service.McPlayerGrpc;
+import cc.towerdefence.api.service.McPlayerProto;
+import cc.towerdefence.api.service.PlayerTrackerGrpc;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.velocity.friends.FriendCache;
-import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
-import cc.towerdefence.velocity.listener.OtpEventListener;
+import cc.towerdefence.velocity.general.UsernameSuggestions;
 import cc.towerdefence.velocity.utils.CommandUtils;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -33,7 +36,7 @@ public class FriendCommand {
                     -----------------------"""//todo purge requests
     );
 
-    private final OtpEventListener otpEventListener;
+    private final UsernameSuggestions usernameSuggestions;
 
     private final FriendAddSub friendAddSub;
     private final FriendDenySubs friendDenySubs;
@@ -42,14 +45,19 @@ public class FriendCommand {
     private final FriendRequestPurgeSub friendRequestPurgeSub;
     private final FriendRequestsSub friendRequestsSub;
 
-    public FriendCommand(ProxyServer proxyServer, OtpEventListener otpEventListener, FriendCache friendCache, GrpcStubManager stubManager) {
-        this.otpEventListener = otpEventListener;
-        this.friendAddSub = new FriendAddSub(stubManager.getMcPlayerService(), stubManager.getFriendService(), friendCache);
-        this.friendDenySubs = new FriendDenySubs(stubManager.getMcPlayerService(), stubManager.getFriendService());
-        this.friendListSub = new FriendListSub(stubManager.getMcPlayerService(), stubManager.getPlayerTrackerService(), friendCache);
-        this.friendRemoveSub = new FriendRemoveSub(stubManager.getMcPlayerService(), stubManager.getFriendService(), friendCache);
-        this.friendRequestPurgeSub = new FriendRequestPurgeSub(stubManager.getFriendService());
-        this.friendRequestsSub = new FriendRequestsSub(stubManager.getFriendService(), stubManager.getMcPlayerService());
+    public FriendCommand(ProxyServer proxyServer, UsernameSuggestions usernameSuggestions, FriendCache friendCache) {
+        this.usernameSuggestions = usernameSuggestions;
+
+        McPlayerGrpc.McPlayerFutureStub mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
+        FriendGrpc.FriendFutureStub friendService = GrpcStubCollection.getFriendService().orElse(null);
+        PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService = GrpcStubCollection.getPlayerTrackerService().orElse(null);
+
+        this.friendAddSub = new FriendAddSub(mcPlayerService, friendService, friendCache);
+        this.friendDenySubs = new FriendDenySubs(mcPlayerService, friendService);
+        this.friendListSub = new FriendListSub(mcPlayerService, playerTrackerService, friendCache);
+        this.friendRemoveSub = new FriendRemoveSub(mcPlayerService, friendService, friendCache);
+        this.friendRequestPurgeSub = new FriendRequestPurgeSub(friendService);
+        this.friendRequestsSub = new FriendRequestsSub(friendService, mcPlayerService);
 
         proxyServer.getCommandManager().register(this.createCommand());
     }
@@ -93,21 +101,24 @@ public class FriendCommand {
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("add")
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.NONE))
                                         .executes(this.friendAddSub::execute)
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("remove")
-                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string()) // todo filter by friends
                                         .executes(this.friendRemoveSub::execute)
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("deny")
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.NONE))
                                         .executes(this.friendDenySubs::executeDeny)
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("revoke")
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.NONE))
                                         .executes(this.friendDenySubs::executeRevoke)
                                 )
                         )

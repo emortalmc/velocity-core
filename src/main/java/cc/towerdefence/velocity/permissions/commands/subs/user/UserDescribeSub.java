@@ -1,6 +1,5 @@
 package cc.towerdefence.velocity.permissions.commands.subs.user;
 
-import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.PermissionProto;
 import cc.towerdefence.api.service.PermissionServiceGrpc;
 import cc.towerdefence.api.utils.resolvers.PlayerResolver;
@@ -10,7 +9,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.proxy.Player;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
@@ -61,7 +59,7 @@ public class UserDescribeSub {
             UUID targetId = playerData.uuid();
             String correctedUsername = playerData.username();
 
-            ListenableFuture<PermissionProto.PlayerRolesResponse> rolesResponseFuture = this.permissionService.getPlayerRoles(PlayerProto.PlayerRequest.newBuilder()
+            ListenableFuture<PermissionProto.PlayerRolesResponse> rolesResponseFuture = this.permissionService.getPlayerRoles(PermissionProto.PlayerRequest.newBuilder()
                     .setPlayerId(targetId.toString()).build());
 
             Futures.addCallback(rolesResponseFuture, FunctionalFutureCallback.create(

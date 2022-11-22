@@ -1,8 +1,8 @@
 package cc.towerdefence.velocity.permissions;
 
-import cc.towerdefence.api.model.PlayerProto;
 import cc.towerdefence.api.service.PermissionProto;
 import cc.towerdefence.api.service.PermissionServiceGrpc;
+import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.utils.FunctionalFutureCallback;
 import cc.towerdefence.velocity.grpc.stub.GrpcStubManager;
 import com.google.common.collect.Sets;
@@ -12,7 +12,6 @@ import com.google.protobuf.Empty;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.permission.Tristate;
-import com.velocitypowered.api.proxy.Player;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -42,13 +41,17 @@ public class PermissionCache {
     private final Set<PermissionBlocker> permissionBlockers;
 
     public PermissionCache(GrpcStubManager stubManager, PermissionBlocker... permissionBlockers) {
-        this.permissionService = stubManager.getPermissionService();
+        this.permissionService = GrpcStubCollection.getPermissionService().orElse(null);
         this.permissionBlockers = Set.of(permissionBlockers);
 
         this.loadRoles();
     }
 
     private void loadRoles() {
+        if (this.permissionService == null) {
+            LOGGER.warn("Permission service is not available! Not loading roles");
+            return;
+        }
         ListenableFuture<PermissionProto.RolesResponse> response = this.permissionService.getRoles(Empty.getDefaultInstance());
 
         Futures.addCallback(response, FunctionalFutureCallback.create(
@@ -75,7 +78,7 @@ public class PermissionCache {
 
     public void loadUser(UUID id, Runnable callback, Consumer<Throwable> errorCallback) {
         ListenableFuture<PermissionProto.PlayerRolesResponse> rolesResponseFuture = this.permissionService.getPlayerRoles(
-                PlayerProto.PlayerRequest.newBuilder().setPlayerId(id.toString()).build()
+                PermissionProto.PlayerRequest.newBuilder().setPlayerId(id.toString()).build()
         );
 
         Futures.addCallback(rolesResponseFuture, FunctionalFutureCallback.create(

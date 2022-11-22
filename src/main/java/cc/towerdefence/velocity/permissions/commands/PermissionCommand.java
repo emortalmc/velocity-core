@@ -1,7 +1,9 @@
 package cc.towerdefence.velocity.permissions.commands;
 
+import cc.towerdefence.api.service.McPlayerProto;
 import cc.towerdefence.api.service.PermissionServiceGrpc;
-import cc.towerdefence.velocity.listener.OtpEventListener;
+import cc.towerdefence.api.utils.GrpcStubCollection;
+import cc.towerdefence.velocity.general.UsernameSuggestions;
 import cc.towerdefence.velocity.permissions.PermissionCache;
 import cc.towerdefence.velocity.permissions.commands.subs.role.RoleCreateSub;
 import cc.towerdefence.velocity.permissions.commands.subs.role.RoleDescribeSub;
@@ -15,7 +17,7 @@ import cc.towerdefence.velocity.permissions.commands.subs.role.RoleSetUsernameSu
 import cc.towerdefence.velocity.permissions.commands.subs.user.UserDescribeSub;
 import cc.towerdefence.velocity.permissions.commands.subs.user.UserRoleAddSub;
 import cc.towerdefence.velocity.permissions.commands.subs.user.UserRoleRemoveSub;
-import cc.towerdefence.velocity.utils.CommandUtils;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -64,7 +66,7 @@ public class PermissionCommand {
             ------------------------------------""");
 
     private final PermissionCache permissionCache;
-    private final OtpEventListener otpEventListener;
+    private final UsernameSuggestions usernameSuggestions;
 
     private final RoleListSub roleListSub;
     private final RoleCreateSub roleCreateSub;
@@ -80,9 +82,12 @@ public class PermissionCommand {
     private final UserRoleRemoveSub userRoleRemoveSub;
     private final UserDescribeSub userDescribeSub;
 
-    public PermissionCommand(ProxyServer proxy, PermissionServiceGrpc.PermissionServiceFutureStub permissionService, PermissionCache permissionCache, OtpEventListener otpEventListener) {
+    public PermissionCommand(ProxyServer proxy,
+                             PermissionCache permissionCache, UsernameSuggestions usernameSuggestions) {
         this.permissionCache = permissionCache;
-        this.otpEventListener = otpEventListener;
+        this.usernameSuggestions = usernameSuggestions;
+
+        PermissionServiceGrpc.PermissionServiceFutureStub permissionService = GrpcStubCollection.getPermissionService().orElse(null);
 
         this.roleListSub = new RoleListSub(permissionCache);
         this.roleCreateSub = new RoleCreateSub(permissionService, permissionCache);
@@ -156,9 +161,11 @@ public class PermissionCommand {
                                                 )
                                         )
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("permission")
-                                                .then(LiteralArgumentBuilder.<CommandSource>literal("add")
+                                                .then(LiteralArgumentBuilder.<CommandSource>literal("set")
                                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word())
-                                                                .executes(this.rolePermissionAddSub::execute)
+                                                                .then(RequiredArgumentBuilder.<CommandSource, Boolean>argument("value", BoolArgumentType.bool())
+                                                                        .executes(this.rolePermissionAddSub::execute)
+                                                                )
                                                         )
                                                 )
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("unset")
@@ -177,7 +184,8 @@ public class PermissionCommand {
                         .then(LiteralArgumentBuilder.<CommandSource>literal("user")
                                 .executes(this::executeUserHelp)
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", word())
-                                        .executes(this.userDescribeSub::execute) // describe
+                                        .executes(this.userDescribeSub::execute)
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.NONE))
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("role")
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("add")
                                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("roleId", word())
