@@ -30,7 +30,7 @@ public class FriendAddSub {
     public static final String FRIEND_ADDED_MESSAGE = "<light_purple>You are now friends with <color:#c98fff><username></color>";
     private static final String ALREADY_FRIENDS_MESSAGE = "<light_purple>You are already friends with <color:#c98fff><username></color>";
     private static final String SENT_REQUEST_MESSAGE = "<light_purple>Sent a friend request to <color:#c98fff><username></color>";
-    private static final String PRIVACY_BLOCKED_MESSAGE = "<color:#c98fff><username>'s</color> <light_purple>privacy settings don't allow you yo add them as a friend.";
+    private static final String PRIVACY_BLOCKED_MESSAGE = "<color:#c98fff><username>'s</color> <light_purple>privacy settings don't allow you you add them as a friend.";
     private static final String ALREADY_REQUESTED_MESSAGE = "<light_purple>You have already sent a friend request to <color:#c98fff><username></color>";
 
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;

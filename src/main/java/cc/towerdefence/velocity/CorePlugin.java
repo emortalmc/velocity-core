@@ -134,6 +134,8 @@ public class CorePlugin {
         // generic
         new PlaytimeCommand(this.proxy, this.sessionCache, this.usernameSuggestions);
 
+        new ServerCleanupTask(this, this.proxy);
+
         boolean debugPackets = Boolean.parseBoolean(System.getenv("VELOCITY_DEBUG_PACKETS"));
         if (debugPackets) {
             this.proxy.getScheduler().buildTask(this, () -> {

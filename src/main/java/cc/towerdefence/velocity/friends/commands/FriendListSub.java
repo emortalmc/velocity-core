@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +95,7 @@ public class FriendListSub {
                 message.append(
                         MINI_MESSAGE.deserialize(ONLINE_LINE,
                                 Placeholder.unparsed("username", status.getUsername()),
-                                Placeholder.unparsed("server", status.getServerId()))
+                                Placeholder.unparsed("server", this.createFriendlyServerName(status.getServerId())))
                 );
             } else {
                 message.append(
@@ -191,5 +192,17 @@ public class FriendListSub {
             if (!this.online) return o.lastSeen.compareTo(this.lastSeen); // both offline
             return this.username.compareTo(o.username);
         }
+    }
+
+    private String createFriendlyServerName(String serverId) {
+        String[] parts = serverId.split("-");
+        String[] serverTypeIdParts = Arrays.copyOf(parts, parts.length - 2);
+        String serverTypeId =String.join("-", serverTypeIdParts);
+
+        return switch (serverTypeId) {
+            case "lobby" -> "In the Lobby";
+            case "tower-defence-game" -> "Playing Tower Defence";
+            default -> "Playing " + serverTypeId;
+        };
     }
 }
