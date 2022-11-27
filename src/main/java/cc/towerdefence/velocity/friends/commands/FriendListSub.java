@@ -86,22 +86,22 @@ public class FriendListSub {
         TextComponent.Builder message = Component.text()
                 .append(
                         MINI_MESSAGE.deserialize(MESSAGE_TITLE,
-                                Placeholder.unparsed("page", String.valueOf(page)),
-                                Placeholder.unparsed("max_page", String.valueOf(maxPage)))
+                                Placeholder.parsed("page", String.valueOf(page)),
+                                Placeholder.parsed("max_page", String.valueOf(maxPage)))
                 ).append(Component.newline());
 
         for (FriendStatus status : statuses) {
             if (status.isOnline()) {
                 message.append(
                         MINI_MESSAGE.deserialize(ONLINE_LINE,
-                                Placeholder.unparsed("username", status.getUsername()),
-                                Placeholder.unparsed("server", this.createFriendlyServerName(status.getServerId())))
+                                Placeholder.parsed("username", status.getUsername()),
+                                Placeholder.parsed("server", this.createFriendlyServerName(status.getServerId())))
                 );
             } else {
                 message.append(
                         MINI_MESSAGE.deserialize(OFFLINE_LINE,
-                                Placeholder.unparsed("username", status.getUsername()),
-                                Placeholder.unparsed("last_seen", DurationFormatter.formatShortFromInstant(status.getLastSeen())))
+                                Placeholder.parsed("username", status.getUsername()),
+                                Placeholder.parsed("last_seen", DurationFormatter.formatShortFromInstant(status.getLastSeen())))
                 );
             }
             message.append(Component.newline());
