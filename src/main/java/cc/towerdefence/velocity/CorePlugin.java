@@ -1,7 +1,6 @@
 package cc.towerdefence.velocity;
 
 import cc.towerdefence.api.agonessdk.AgonesUtils;
-import cc.towerdefence.api.utils.GrpcStubCollection;
 import cc.towerdefence.api.utils.resolvers.PlayerResolver;
 import cc.towerdefence.velocity.cache.SessionCache;
 import cc.towerdefence.velocity.friends.FriendCache;
@@ -18,13 +17,13 @@ import cc.towerdefence.velocity.listener.AgonesListener;
 import cc.towerdefence.velocity.listener.LobbySelectorListener;
 import cc.towerdefence.velocity.listener.McPlayerListener;
 import cc.towerdefence.velocity.listener.OtpEventListener;
-import cc.towerdefence.velocity.listener.PlayerTrackerListener;
 import cc.towerdefence.velocity.permissions.PermissionCache;
 import cc.towerdefence.velocity.permissions.commands.PermissionCommand;
 import cc.towerdefence.velocity.permissions.listener.PermissionCheckListener;
 import cc.towerdefence.velocity.privatemessages.LastMessageCache;
 import cc.towerdefence.velocity.privatemessages.PrivateMessageListener;
 import cc.towerdefence.velocity.privatemessages.commands.MessageCommand;
+import cc.towerdefence.velocity.rabbitmq.RabbitMqEventListener;
 import cc.towerdefence.velocity.serverlist.ServerPingListener;
 import cc.towerdefence.velocity.tablist.TabList;
 import cc.towerdefence.velocity.utils.ReflectionUtils;
@@ -59,6 +58,7 @@ public class CorePlugin {
     private static final Map<Integer, AtomicLong> OUTGOING_PACKET_COUNTER = new ConcurrentHashMap<>();
     private static final Logger LOGGER = LoggerFactory.getLogger(CorePlugin.class);
 
+    public static final boolean DEBUG_PACKETS = Boolean.getBoolean("VELOCITY_DEBUG_PACKETS");
     public static final String SERVER_ID = System.getenv("HOSTNAME");
     public static final boolean DEV_ENVIRONMENT = System.getenv("AGONES_SDK_GRPC_PORT") == null;
 
@@ -68,6 +68,8 @@ public class CorePlugin {
     private final GrpcServerContainer grpcServerContainer;
 
     private final UsernameSuggestions usernameSuggestions = new UsernameSuggestions();
+
+    private final RabbitMqEventListener rabbitMqEventListener = new RabbitMqEventListener();
 
     private final FriendCache friendCache = new FriendCache();
     private final SessionCache sessionCache = new SessionCache();
@@ -79,8 +81,7 @@ public class CorePlugin {
         this.proxy = server;
         this.grpcServerContainer = new GrpcServerContainer(this.proxy);
 
-        PlayerResolver.setPlayerService(GrpcStubCollection.getPlayerService().orElse(null),
-                username -> this.proxy.getPlayer(username).map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername())).orElse(null));
+        PlayerResolver.setPlatformUsernameResolver(username -> this.proxy.getPlayer(username).map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername())).orElse(null));
     }
 
     @Subscribe
@@ -98,6 +99,9 @@ public class CorePlugin {
         // OTP status affects a lot of functionality, so we need it to be loaded first
         OtpEventListener otpEventListener = new OtpEventListener(serverManager);
         this.permissionCache = new PermissionCache(this.stubManager, otpEventListener);
+
+        // rabbitmq
+        this.proxy.getEventManager().register(this, this.rabbitMqEventListener);
 
         // friends
         this.proxy.getEventManager().register(this, this.friendCache);
@@ -117,7 +121,6 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, otpEventListener);
         this.proxy.getEventManager().register(this, new LobbySelectorListener(this.stubManager, this.proxy, otpEventListener));
         this.proxy.getEventManager().register(this, new McPlayerListener(this.sessionCache));
-        this.proxy.getEventManager().register(this, new PlayerTrackerListener());
 
         // server list
         this.proxy.getEventManager().register(this, new ServerPingListener());
@@ -136,8 +139,7 @@ public class CorePlugin {
 
         new ServerCleanupTask(this, this.proxy);
 
-        boolean debugPackets = Boolean.parseBoolean(System.getenv("VELOCITY_DEBUG_PACKETS"));
-        if (debugPackets) {
+        if (DEBUG_PACKETS) {
             this.proxy.getScheduler().buildTask(this, () -> {
                 List<PacketStat> packetStats = OUTGOING_PACKET_COUNTER.entrySet().stream()
                         .map(entry -> new PacketStat(entry.getKey(), entry.getValue().get()))
@@ -165,6 +167,8 @@ public class CorePlugin {
 
     @Subscribe
     public void onLogin(PostLoginEvent event) {
+        if (!DEBUG_PACKETS) return;
+
         Player player = event.getPlayer();
         Object minecraftConnection = ReflectionUtils.get(player, player.getClass(), "connection", Object.class);
         Channel channel = ReflectionUtils.get(minecraftConnection, minecraftConnection.getClass(), "channel", Channel.class);
@@ -217,6 +221,7 @@ public class CorePlugin {
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         this.grpcServerContainer.stop();
+        this.rabbitMqEventListener.shutdown();
         AgonesUtils.shutdownHealthTask();
     }
 

@@ -1,7 +1,7 @@
 plugins {
-    id ("java")
+    id("java")
     id("com.github.johnrengelman.shadow") version "7.1.2"
-    
+
     id("io.freefair.lombok") version "6.5.1"
 }
 
@@ -22,11 +22,12 @@ dependencies {
     annotationProcessor("com.velocitypowered:velocity-api:3.1.1")
     implementation("net.kyori:adventure-text-minimessage:4.11.0")
 
-    implementation("cc.towerdefence.api:grpc-sdk:00e8ad4")
+    implementation("com.rabbitmq:amqp-client:5.16.0")
+    implementation("cc.towerdefence.api:grpc-sdk:74a9904")
     implementation("cc.towerdefence.api:agones-sdk:1.0.3")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
-    testRuntimeOnly ("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
 }
 
 shadowJar {
