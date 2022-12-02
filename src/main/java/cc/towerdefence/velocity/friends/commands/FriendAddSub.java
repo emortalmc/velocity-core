@@ -47,6 +47,11 @@ public class FriendAddSub {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);
 
+        if (player.getUsername().equalsIgnoreCase(targetUsername)) {
+            player.sendMessage(Component.text("You can't add yourself as a friend.", NamedTextColor.RED));
+            return 1;
+        }
+
         PlayerResolver.retrievePlayerData(targetUsername, cachedMcPlayer -> {
             String correctedUsername = cachedMcPlayer.username();
             UUID targetId = cachedMcPlayer.uuid();

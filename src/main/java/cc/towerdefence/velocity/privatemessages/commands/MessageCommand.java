@@ -110,6 +110,11 @@ public class MessageCommand {
         String message = context.getArgument("message", String.class);
         Player player = (Player) context.getSource();
 
+        if (player.getUsername().equalsIgnoreCase(targetUsername)) {
+            player.sendMessage(Component.text("You cannot send a message to yourself.", NamedTextColor.RED));
+            return 1;
+        }
+
         return this.sendMessage(player, targetUsername, message);
     }
 

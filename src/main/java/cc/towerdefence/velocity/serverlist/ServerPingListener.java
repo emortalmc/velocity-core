@@ -7,8 +7,8 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 
 public class ServerPingListener {
     private static final String MOTD = """
-            <gradient:#c98fff:#ff63d6>                ★ TowerDefence ★
-                       now with at least 2 towers""";
+            <gradient:#c98fff:#ff63d6>                    ★ TowerDefence ★
+                           now with at least 2 towers""";
 
     @Subscribe
     public void onServerPing(ProxyPingEvent event) {
