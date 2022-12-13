@@ -29,7 +29,7 @@ public class RabbitMqEventListener {
 
     public RabbitMqEventListener() {
         ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("rabbitmq-default.towerdefence.svc");
+        connectionFactory.setHost("rabbitmq-default");
         connectionFactory.setUsername(USERNAME);
         connectionFactory.setPassword(PASSWORD);
 

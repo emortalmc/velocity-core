@@ -28,8 +28,8 @@ public class ServerCleanupTask {
             }
         }
 
-        LOGGER.info("Unregistered {} servers:", unRegisteredServers.size());
         if (unRegisteredServers.size() > 0) {
+            LOGGER.info("Unregistered {} servers:", unRegisteredServers.size());
             for (RegisteredServer server : unRegisteredServers) {
                 LOGGER.info(" - {}", server.getServerInfo().getName());
             }

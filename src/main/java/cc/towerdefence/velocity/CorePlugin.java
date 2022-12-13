@@ -126,7 +126,7 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, new ServerPingListener());
 
         // tablist
-        this.proxy.getEventManager().register(this, new TabList());
+        this.proxy.getEventManager().register(this, new TabList(this, this.proxy));
 
         new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache);
 
