@@ -1,0 +1,134 @@
+package dev.emortal.velocity.listener;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.velocitypowered.api.event.Continuation;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
+import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.api.proxy.server.ServerInfo;
+import dev.emortal.api.kurushimi.Assignment;
+import dev.emortal.api.kurushimi.CreateTicketRequest;
+import dev.emortal.api.kurushimi.FrontendGrpc;
+import dev.emortal.api.kurushimi.SearchFields;
+import dev.emortal.api.kurushimi.Ticket;
+import dev.emortal.api.kurushimi.WatchAssignmentRequest;
+import dev.emortal.api.service.McPlayerGrpc;
+import dev.emortal.api.service.McPlayerProto;
+import dev.emortal.api.service.ServerDiscoveryGrpc;
+import dev.emortal.api.utils.GrpcStubCollection;
+import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.api.utils.callback.FunctionalStreamObserver;
+import dev.emortal.velocity.grpc.stub.GrpcStubManager;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.concurrent.ForkJoinPool;
+
+public class LobbySelectorListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LobbySelectorListener.class);
+
+    private static final Component ERROR_MESSAGE = MiniMessage.miniMessage().deserialize("<red>Failed to connect to lobby");
+
+    private final ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService;
+    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
+    private final FrontendGrpc.FrontendFutureStub matchmakingService;
+    private final FrontendGrpc.FrontendStub matchmakingServiceBlocking;
+    private final ProxyServer proxy;
+
+    public LobbySelectorListener(GrpcStubManager stubManager, ProxyServer proxy) {
+        System.out.println("LobbySelectorListener init");
+        this.serverDiscoveryService = GrpcStubCollection.getServerDiscoveryService().orElse(null);
+        this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
+
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("matchmaker", 9090)
+                .defaultLoadBalancingPolicy("round_robin")
+                .usePlaintext()
+                .build();
+
+        this.matchmakingService = FrontendGrpc.newFutureStub(channel);
+        this.matchmakingServiceBlocking = FrontendGrpc.newStub(channel);
+
+        this.proxy = proxy;
+    }
+
+    @Subscribe
+    public void onInitialServerChoose(PlayerChooseInitialServerEvent event, Continuation continuation) {
+        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayer(McPlayerProto.PlayerRequest.newBuilder()
+                .setPlayerId(String.valueOf(event.getPlayer().getUniqueId())).build());
+
+        System.out.println("onInitialServerChoose");
+        Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
+                player -> {
+                    System.out.println("onInitialServerChoose - player");
+//                    boolean otpEnabled = player.getOtpEnabled();
+//                    if (!otpEnabled)
+                        this.sendToLobbyServer(event, continuation);
+//                    else
+//                        this.sendToOtpServer(event, continuation);
+                },
+                throwable -> {
+                    Status status = Status.fromThrowable(throwable);
+                    if (status == Status.NOT_FOUND) this.sendToLobbyServer(event, continuation);
+                    else continuation.resumeWithException(throwable);
+                }
+        ), ForkJoinPool.commonPool());
+    }
+
+    private void sendToLobbyServer(PlayerChooseInitialServerEvent event, Continuation continuation) {
+        ListenableFuture<Ticket> listenableTicketFuture = this.matchmakingService.createTicket(CreateTicketRequest.newBuilder()
+                .setTicket(
+                        Ticket.newBuilder()
+                                .setPlayerId(event.getPlayer().getUniqueId().toString())
+                                .setSearchFields(
+                                        SearchFields.newBuilder()
+                                                .addTags("game.lobby")
+                                )
+                                .setNotifyProxy(false)
+                ).build());
+
+        Futures.addCallback(listenableTicketFuture, FunctionalFutureCallback.create(
+                ticket -> {
+                    String ticketId = ticket.getId();
+                    System.out.println("a " + ticketId + " " + System.currentTimeMillis());
+
+                    // do nothing
+                    this.matchmakingServiceBlocking.watchTicketAssignment(WatchAssignmentRequest.newBuilder().setTicketId(ticketId).build(),
+                            FunctionalStreamObserver.create(
+                                    response -> {
+                                        System.out.println("b");
+                                        Assignment assignment = response.getAssignment();
+                                        System.out.println("c " + assignment);
+                                        this.connectPlayerToAssignment(event, assignment);
+                                        System.out.println("d");
+                                        continuation.resume();
+                                    },
+                                    throwable -> {
+                                        event.getPlayer().disconnect(ERROR_MESSAGE);
+                                        LOGGER.error("Failed to connect player to lobby", throwable);
+                                        continuation.resumeWithException(throwable);
+                                    },
+                                    () -> {
+                                        System.out.println("onCompleted " + System.currentTimeMillis());
+                                    }
+                            ));
+                },
+                throwable -> event.getPlayer().disconnect(ERROR_MESSAGE)
+        ), ForkJoinPool.commonPool());
+    }
+
+    private void connectPlayerToAssignment(PlayerChooseInitialServerEvent event, Assignment assignment) {
+        RegisteredServer registeredServer = this.proxy.getServer(assignment.getServerId()).orElseGet(() -> {
+            InetSocketAddress address = new InetSocketAddress(assignment.getServerAddress(), assignment.getServerPort());
+            return this.proxy.registerServer(new ServerInfo(assignment.getServerId(), address));
+        });
+        event.setInitialServer(registeredServer);
+    }
+}

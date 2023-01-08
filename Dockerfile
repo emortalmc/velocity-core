@@ -5,7 +5,7 @@ RUN apk add --no-cache \
     wget
 
 # We manually set the Velocity version to avoid bugs
-ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.1.2-SNAPSHOT/builds/200/downloads/velocity-3.1.2-SNAPSHOT-200.jar"
+ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.2.0-SNAPSHOT/builds/216/downloads/velocity-3.2.0-SNAPSHOT-216.jar"
 
 RUN mkdir /app
 WORKDIR /app
@@ -22,4 +22,4 @@ WORKDIR /app/plugins
 COPY build/libs/*-all.jar velocity-core.jar
 # Go back to the base directory for our server
 WORKDIR /app
-CMD ["java", "-jar", "-Xmx4G", "-Xms4G", "/app/velocity.jar"]
+CMD ["java", "-jar", "/app/velocity.jar"]

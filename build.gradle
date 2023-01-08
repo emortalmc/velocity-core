@@ -5,15 +5,15 @@ plugins {
     id("io.freefair.lombok") version "6.5.1"
 }
 
-group "cc.towerdefence.velocity"
+group "dev.emortal.velocity"
 version "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
     mavenLocal()
 
-    maven { url = "https://repo.towerdefence.cc/snapshots" }
-    maven { url = "https://repo.towerdefence.cc/releases" }
+    maven { url = "https://repo.emortal.dev/snapshots" }
+    maven { url = "https://repo.emortal.dev/releases" }
     maven { url = "https://repo.papermc.io/repository/maven-public/" }
 }
 
@@ -23,8 +23,9 @@ dependencies {
     implementation('net.kyori:adventure-text-minimessage:4.12.0')
 
     implementation("com.rabbitmq:amqp-client:5.16.0")
-    implementation("cc.towerdefence.api:grpc-sdk:886d2e9")
-    implementation("cc.towerdefence.api:agones-sdk:1.0.3")
+    implementation("dev.emortal.api:grpc-sdk:383c276")
+    implementation("dev.emortal.api:agones-sdk:1.0.5")
+    implementation("dev.emortal.api:kurushimi-sdk:d805526")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
