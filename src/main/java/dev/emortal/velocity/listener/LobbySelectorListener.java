@@ -16,11 +16,9 @@ import dev.emortal.api.kurushimi.Ticket;
 import dev.emortal.api.kurushimi.WatchAssignmentRequest;
 import dev.emortal.api.service.McPlayerGrpc;
 import dev.emortal.api.service.McPlayerProto;
-import dev.emortal.api.service.ServerDiscoveryGrpc;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.callback.FunctionalStreamObserver;
-import dev.emortal.velocity.grpc.stub.GrpcStubManager;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -37,15 +35,12 @@ public class LobbySelectorListener {
 
     private static final Component ERROR_MESSAGE = MiniMessage.miniMessage().deserialize("<red>Failed to connect to lobby");
 
-    private final ServerDiscoveryGrpc.ServerDiscoveryFutureStub serverDiscoveryService;
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
     private final FrontendGrpc.FrontendFutureStub matchmakingService;
     private final FrontendGrpc.FrontendStub matchmakingServiceBlocking;
     private final ProxyServer proxy;
 
-    public LobbySelectorListener(GrpcStubManager stubManager, ProxyServer proxy) {
-        System.out.println("LobbySelectorListener init");
-        this.serverDiscoveryService = GrpcStubCollection.getServerDiscoveryService().orElse(null);
+    public LobbySelectorListener(ProxyServer proxy) {
         this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
 
         ManagedChannel channel = ManagedChannelBuilder.forAddress("matchmaker", 9090)
@@ -64,13 +59,11 @@ public class LobbySelectorListener {
         ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayer(McPlayerProto.PlayerRequest.newBuilder()
                 .setPlayerId(String.valueOf(event.getPlayer().getUniqueId())).build());
 
-        System.out.println("onInitialServerChoose");
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
                 player -> {
-                    System.out.println("onInitialServerChoose - player");
 //                    boolean otpEnabled = player.getOtpEnabled();
 //                    if (!otpEnabled)
-                        this.sendToLobbyServer(event, continuation);
+                    this.sendToLobbyServer(event, continuation);
 //                    else
 //                        this.sendToOtpServer(event, continuation);
                 },
@@ -97,17 +90,13 @@ public class LobbySelectorListener {
         Futures.addCallback(listenableTicketFuture, FunctionalFutureCallback.create(
                 ticket -> {
                     String ticketId = ticket.getId();
-                    System.out.println("a " + ticketId + " " + System.currentTimeMillis());
 
                     // do nothing
                     this.matchmakingServiceBlocking.watchTicketAssignment(WatchAssignmentRequest.newBuilder().setTicketId(ticketId).build(),
                             FunctionalStreamObserver.create(
                                     response -> {
-                                        System.out.println("b");
                                         Assignment assignment = response.getAssignment();
-                                        System.out.println("c " + assignment);
                                         this.connectPlayerToAssignment(event, assignment);
-                                        System.out.println("d");
                                         continuation.resume();
                                     },
                                     throwable -> {
@@ -116,11 +105,13 @@ public class LobbySelectorListener {
                                         continuation.resumeWithException(throwable);
                                     },
                                     () -> {
-                                        System.out.println("onCompleted " + System.currentTimeMillis());
                                     }
                             ));
                 },
-                throwable -> event.getPlayer().disconnect(ERROR_MESSAGE)
+                throwable -> {
+                    event.getPlayer().disconnect(ERROR_MESSAGE);
+                    LOGGER.error("Failed to connect player to lobby", throwable);
+                }
         ), ForkJoinPool.commonPool());
     }
 

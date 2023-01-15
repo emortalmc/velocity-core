@@ -117,7 +117,7 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, new PermissionCheckListener(this.permissionCache));
 
         // generic
-        this.proxy.getEventManager().register(this, new LobbySelectorListener(this.stubManager, this.proxy));
+        this.proxy.getEventManager().register(this, new LobbySelectorListener(this.proxy));
         this.proxy.getEventManager().register(this, new McPlayerListener(this.sessionCache));
 
         // server list
@@ -225,9 +225,5 @@ public class CorePlugin {
 
     public ProxyServer getProxy() {
         return this.proxy;
-    }
-
-    public GrpcStubManager getStubManager() {
-        return this.stubManager;
     }
 }
