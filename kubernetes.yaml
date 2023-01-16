@@ -1,0 +1,85 @@
+apiVersion: agones.dev/v1
+kind: Fleet
+metadata:
+  name: velocity
+  namespace: emortalmc
+
+spec:
+  replicas: 1
+  scheduling: Packed
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+
+  template:
+    spec:
+      ports:
+        - name: default
+          portPolicy: Static
+          hostPort: 25565
+          containerPort: 25565
+          protocol: TCP
+
+      health:
+        initialDelaySeconds: 10
+        periodSeconds: 6
+        failureThreshold: 2
+
+      template:
+        spec:
+          containers:
+            - name: velocity
+              image: emortalmc/velocity:dev
+              imagePullPolicy: IfNotPresent
+
+              ports:
+                - containerPort: 9090
+                  name: grpc
+                  protocol: TCP
+
+              lifecycle:
+                postStart:
+                  exec:
+                    command: [ "/bin/sh", "-c", "echo $VELOCITY_FORWARDING_SECRET > /app/forwarding.secret" ]
+
+              env:
+                - name: JAVA_OPTS
+                  value: "-Xms512M -Xmx512M"
+                - name: VELOCITY_FORWARDING_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: velocity-forwarding-token
+                      key: forwarding.secret
+                      optional: false
+                - name: RABBITMQ_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: rabbitmq-credentials
+                      key: host
+                      optional: false
+                - name: RABBITMQ_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: rabbitmq-credentials
+                      key: username
+                      optional: false
+                - name: RABBITMQ_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: rabbitmq-credentials
+                      key: password
+                      optional: false
+
+              resources:
+                limits:
+                  memory: "512Mi"
+                  cpu: "1"
+                requests:
+                  memory: "512Mi"
+                  cpu: "250m"
+
+#          serviceAccountName: velocity
+#          automountServiceAccountToken: true

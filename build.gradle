@@ -23,12 +23,12 @@ dependencies {
     implementation('net.kyori:adventure-text-minimessage:4.12.0')
 
     implementation("com.rabbitmq:amqp-client:5.16.0")
-    implementation("dev.emortal.api:grpc-sdk:383c276")
+    implementation("dev.emortal.api:grpc-sdk:393f9a8")
     implementation("dev.emortal.api:agones-sdk:1.0.5")
-    implementation("dev.emortal.api:kurushimi-sdk:d805526")
+    implementation("dev.emortal.api:kurushimi-sdk:4d626e4")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.9.2')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.9.2')
 }
 
 shadowJar {

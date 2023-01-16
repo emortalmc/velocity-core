@@ -11,6 +11,7 @@ import com.velocitypowered.api.proxy.server.ServerInfo;
 import dev.emortal.api.kurushimi.Assignment;
 import dev.emortal.api.kurushimi.CreateTicketRequest;
 import dev.emortal.api.kurushimi.FrontendGrpc;
+import dev.emortal.api.kurushimi.KurushimiStubCollection;
 import dev.emortal.api.kurushimi.SearchFields;
 import dev.emortal.api.kurushimi.Ticket;
 import dev.emortal.api.kurushimi.WatchAssignmentRequest;
@@ -19,8 +20,6 @@ import dev.emortal.api.service.McPlayerProto;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.callback.FunctionalStreamObserver;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -35,22 +34,12 @@ public class LobbySelectorListener {
 
     private static final Component ERROR_MESSAGE = MiniMessage.miniMessage().deserialize("<red>Failed to connect to lobby");
 
-    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
-    private final FrontendGrpc.FrontendFutureStub matchmakingService;
-    private final FrontendGrpc.FrontendStub matchmakingServiceBlocking;
+    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
+    private final FrontendGrpc.FrontendFutureStub matchmakingService = KurushimiStubCollection.getFutureStub().orElse(null);
+    private final FrontendGrpc.FrontendStub matchmakingServiceBlocking = KurushimiStubCollection.getStub().orElse(null);
     private final ProxyServer proxy;
 
     public LobbySelectorListener(ProxyServer proxy) {
-        this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
-
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("matchmaker", 9090)
-                .defaultLoadBalancingPolicy("round_robin")
-                .usePlaintext()
-                .build();
-
-        this.matchmakingService = FrontendGrpc.newFutureStub(channel);
-        this.matchmakingServiceBlocking = FrontendGrpc.newStub(channel);
-
         this.proxy = proxy;
     }
 

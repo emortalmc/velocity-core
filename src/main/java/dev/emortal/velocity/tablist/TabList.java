@@ -44,7 +44,6 @@ public class TabList {
         if (this.playerTracker == null) {
             this.currentFooter = MINI_MESSAGE.deserialize(TAB_LIST_FOOTER, Placeholder.parsed("online_players", "Not Connected"));
         } else {
-
             this.proxy.getScheduler().buildTask(plugin, this::updateFooter)
                     .repeat(5, TimeUnit.SECONDS).schedule();
         }

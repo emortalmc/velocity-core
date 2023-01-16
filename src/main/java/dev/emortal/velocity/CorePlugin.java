@@ -14,13 +14,14 @@ import dev.emortal.velocity.grpc.stub.GrpcStubManager;
 import dev.emortal.velocity.listener.AgonesListener;
 import dev.emortal.velocity.listener.LobbySelectorListener;
 import dev.emortal.velocity.listener.McPlayerListener;
+import dev.emortal.velocity.listener.ServerChangeNotificationListener;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.PermissionCommand;
 import dev.emortal.velocity.permissions.listener.PermissionCheckListener;
 import dev.emortal.velocity.privatemessages.LastMessageCache;
 import dev.emortal.velocity.privatemessages.PrivateMessageListener;
 import dev.emortal.velocity.privatemessages.commands.MessageCommand;
-import dev.emortal.velocity.rabbitmq.RabbitMqEventListener;
+import dev.emortal.velocity.rabbitmq.RabbitMqCore;
 import dev.emortal.velocity.serverlist.ServerPingListener;
 import dev.emortal.velocity.tablist.TabList;
 import dev.emortal.velocity.utils.ReflectionUtils;
@@ -68,7 +69,7 @@ public class CorePlugin {
 
     private final UsernameSuggestions usernameSuggestions = new UsernameSuggestions();
 
-    private final RabbitMqEventListener rabbitMqEventListener = new RabbitMqEventListener();
+    private final RabbitMqCore rabbitMqCore = new RabbitMqCore();
 
     private final FriendCache friendCache = new FriendCache();
     private final SessionCache sessionCache = new SessionCache();
@@ -85,7 +86,6 @@ public class CorePlugin {
 
     @Subscribe
     public void onProxyInitialize(ProxyInitializeEvent event) {
-
         if (this.stubManager.getAgonesService() != null) {
             this.proxy.getEventManager().register(this, new AgonesListener(this.stubManager.getAgonesService(),
                     this.stubManager.getStandardAgonesService(), this.stubManager.getAlphaAgonesService())
@@ -95,12 +95,11 @@ public class CorePlugin {
         }
 
         ServerManager serverManager = new ServerManager(this, this.proxy);
-        // OTP status affects a lot of functionality, so we need it to be loaded first
-//        OtpEventListener otpEventListener = new OtpEventListener(serverManager);
+        new ServerChangeNotificationListener(this.proxy, this.rabbitMqCore); // Listens for RabbitMQ ProxyServerChangeMessage messages
         this.permissionCache = new PermissionCache(this.stubManager);
 
         // rabbitmq
-        this.proxy.getEventManager().register(this, this.rabbitMqEventListener);
+        this.proxy.getEventManager().register(this, this.rabbitMqCore);
 
         // friends
         this.proxy.getEventManager().register(this, this.friendCache);
@@ -219,7 +218,7 @@ public class CorePlugin {
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         this.grpcServerContainer.stop();
-        this.rabbitMqEventListener.shutdown();
+        this.rabbitMqCore.shutdown();
         AgonesUtils.shutdownHealthTask();
     }
 
