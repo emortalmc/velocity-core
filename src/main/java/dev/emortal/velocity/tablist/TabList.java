@@ -13,6 +13,8 @@ import dev.emortal.api.service.PlayerTrackerProto;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
@@ -25,12 +27,11 @@ public class TabList {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(TabList.class);
 
-    private static final Component TAB_LIST_HEADER = MINI_MESSAGE.deserialize("<light_purple><bold>ඞ                                   <dark_purple>ඞ</bold>");
-    private static final String TAB_LIST_FOOTER = """
-                        
-            <gray><online_players> online</gray>
-            <reset><gradient:#e2c2ff:#c98fff>towerdefence.cc</gradient>
-            <dark_purple><bold>ඞ                                   <light_purple>ඞ</bold>""";
+    private static final Component TAB_LIST_HEADER = Component.text()
+            .append(Component.text("┌                                                  ", NamedTextColor.GOLD))
+            .append(Component.text("┐ \n ", NamedTextColor.LIGHT_PURPLE))
+            .append(MINI_MESSAGE.deserialize("<gradient:gold:light_purple><bold>EmortalMC"))
+            .build();
 
     private final PlayerTrackerGrpc.PlayerTrackerFutureStub playerTracker;
     private final ProxyServer proxy;
@@ -42,7 +43,7 @@ public class TabList {
 
         this.playerTracker = GrpcStubCollection.getPlayerTrackerService().orElse(null);
         if (this.playerTracker == null) {
-            this.currentFooter = MINI_MESSAGE.deserialize(TAB_LIST_FOOTER, Placeholder.parsed("online_players", "Not Connected"));
+            this.currentFooter = createFooter(0);
         } else {
             this.proxy.getScheduler().buildTask(plugin, this::updateFooter)
                     .repeat(5, TimeUnit.SECONDS).schedule();
@@ -76,6 +77,11 @@ public class TabList {
     }
 
     private Component createFooter(int playerCount) {
-        return MINI_MESSAGE.deserialize(TAB_LIST_FOOTER, Placeholder.parsed("online_players", String.valueOf(playerCount)));
+        return Component.text()
+                .append(Component.text(" \n" + playerCount + " online", NamedTextColor.GRAY))
+                .append(Component.text("\nᴍᴄ.ᴇᴍᴏʀᴛᴀʟ.ᴅᴇᴠ", TextColor.color(38, 110, 224)))
+                .append(Component.text("\n└                                                  ", NamedTextColor.LIGHT_PURPLE))
+                .append(Component.text("┘ ", NamedTextColor.GOLD))
+                .build();
     }
 }

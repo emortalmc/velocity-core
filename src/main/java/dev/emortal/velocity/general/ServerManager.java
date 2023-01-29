@@ -5,7 +5,6 @@ import dev.emortal.api.service.ServerDiscoveryProto;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.CorePlugin;
-import dev.emortal.velocity.api.event.server.SwapToTowerDefenceEvent;
 import dev.emortal.velocity.api.event.transport.PlayerTransportEvent;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -54,23 +53,6 @@ public class ServerManager {
                 this.connectPlayerToServer(player, event.server());
             });
         }
-    }
-
-    @Subscribe
-    public void onTowerDefenceChange(SwapToTowerDefenceEvent event) {
-        this.sendToTowerDefenceServer(event.player(), event.quickJoin());
-    }
-
-    public void sendToTowerDefenceServer(Player player, boolean quickJoin) {
-        ListenableFuture<ServerDiscoveryProto.ConnectableServer> tdServerFuture = this.serverDiscoveryService.getSuggestedTowerDefenceServer(
-                ServerDiscoveryProto.TowerDefenceServerRequest.newBuilder()
-                        .setInProgress(quickJoin)
-                        .build());
-
-        Futures.addCallback(tdServerFuture, FunctionalFutureCallback.create(
-                connectableServer -> this.connectPlayerToServer(player, connectableServer),
-                throwable -> LOGGER.error("Failed to get TD server", throwable)
-        ), ForkJoinPool.commonPool());
     }
 
     private void connectPlayerToServer(Player player, ServerDiscoveryProto.ConnectableServer connectableServer) {

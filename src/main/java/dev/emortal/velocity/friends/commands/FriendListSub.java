@@ -201,7 +201,6 @@ public class FriendListSub {
 
         return switch (serverTypeId) {
             case "lobby" -> "In the Lobby";
-            case "tower-defence-game" -> "Playing Tower Defence";
             default -> "Playing " + serverTypeId;
         };
     }
