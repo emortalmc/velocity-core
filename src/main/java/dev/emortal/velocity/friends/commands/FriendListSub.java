@@ -1,18 +1,19 @@
 package dev.emortal.velocity.friends.commands;
 
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.service.McPlayerProto;
-import dev.emortal.api.service.PlayerTrackerGrpc;
-import dev.emortal.api.service.PlayerTrackerProto;
+import com.google.common.util.concurrent.Futures;
+import com.mojang.brigadier.context.CommandContext;
+import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.grpc.playertracker.PlayerTrackerGrpc;
+import dev.emortal.api.grpc.playertracker.PlayerTrackerProto;
+import dev.emortal.api.model.mcplayer.McPlayer;
+import dev.emortal.api.model.playertracker.PlayerLocation;
 import dev.emortal.api.utils.GrpcTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.friends.FriendCache;
 import dev.emortal.velocity.utils.DurationFormatter;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.mojang.brigadier.context.CommandContext;
-import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.proxy.Player;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -112,14 +113,15 @@ public class FriendListSub {
 
     private void retrieveStatuses(List<FriendCache.CachedFriend> friends, Consumer<List<FriendStatus>> callback) {
         Map<UUID, FriendStatus> statuses = new ConcurrentHashMap<>();
-        for (FriendCache.CachedFriend friend : friends) statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
-        ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.PlayersRequest.newBuilder()
+        for (FriendCache.CachedFriend friend : friends)
+            statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
+        var playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.GetPlayersRequest.newBuilder()
                 .addAllPlayerIds(friends.stream().map(FriendCache.CachedFriend::playerId).map(UUID::toString).toList())
                 .build());
 
         Futures.addCallback(playersResponseFuture, FunctionalFutureCallback.create(
                 response -> {
-                    for (McPlayerProto.PlayerResponse player : response.getPlayersList()) {
+                    for (McPlayer player : response.getPlayersList()) {
                         FriendStatus status = statuses.get(UUID.fromString(player.getId()));
                         status.setUsername(player.getCurrentUsername());
                         status.setLastSeen(GrpcTimestampConverter.reverse(player.getLastOnline()));
@@ -139,19 +141,23 @@ public class FriendListSub {
                         LOGGER.warn("Found Players: {}", response.getPlayersList());
                     }
 
-                    ListenableFuture<PlayerTrackerProto.GetPlayerServersResponse> playerServersResponseFuture =
-                            this.playerTrackerService.getPlayerServers(PlayerTrackerProto.PlayersRequest.newBuilder()
-                                    .addAllPlayerIds(statuses.values().stream().filter(FriendStatus::isOnline).map(FriendStatus::getUuid).map(UUID::toString).toList())
+                    var playerServersResponseFuture = this.playerTrackerService.getPlayerServers(
+                            PlayerTrackerProto.GetPlayerServersRequest.newBuilder()
+                                    .addAllPlayerIds(statuses.values().stream()
+                                            .filter(FriendStatus::isOnline)
+                                            .map(FriendStatus::getUuid)
+                                            .map(UUID::toString)
+                                            .toList())
                                     .build());
 
                     Futures.addCallback(playerServersResponseFuture,
                             FunctionalFutureCallback.create(
                                     playerServersResponse -> {
-                                        for (Map.Entry<String, PlayerTrackerProto.OnlineServer> onlineServerEntry : playerServersResponse.getPlayerServersMap().entrySet()) {
-                                            UUID playerId = UUID.fromString(onlineServerEntry.getKey());
+                                        for (Map.Entry<String, PlayerLocation> entry : playerServersResponse.getPlayerServersMap().entrySet()) {
+                                            UUID playerId = UUID.fromString(entry.getKey());
                                             FriendStatus status = statuses.get(playerId);
 
-                                            status.setServerId(onlineServerEntry.getValue().getServerId());
+                                            status.setServerId(entry.getValue().getServerId());
                                         }
 
                                         callback.accept(new ArrayList<>(statuses.values()));
@@ -197,7 +203,7 @@ public class FriendListSub {
     private String createFriendlyServerName(String serverId) {
         String[] parts = serverId.split("-");
         String[] serverTypeIdParts = Arrays.copyOf(parts, parts.length - 2);
-        String serverTypeId =String.join("-", serverTypeIdParts);
+        String serverTypeId = String.join("-", serverTypeIdParts);
 
         return switch (serverTypeId) {
             case "lobby" -> "In the Lobby";

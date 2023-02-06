@@ -1,14 +1,13 @@
 package dev.emortal.velocity.permissions.commands.subs.user;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.service.PermissionProto;
-import dev.emortal.api.service.PermissionServiceGrpc;
+import dev.emortal.api.grpc.permission.PermissionProto;
+import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
+import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
@@ -59,17 +58,17 @@ public class UserDescribeSub {
             UUID targetId = playerData.uuid();
             String correctedUsername = playerData.username();
 
-            ListenableFuture<PermissionProto.PlayerRolesResponse> rolesResponseFuture = this.permissionService.getPlayerRoles(PermissionProto.PlayerRequest.newBuilder()
+            var rolesResponseFuture = this.permissionService.getPlayerRoles(PermissionProto.GetPlayerRolesRequest.newBuilder()
                     .setPlayerId(targetId.toString()).build());
 
             Futures.addCallback(rolesResponseFuture, FunctionalFutureCallback.create(
                     response -> {
                         List<String> roleIds = response.getRoleIdsList();
-                        List<PermissionCache.Role> sortedRoles = this.sortRolesByWeight(roleIds);
+                        List<PermissionCache.CachedRole> sortedRoles = this.sortRolesByWeight(roleIds);
 
                         List<Component> roleComponents = new ArrayList<>();
                         for (int i = 0; i < sortedRoles.size(); i++) {
-                            PermissionCache.Role role = sortedRoles.get(i);
+                            PermissionCache.CachedRole role = sortedRoles.get(i);
                             if (i == 0) {
                                 roleComponents.add(Component.text(role.getId(), Style.style(TextDecoration.BOLD)));
                             } else {
@@ -95,7 +94,7 @@ public class UserDescribeSub {
                         source.sendMessage(MINI_MESSAGE.deserialize(USER_DESCRIPTION,
                                 Placeholder.unparsed("username", correctedUsername),
                                 Placeholder.component("groups", groupsValue),
-                                Placeholder.unparsed("permission_count", String.valueOf(sortedRoles.stream().map(PermissionCache.Role::getPermissions).mapToInt(Set::size).sum())),
+                                Placeholder.unparsed("permission_count", String.valueOf(sortedRoles.stream().map(PermissionCache.CachedRole::getPermissions).mapToInt(Set::size).sum())),
                                 Placeholder.component("group_prefix", activePrefix == null ? Component.text("null") : activePrefix),
                                 Placeholder.unparsed("group_display_name", activeDisplayName == null ? "null" : activeDisplayName),
                                 Placeholder.component("example_chat", exampleChatBuilder.build()),
@@ -118,7 +117,7 @@ public class UserDescribeSub {
         return 1;
     }
 
-    private List<PermissionCache.Role> sortRolesByWeight(List<String> roleIds) {
+    private List<PermissionCache.CachedRole> sortRolesByWeight(List<String> roleIds) {
         return roleIds.stream()
                 .map(this.permissionCache::getRole)
                 .filter(Optional::isPresent)

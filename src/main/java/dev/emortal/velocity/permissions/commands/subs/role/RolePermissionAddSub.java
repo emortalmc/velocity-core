@@ -1,14 +1,14 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
-import dev.emortal.api.service.PermissionProto;
-import dev.emortal.api.service.PermissionServiceGrpc;
+import dev.emortal.api.grpc.permission.PermissionProto;
+import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
+import dev.emortal.api.model.permission.PermissionNode;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.Status;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -41,10 +41,10 @@ public class RolePermissionAddSub {
         boolean value = context.getArgument("value", Boolean.class);
         Tristate tristateValue = value ? Tristate.TRUE : Tristate.FALSE;
 
-        Optional<PermissionCache.Role> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
+        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
 
-        PermissionCache.Role role = optionalRole.get();
+        PermissionCache.CachedRole role = optionalRole.get();
         Tristate oldState = role.getPermissionState(permission);
         if (oldState == tristateValue) {
             source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_ALREADY_EXISTS,
@@ -57,18 +57,18 @@ public class RolePermissionAddSub {
 
         PermissionProto.RoleUpdateRequest.Builder requestBuilder = PermissionProto.RoleUpdateRequest.newBuilder()
                 .setId(roleId)
-                .addSetPermissions(PermissionProto.PermissionNode.newBuilder()
-                        .setState(tristateValue == Tristate.TRUE ? PermissionProto.PermissionNode.PermissionState.ALLOW : PermissionProto.PermissionNode.PermissionState.DENY)
+                .addSetPermissions(PermissionNode.newBuilder()
+                        .setState(tristateValue == Tristate.TRUE ? PermissionNode.PermissionState.ALLOW : PermissionNode.PermissionState.DENY)
                         .setNode(permission)
                 );
 
         if (oldState != Tristate.UNDEFINED) requestBuilder.addUnsetPermissions(permission);
 
-        ListenableFuture<PermissionProto.RoleResponse> roleResponseFuture = this.permissionService.updateRole(requestBuilder.build());
+        var roleResponseFuture = this.permissionService.updateRole(requestBuilder.build());
 
         Futures.addCallback(roleResponseFuture, FunctionalFutureCallback.create(
                 response -> {
-                    optionalRole.get().getPermissions().add(new PermissionCache.Role.PermissionNode(permission, Tristate.TRUE));
+                    optionalRole.get().getPermissions().add(new PermissionCache.CachedRole.PermissionNode(permission, Tristate.TRUE));
                     source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_ADDED,
                             Placeholder.unparsed("role_id", roleId),
                             Placeholder.unparsed("permission", permission),

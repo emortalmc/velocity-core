@@ -1,17 +1,6 @@
 package dev.emortal.velocity.general.commands;
 
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.service.McPlayerProto;
-import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.api.utils.GrpcTimestampConverter;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
-import dev.emortal.velocity.cache.SessionCache;
-import dev.emortal.velocity.general.UsernameSuggestions;
-import dev.emortal.velocity.utils.CommandUtils;
-import dev.emortal.velocity.utils.DurationFormatter;
-import dev.emortal.velocity.utils.GrpcDurationConverter;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -20,6 +9,18 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.model.mcplayer.LoginSession;
+import dev.emortal.api.model.mcplayer.McPlayer;
+import dev.emortal.api.utils.GrpcStubCollection;
+import dev.emortal.api.utils.GrpcTimestampConverter;
+import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.cache.SessionCache;
+import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.utils.CommandUtils;
+import dev.emortal.velocity.utils.DurationFormatter;
+import dev.emortal.velocity.utils.GrpcDurationConverter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -52,15 +53,17 @@ public class PlaytimeCommand {
     private int executePlayTimeSelf(CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
 
-        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayer(
-                McPlayerProto.PlayerRequest.newBuilder().setPlayerId(player.getUniqueId().toString()).build()
+        var playerResponseFuture = this.mcPlayerService.getPlayer(
+                McPlayerProto.GetPlayerRequest.newBuilder().setPlayerId(player.getUniqueId().toString()).build()
         );
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
-                playerResponse -> {
+                response -> {
+                    McPlayer mcPlayer = response.getPlayer();
+
                     SessionCache.CachedSession currentSession = this.sessionCache.get(player.getUniqueId());
                     Duration currentSessionDuration = Duration.between(currentSession.loginTime(), Instant.now());
-                    Duration totalDuration = GrpcDurationConverter.reverse(playerResponse.getPlayTime()).plus(currentSessionDuration);
+                    Duration totalDuration = GrpcDurationConverter.reverse(mcPlayer.getHistoricPlayTime()).plus(currentSessionDuration);
 
                     String playtime = DurationFormatter.formatBigToSmall(totalDuration);
                     Component message = MINI_MESSAGE.deserialize(PLAYTIME_SELF_MESSAGE, Placeholder.unparsed("playtime", playtime));
@@ -79,18 +82,21 @@ public class PlaytimeCommand {
         Player player = (Player) context.getSource();
         String targetName = StringArgumentType.getString(context, "username");
 
-        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
+        var playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
                 McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetName).build()
         );
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
                 playerResponse -> {
-                    McPlayerProto.PlayerSession currentSession = playerResponse.hasCurrentSession() ? playerResponse.getCurrentSession() : null;
+                    McPlayer targetPlayer = playerResponse.getPlayer();
+
+                    LoginSession currentSession = targetPlayer.hasCurrentSession() ? targetPlayer.getCurrentSession() : null;
+
                     Duration currentSessionDuration = currentSession == null ? Duration.ZERO
                             : Duration.between(GrpcTimestampConverter.reverse(currentSession.getLoginTime()), Instant.now());
-                    Duration totalDuration = currentSessionDuration.plus(GrpcDurationConverter.reverse(playerResponse.getPlayTime()));
+                    Duration totalDuration = currentSessionDuration.plus(GrpcDurationConverter.reverse(targetPlayer.getHistoricPlayTime()));
 
-                    String correctedUsername = playerResponse.getCurrentUsername();
+                    String correctedUsername = targetPlayer.getCurrentUsername();
                     String playtime = DurationFormatter.formatBigToSmall(totalDuration);
                     Component message = MINI_MESSAGE.deserialize(PLAYTIME_OTHER_MESSAGE,
                             Placeholder.unparsed("playtime", playtime), Placeholder.unparsed("name", correctedUsername));
@@ -112,7 +118,7 @@ public class PlaytimeCommand {
                         .executes(this::executePlayTimeSelf)
                         .requires(CommandUtils.isPlayer())
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.word())
-                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.NONE))
+                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.NONE))
                                 .executes(this::executePlayTimeTarget)
                         )
         );

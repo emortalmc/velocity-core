@@ -1,5 +1,17 @@
 package dev.emortal.velocity.permissions.commands;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.velocitypowered.api.command.BrigadierCommand;
+import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.ProxyServer;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
+import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleCreateSub;
@@ -14,18 +26,6 @@ import dev.emortal.velocity.permissions.commands.subs.role.RoleSetUsernameSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserDescribeSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserRoleAddSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserRoleRemoveSub;
-import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import com.velocitypowered.api.command.BrigadierCommand;
-import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.service.McPlayerProto;
-import dev.emortal.api.service.PermissionServiceGrpc;
-import dev.emortal.api.utils.GrpcStubCollection;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 
@@ -185,7 +185,7 @@ public class PermissionCommand {
                                 .executes(this::executeUserHelp)
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", word())
                                         .executes(this.userDescribeSub::execute)
-                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.NONE))
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.NONE))
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("role")
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("add")
                                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("roleId", word())

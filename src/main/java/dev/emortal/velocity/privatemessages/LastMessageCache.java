@@ -11,7 +11,7 @@ public class LastMessageCache {
     // recipient, last person who messaged them
     private final Map<UUID, String> lastMessageMap = new ConcurrentHashMap<>();
 
-    public void setLastMessage(UUID recipient, String sender) {
+    void setLastMessage(UUID recipient, String sender) {
         this.lastMessageMap.put(recipient, sender);
     }
 

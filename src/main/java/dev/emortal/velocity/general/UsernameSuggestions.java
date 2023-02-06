@@ -5,14 +5,20 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.service.McPlayerProto;
+import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.model.common.Pageable;
+import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.utils.GrpcStubCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class UsernameSuggestions {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UsernameSuggestions.class);
+
     private final McPlayerGrpc.McPlayerFutureStub playerService;
 
     public UsernameSuggestions() {
@@ -21,7 +27,7 @@ public class UsernameSuggestions {
 
     public CompletableFuture<Suggestions> command(
             CommandContext<CommandSource> context, SuggestionsBuilder builder,
-            McPlayerProto.McPlayerSearchRequest.FilterMethod filterMethod) {
+            McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod filterMethod) {
 
         if (!(context.getSource() instanceof Player player)) return CompletableFuture.completedFuture(builder.build());
 
@@ -30,24 +36,30 @@ public class UsernameSuggestions {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                McPlayerProto.PlayerSearchResponse response = this.playerService.searchPlayersByUsername(
-                        McPlayerProto.McPlayerSearchRequest.newBuilder()
+                var response = this.playerService.searchPlayersByUsername(
+                        McPlayerProto.SearchPlayersByUsernameRequest.newBuilder()
                                 .setIssuerId(player.getUniqueId().toString())
                                 .setSearchUsername(currentInput)
-                                .setPage(0)
-                                .setPageSize(15)
                                 .setFilterMethod(filterMethod)
+                                .setPageable(
+                                        Pageable.newBuilder()
+                                                .setPage(0)
+                                                .setSize(15)
+                                        )
                                 .build()).get();
 
                 response.getPlayersList()
                         .stream()
-                        .map(McPlayerProto.PlayerResponse::getCurrentUsername)
+                        .map(McPlayer::getCurrentUsername)
                         .forEach(builder::suggest);
 
                 return builder.build();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
+        }).exceptionally(throwable -> {
+            LOGGER.error("Failed to retrieve player suggestions", throwable);
+            return builder.build();
         });
     }
 }

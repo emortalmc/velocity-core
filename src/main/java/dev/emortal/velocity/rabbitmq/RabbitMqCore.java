@@ -1,6 +1,5 @@
 package dev.emortal.velocity.rabbitmq;
 
-import com.google.gson.Gson;
 import com.google.protobuf.AbstractMessage;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -9,15 +8,16 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
+import com.velocitypowered.api.event.player.ServerConnectedEvent;
+import dev.emortal.api.message.common.PlayerConnectMessage;
+import dev.emortal.api.message.common.PlayerDisconnectMessage;
+import dev.emortal.api.message.common.PlayerSwitchServerMessage;
 import dev.emortal.api.utils.parser.ProtoParserRegistry;
 import dev.emortal.velocity.Environment;
-import dev.emortal.velocity.rabbitmq.types.ConnectEventDataPackage;
-import dev.emortal.velocity.rabbitmq.types.DisconnectEventDataPackage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,8 +32,6 @@ public class RabbitMqCore {
     private static final String HOST = System.getenv("RABBITMQ_HOST");
     private static final String USERNAME = System.getenv("RABBITMQ_USERNAME");
     private static final String PASSWORD = System.getenv("RABBITMQ_PASSWORD");
-
-    private static final Gson GSON = new Gson();
 
     private final Map<Class<?>, Consumer<AbstractMessage>> protoListeners = new ConcurrentHashMap<>();
     private final Connection connection;
@@ -63,32 +61,44 @@ public class RabbitMqCore {
             this.channel.basicConsume(selfQueueName, true, (consumerTag, delivery) -> {
                 String type = delivery.getProperties().getType();
 
+                if (type == null) {
+                    LOGGER.warn("Received message with no type header {}", delivery);
+                    return;
+                }
+
                 AbstractMessage message = ProtoParserRegistry.parse(type, delivery.getBody());
-
                 Consumer<AbstractMessage> listener = this.protoListeners.get(message.getClass());
-                if (listener == null) LOGGER.warn("No listener registered for message of type {}", type);
-                else listener.accept(message);
 
+                if (listener == null) {
+                    LOGGER.warn("No listener registered for message of type {}", type);
+                    return;
+                }
+
+                listener.accept(message);
             }, consumerTag -> LOGGER.warn("Consumer cancelled"));
-
         } catch (IOException ex) {
             LOGGER.error("Failed to bind to proxy all exchange", ex);
         }
-
         this.selfQueueName = selfQueueName;
     }
 
     @Subscribe
     public void onPlayerLogin(PostLoginEvent event) {
-        ConnectEventDataPackage dataPackage = new ConnectEventDataPackage(event.getPlayer().getUniqueId(), event.getPlayer().getUsername());
-        AMQP.BasicProperties basicProperties = new AMQP.BasicProperties.Builder()
+        PlayerConnectMessage message = PlayerConnectMessage.newBuilder()
+                .setPlayerId(event.getPlayer().getUniqueId().toString())
+                .setPlayerUsername(event.getPlayer().getUsername())
+                .setServerId(Environment.getHostname())
+                .build();
+
+
+        AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                 .timestamp(new Date())
-                .type("connect")
+                .type(message.getDescriptorForType().getFullName())
                 .appId(Environment.getHostname())
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "", basicProperties, GSON.toJson(dataPackage).getBytes(StandardCharsets.UTF_8));
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -96,22 +106,46 @@ public class RabbitMqCore {
 
     @Subscribe
     public void onPlayerDisconnect(DisconnectEvent event) {
-        DisconnectEventDataPackage dataPackage = new DisconnectEventDataPackage(event.getPlayer().getUniqueId());
-        AMQP.BasicProperties basicProperties = new AMQP.BasicProperties.Builder()
+        PlayerDisconnectMessage message = PlayerDisconnectMessage.newBuilder()
+                .setPlayerId(event.getPlayer().getUniqueId().toString())
+                .build();
+
+        AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                 .timestamp(new Date())
-                .type("disconnect")
+                .type(message.getDescriptorForType().getFullName())
                 .appId(Environment.getHostname())
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "", basicProperties, GSON.toJson(dataPackage).getBytes(StandardCharsets.UTF_8));
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public <T extends AbstractMessage> void addListener(Class<T> message, Consumer<AbstractMessage> listener) {
-        this.protoListeners.put(message, listener);
+    @Subscribe
+    public void onServerSwitch(ServerConnectedEvent event) {
+        PlayerSwitchServerMessage message = PlayerSwitchServerMessage.newBuilder()
+                .setPlayerId(event.getPlayer().getUniqueId().toString())
+                .setServerId(event.getServer().getServerInfo().getName())
+                .build();
+
+        AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
+                .timestamp(new Date())
+                .type(message.getDescriptorForType().getFullName())
+                .appId(Environment.getHostname())
+                .build();
+
+        try {
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "", properties, message.toByteArray());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends AbstractMessage> void setListener(Class<T> messageType, Consumer<T> listener) {
+        this.protoListeners.put(messageType, (Consumer<AbstractMessage>) listener);
     }
 
     public void shutdown() {

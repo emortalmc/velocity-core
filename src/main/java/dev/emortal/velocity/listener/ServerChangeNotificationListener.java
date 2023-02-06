@@ -4,8 +4,8 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
-import dev.emortal.api.messaging.general.ProxyServerSwitchMessage;
-import dev.emortal.api.service.ServerDiscoveryProto;
+import dev.emortal.api.message.common.SwitchPlayersServerMessage;
+import dev.emortal.api.model.common.ConnectableServer;
 import dev.emortal.velocity.rabbitmq.RabbitMqCore;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -21,18 +21,15 @@ public class ServerChangeNotificationListener {
     private static final String TELEPORT_MESSAGE = "<green>Sending you to <gold><server_id><green>...</green>";
 
     public ServerChangeNotificationListener(ProxyServer proxy, RabbitMqCore rabbitMq) {
-        rabbitMq.addListener(ProxyServerSwitchMessage.class, message -> {
-            ProxyServerSwitchMessage switchMessage = (ProxyServerSwitchMessage) message;
-
+        rabbitMq.setListener(SwitchPlayersServerMessage.class, message -> {
             Set<Player> presentPlayers = new HashSet<>();
-            for (String playerIdStr : switchMessage.getPlayerIdsList()) {
-                UUID playerId = UUID.fromString(playerIdStr);
-                proxy.getPlayer(playerId).ifPresent(presentPlayers::add);
+            for (String playerIdStr : message.getPlayerIdsList()) {
+                proxy.getPlayer(UUID.fromString(playerIdStr)).ifPresent(presentPlayers::add);
             }
 
             if (presentPlayers.isEmpty()) return;
 
-            ServerDiscoveryProto.ConnectableServer connectableServer = switchMessage.getServer();
+            ConnectableServer connectableServer = message.getServer();
             RegisteredServer server = proxy.getServer(connectableServer.getId()).orElse(null);
             if (server == null) {
                 InetSocketAddress address = InetSocketAddress.createUnresolved(connectableServer.getAddress(), connectableServer.getPort());

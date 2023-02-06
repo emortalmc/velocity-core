@@ -1,14 +1,13 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.service.PermissionProto;
-import dev.emortal.api.service.PermissionServiceGrpc;
+import dev.emortal.api.grpc.permission.PermissionProto;
+import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -38,17 +37,17 @@ public class RoleSetUsernameSub {
         String roleId = context.getArgument("roleId", String.class).toLowerCase();
         String usernameFormat = context.getArgument("usernameFormat", String.class);
 
-        Optional<PermissionCache.Role> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
+        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
 
-        ListenableFuture<PermissionProto.RoleResponse> roleResponseFuture = this.permissionService.updateRole(PermissionProto.RoleUpdateRequest.newBuilder()
+        var roleResponseFuture = this.permissionService.updateRole(PermissionProto.RoleUpdateRequest.newBuilder()
                 .setId(roleId)
                 .setDisplayName(usernameFormat)
                 .build());
 
         Futures.addCallback(roleResponseFuture, FunctionalFutureCallback.create(
                 response -> {
-                    PermissionCache.Role role = this.permissionCache.getRole(roleId).orElseThrow();
+                    PermissionCache.CachedRole role = this.permissionCache.getRole(roleId).orElseThrow();
                     role.setDisplayName(usernameFormat);
 
                     Component formattedUsername = role.getFormattedDisplayName(source instanceof Player player ? player.getUsername() : "CONSOLE");

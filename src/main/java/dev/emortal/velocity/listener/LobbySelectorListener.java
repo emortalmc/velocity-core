@@ -8,6 +8,7 @@ import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
+import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.kurushimi.Assignment;
 import dev.emortal.api.kurushimi.CreateTicketRequest;
 import dev.emortal.api.kurushimi.FrontendGrpc;
@@ -15,12 +16,9 @@ import dev.emortal.api.kurushimi.KurushimiStubCollection;
 import dev.emortal.api.kurushimi.SearchFields;
 import dev.emortal.api.kurushimi.Ticket;
 import dev.emortal.api.kurushimi.WatchAssignmentRequest;
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.service.McPlayerProto;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.callback.FunctionalStreamObserver;
-import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.slf4j.Logger;
@@ -45,23 +43,7 @@ public class LobbySelectorListener {
 
     @Subscribe
     public void onInitialServerChoose(PlayerChooseInitialServerEvent event, Continuation continuation) {
-        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayer(McPlayerProto.PlayerRequest.newBuilder()
-                .setPlayerId(String.valueOf(event.getPlayer().getUniqueId())).build());
-
-        Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
-                player -> {
-//                    boolean otpEnabled = player.getOtpEnabled();
-//                    if (!otpEnabled)
-                    this.sendToLobbyServer(event, continuation);
-//                    else
-//                        this.sendToOtpServer(event, continuation);
-                },
-                throwable -> {
-                    Status status = Status.fromThrowable(throwable);
-                    if (status == Status.NOT_FOUND) this.sendToLobbyServer(event, continuation);
-                    else continuation.resumeWithException(throwable);
-                }
-        ), ForkJoinPool.commonPool());
+        this.sendToLobbyServer(event, continuation);
     }
 
     private void sendToLobbyServer(PlayerChooseInitialServerEvent event, Continuation continuation) {

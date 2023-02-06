@@ -1,15 +1,13 @@
 package dev.emortal.velocity.friends.commands;
 
-import dev.emortal.api.service.FriendGrpc;
-import dev.emortal.api.service.FriendProto;
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.utils.resolvers.PlayerResolver;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.grpc.relationship.RelationshipGrpc;
+import dev.emortal.api.grpc.relationship.RelationshipProto;
+import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.api.utils.resolvers.PlayerResolver;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -30,12 +28,10 @@ public class FriendDenySubs {
     private static final String NO_REQUEST_RECEIVED_MESSAGE = "<light_purple>You have not received a friend request from <color:#c98fff><username></color>";
     private static final String NO_REQUEST_SENT_MESSAGE = "<light_purple>You have not sent a friend request to <color:#c98fff><username></color>";
 
-    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
-    private final FriendGrpc.FriendFutureStub friendService;
+    private final RelationshipGrpc.RelationshipFutureStub relationshipService;
 
-    public FriendDenySubs(McPlayerGrpc.McPlayerFutureStub mcPlayerService, FriendGrpc.FriendFutureStub friendService) {
-        this.mcPlayerService = mcPlayerService;
-        this.friendService = friendService;
+    public FriendDenySubs(RelationshipGrpc.RelationshipFutureStub relationshipService) {
+        this.relationshipService = relationshipService;
     }
 
     public int executeRevoke(CommandContext<CommandSource> context) {
@@ -54,8 +50,8 @@ public class FriendDenySubs {
             String correctedUsername = cachedMcPlayer.username(); // this will have correct capitalisation
             UUID targetId = cachedMcPlayer.uuid();
 
-            ListenableFuture<FriendProto.DenyFriendRequestResponse> denyResponseFuture = this.friendService.denyFriendRequest(
-                    FriendProto.DenyFriendRequestRequest.newBuilder()
+            var denyResponseFuture = this.relationshipService.denyFriendRequest(
+                    RelationshipProto.DenyFriendRequestRequest.newBuilder()
                             .setIssuerId(player.getUniqueId().toString())
                             .setTargetId(targetId.toString())
                             .build()

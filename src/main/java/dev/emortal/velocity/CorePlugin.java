@@ -1,15 +1,21 @@
 package dev.emortal.velocity;
 
+import com.google.inject.Inject;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.PostLoginEvent;
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
+import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.ProxyServer;
+import dev.emortal.api.agonessdk.AgonesUtils;
+import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.cache.SessionCache;
 import dev.emortal.velocity.friends.FriendCache;
 import dev.emortal.velocity.friends.commands.FriendCommand;
-import dev.emortal.velocity.friends.listeners.FriendAddListener;
-import dev.emortal.velocity.friends.listeners.FriendRemovalListener;
-import dev.emortal.velocity.friends.listeners.FriendRequestListener;
-import dev.emortal.velocity.general.ServerManager;
+import dev.emortal.velocity.friends.listeners.FriendRabbitMqListener;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.general.commands.PlaytimeCommand;
-import dev.emortal.velocity.grpc.service.GrpcServerContainer;
 import dev.emortal.velocity.grpc.stub.GrpcStubManager;
 import dev.emortal.velocity.listener.AgonesListener;
 import dev.emortal.velocity.listener.LobbySelectorListener;
@@ -25,16 +31,6 @@ import dev.emortal.velocity.rabbitmq.RabbitMqCore;
 import dev.emortal.velocity.serverlist.ServerPingListener;
 import dev.emortal.velocity.tablist.TabList;
 import dev.emortal.velocity.utils.ReflectionUtils;
-import com.google.inject.Inject;
-import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.connection.PostLoginEvent;
-import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
-import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
-import com.velocitypowered.api.plugin.Plugin;
-import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.agonessdk.AgonesUtils;
-import dev.emortal.api.utils.resolvers.PlayerResolver;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -65,7 +61,6 @@ public class CorePlugin {
     private final ProxyServer proxy;
 
     private final GrpcStubManager stubManager = new GrpcStubManager();
-    private final GrpcServerContainer grpcServerContainer;
 
     private final UsernameSuggestions usernameSuggestions = new UsernameSuggestions();
 
@@ -79,7 +74,6 @@ public class CorePlugin {
     @Inject
     public CorePlugin(ProxyServer server) {
         this.proxy = server;
-        this.grpcServerContainer = new GrpcServerContainer(this.proxy);
 
         PlayerResolver.setPlatformUsernameResolver(username -> this.proxy.getPlayer(username).map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername())).orElse(null));
     }
@@ -94,7 +88,6 @@ public class CorePlugin {
             LOGGER.warn("Agones SDK is not enabled. This is only intended for development purposes.");
         }
 
-        ServerManager serverManager = new ServerManager(this, this.proxy);
         new ServerChangeNotificationListener(this.proxy, this.rabbitMqCore); // Listens for RabbitMQ ProxyServerChangeMessage messages
         this.permissionCache = new PermissionCache(this.stubManager);
 
@@ -102,13 +95,11 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, this.rabbitMqCore);
 
         // friends
+        new FriendRabbitMqListener(this.rabbitMqCore, this.proxy, this.friendCache);
         this.proxy.getEventManager().register(this, this.friendCache);
-        this.proxy.getEventManager().register(this, new FriendAddListener(this.friendCache, this.proxy));
-        this.proxy.getEventManager().register(this, new FriendRemovalListener(this.friendCache));
-        this.proxy.getEventManager().register(this, new FriendRequestListener(this.proxy));
 
         // private messages
-        this.proxy.getEventManager().register(this, new PrivateMessageListener(this.proxy, this.lastMessageCache));
+        this.proxy.getEventManager().register(this, new PrivateMessageListener(this.rabbitMqCore, this.proxy, this.lastMessageCache));
         this.proxy.getEventManager().register(this, this.lastMessageCache);
 
         // permissions
@@ -217,7 +208,6 @@ public class CorePlugin {
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
-        this.grpcServerContainer.stop();
         this.rabbitMqCore.shutdown();
         AgonesUtils.shutdownHealthTask();
     }

@@ -34,16 +34,6 @@ public class AgonesListener {
 
     @Subscribe
     public void onListenerBound(ListenerBoundEvent event) {
-        ListenableFuture<AlphaAgonesSDKProto.Empty> response = this.alphaAgonesService.setPlayerCapacity(
-                AlphaAgonesSDKProto.Count.newBuilder().setCount(250).build()
-        );
-
-        Futures.addCallback(response, FunctionalFutureCallback.create(
-                result -> {
-                },
-                error -> LOGGER.error("Failed to set player capacity ({}): {}", 250, error)
-        ), ForkJoinPool.commonPool());
-
         ListenableFuture<AgonesSDKProto.Empty> readyResponse = this.agonesService.ready(AgonesSDKProto.Empty.getDefaultInstance());
 
         Futures.addCallback(readyResponse, FunctionalFutureCallback.create(

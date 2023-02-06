@@ -1,13 +1,12 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.service.PermissionProto;
-import dev.emortal.api.service.PermissionServiceGrpc;
+import dev.emortal.api.grpc.permission.PermissionProto;
+import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
@@ -36,10 +35,10 @@ public class RoleSetPrioritySub {
         String roleId = context.getArgument("roleId", String.class);
         int priority = context.getArgument("priority", Integer.class);
 
-        Optional<PermissionCache.Role> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
+        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
 
-        ListenableFuture<PermissionProto.RoleResponse> roleResponseFuture = this.permissionService.updateRole(PermissionProto.RoleUpdateRequest.newBuilder()
+        var roleResponseFuture = this.permissionService.updateRole(PermissionProto.RoleUpdateRequest.newBuilder()
                 .setId(roleId)
                 .setPriority(priority)
                 .build());

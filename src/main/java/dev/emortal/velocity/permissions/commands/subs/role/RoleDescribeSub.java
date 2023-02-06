@@ -1,18 +1,15 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
+import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Optional;
 
 public class RoleDescribeSub {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RoleDescribeSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";
@@ -33,10 +30,10 @@ public class RoleDescribeSub {
     public int execute(CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
-        Optional<PermissionCache.Role> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
+        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
 
-        PermissionCache.Role role = optionalRole.get();
+        PermissionCache.CachedRole role = optionalRole.get();
         source.sendMessage(MINI_MESSAGE.deserialize(ROLE_DESCRIPTION, Placeholder.unparsed("role_id", role.getId()),
                 Placeholder.unparsed("priority", String.valueOf(role.getPriority())),
                 Placeholder.unparsed("permission_count", String.valueOf(role.getPermissions().size())),

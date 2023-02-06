@@ -1,22 +1,21 @@
 package dev.emortal.velocity.tablist;
 
-import dev.emortal.velocity.CorePlugin;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.model.ServerType;
-import dev.emortal.api.service.PlayerTrackerGrpc;
-import dev.emortal.api.service.PlayerTrackerProto;
+import dev.emortal.api.grpc.playertracker.PlayerTrackerGrpc;
+import dev.emortal.api.grpc.playertracker.PlayerTrackerProto;
+import dev.emortal.api.model.common.ServerType;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.CorePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +56,7 @@ public class TabList {
 
     private void updateFooter() {
         ListenableFuture<PlayerTrackerProto.ServerTypePlayerCountResponse> responseFuture = this.playerTracker.getServerTypePlayerCount(
-                PlayerTrackerProto.ServerTypeRequest.newBuilder()
+                PlayerTrackerProto.GetServerTypePlayerCountRequest.newBuilder()
                         .setServerType(ServerType.PROXY).build());
 
         Futures.addCallback(responseFuture, FunctionalFutureCallback.create(

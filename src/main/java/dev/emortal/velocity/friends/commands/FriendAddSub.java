@@ -1,17 +1,16 @@
 package dev.emortal.velocity.friends.commands;
 
-import dev.emortal.api.service.FriendGrpc;
-import dev.emortal.api.service.FriendProto;
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.utils.GrpcTimestampConverter;
-import dev.emortal.api.utils.resolvers.PlayerResolver;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
-import dev.emortal.velocity.friends.FriendCache;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.grpc.relationship.RelationshipGrpc;
+import dev.emortal.api.grpc.relationship.RelationshipProto;
+import dev.emortal.api.model.relationship.FriendRequest;
+import dev.emortal.api.utils.GrpcTimestampConverter;
+import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.api.utils.resolvers.PlayerResolver;
+import dev.emortal.velocity.friends.FriendCache;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -32,14 +31,13 @@ public class FriendAddSub {
     private static final String SENT_REQUEST_MESSAGE = "<light_purple>Sent a friend request to <color:#c98fff><username></color>";
     private static final String PRIVACY_BLOCKED_MESSAGE = "<color:#c98fff><username>'s</color> <light_purple>privacy settings don't allow you you add them as a friend.";
     private static final String ALREADY_REQUESTED_MESSAGE = "<light_purple>You have already sent a friend request to <color:#c98fff><username></color>";
+    private static final String YOU_BLOCKED_MESSAGE = "<red>You cannot add <color:#c98fff><username></color> as a friend as you have blocked them!</red>";
 
-    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
-    private final FriendGrpc.FriendFutureStub friendService;
+    private final RelationshipGrpc.RelationshipFutureStub relationshipService;
     private final FriendCache friendCache;
 
-    public FriendAddSub(McPlayerGrpc.McPlayerFutureStub mcPlayerService, FriendGrpc.FriendFutureStub friendService, FriendCache friendCache) {
-        this.mcPlayerService = mcPlayerService;
-        this.friendService = friendService;
+    public FriendAddSub(RelationshipGrpc.RelationshipFutureStub relationshipService, FriendCache friendCache) {
+        this.relationshipService = relationshipService;
         this.friendCache = friendCache;
     }
 
@@ -56,11 +54,12 @@ public class FriendAddSub {
             String correctedUsername = cachedMcPlayer.username();
             UUID targetId = cachedMcPlayer.uuid();
 
-            ListenableFuture<FriendProto.AddFriendResponse> friendResponseFuture = this.friendService.addFriend(
-                    FriendProto.AddFriendRequest.newBuilder()
-                            .setIssuerId(player.getUniqueId().toString())
-                            .setIssuerUsername(player.getUsername())
-                            .setTargetId(targetId.toString())
+            var friendResponseFuture = this.relationshipService.addFriend(
+                    RelationshipProto.AddFriendRequest.newBuilder()
+                            .setRequest(FriendRequest.newBuilder()
+                                    .setSenderId(player.getUniqueId().toString())
+                                    .setSenderUsername(player.getUsername())
+                                    .setTargetId(targetId.toString()))
                             .build()
             );
 
@@ -79,6 +78,8 @@ public class FriendAddSub {
                                     MINI_MESSAGE.deserialize(PRIVACY_BLOCKED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
                             case ALREADY_REQUESTED ->
                                     MINI_MESSAGE.deserialize(ALREADY_REQUESTED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
+                            case YOU_BLOCKED ->
+                                    MINI_MESSAGE.deserialize(YOU_BLOCKED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
                             case UNRECOGNIZED -> {
                                 LOGGER.error("Unrecognised friend response: {}", friendResponse);
                                 yield Component.text("An error occurred");

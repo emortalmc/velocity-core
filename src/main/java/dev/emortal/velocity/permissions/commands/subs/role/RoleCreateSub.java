@@ -1,13 +1,12 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.service.PermissionProto;
-import dev.emortal.api.service.PermissionServiceGrpc;
+import dev.emortal.api.grpc.permission.PermissionProto;
+import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -38,21 +37,19 @@ public class RoleCreateSub {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class).toLowerCase();
 
-        Optional<PermissionCache.Role> optionalRole = this.permissionCache.getRole(roleId);
+        Optional<PermissionCache.CachedRole> optionalRole = this.permissionCache.getRole(roleId);
         if (optionalRole.isPresent()) return 1;
 
-        ListenableFuture<PermissionProto.RoleResponse> roleResponseFuture = this.permissionService.createRole(PermissionProto.RoleCreateRequest.newBuilder()
+        var roleResponseFuture = this.permissionService.createRole(PermissionProto.RoleCreateRequest.newBuilder()
                 .setId(roleId)
                 .setDisplayName("<username>")
                 .build());
 
         Futures.addCallback(roleResponseFuture, FunctionalFutureCallback.create(
-                response -> {
-                    this.permissionCache.addRole(response);
-                    source.sendMessage(MINI_MESSAGE.deserialize(ROLE_CREATED, Placeholder.unparsed("role_id", roleId)));
-                },
+                response -> source.sendMessage(MINI_MESSAGE.deserialize(ROLE_CREATED, Placeholder.unparsed("role_id", roleId))),
                 throwable -> {
-                    if (Status.fromThrowable(throwable) == Status.ALREADY_EXISTS) {
+                    Status status = Status.fromThrowable(throwable);
+                    if (status == Status.ALREADY_EXISTS) {
                         source.sendMessage(MINI_MESSAGE.deserialize(ROLE_ALREADY_EXISTS, Placeholder.unparsed("role_id", roleId)));
                     } else {
                         source.sendMessage(Component.text("An error occurred while creating role", NamedTextColor.RED));

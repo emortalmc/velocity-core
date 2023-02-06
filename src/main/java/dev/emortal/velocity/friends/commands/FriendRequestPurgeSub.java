@@ -1,13 +1,12 @@
 package dev.emortal.velocity.friends.commands;
 
-import dev.emortal.api.service.FriendGrpc;
-import dev.emortal.api.service.FriendProto;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.grpc.relationship.RelationshipGrpc;
+import dev.emortal.api.grpc.relationship.RelationshipProto;
+import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -24,9 +23,9 @@ public class FriendRequestPurgeSub {
     private static final String PURGED_INCOMING_MESSAGE = "<light_purple>Purged <count> incoming friend requests";
     private static final String PURGED_OUTGOING_MESSAGE = "<light_purple>Purged <count> outgoing friend requests";
 
-    private final FriendGrpc.FriendFutureStub friendService;
+    private final RelationshipGrpc.RelationshipFutureStub friendService;
 
-    public FriendRequestPurgeSub(FriendGrpc.FriendFutureStub friendService) {
+    public FriendRequestPurgeSub(RelationshipGrpc.RelationshipFutureStub friendService) {
         this.friendService = friendService;
     }
 
@@ -41,8 +40,8 @@ public class FriendRequestPurgeSub {
     public int execute(CommandContext<CommandSource> context, boolean incoming) {
         Player player = (Player) context.getSource();
 
-        ListenableFuture<FriendProto.MassDenyFriendRequestResponse> massDenyResponseFuture = this.friendService.massDenyFriendRequest(
-                FriendProto.MassDenyFriendRequestRequest.newBuilder()
+        var massDenyResponseFuture = this.friendService.massDenyFriendRequest(
+                RelationshipProto.MassDenyFriendRequestRequest.newBuilder()
                         .setIssuerId(player.getUniqueId().toString())
                         .setIncoming(incoming)
                         .build()

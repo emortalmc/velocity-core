@@ -13,11 +13,11 @@ public class RoleSubUtils {
 
     private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";
 
-    public static Optional<PermissionCache.Role> getRole(PermissionCache permissionCache, CommandContext<CommandSource> context) {
+    public static Optional<PermissionCache.CachedRole> getRole(PermissionCache permissionCache, CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
 
-        Optional<PermissionCache.Role> optionalRole = permissionCache.getRole(roleId);
+        Optional<PermissionCache.CachedRole> optionalRole = permissionCache.getRole(roleId);
 
         if (optionalRole.isEmpty()) source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId)));
         return optionalRole;

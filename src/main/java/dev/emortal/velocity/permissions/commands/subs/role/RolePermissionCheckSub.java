@@ -25,10 +25,10 @@ public class RolePermissionCheckSub {
         String roleId = context.getArgument("roleId", String.class);
         String permission = context.getArgument("permission", String.class);
 
-        Optional<PermissionCache.Role> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
+        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
 
-        PermissionCache.Role role = optionalRole.get();
+        PermissionCache.CachedRole role = optionalRole.get();
         Tristate permissionState = role.getPermissionState(permission);
 
         source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_STATE,

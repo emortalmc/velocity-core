@@ -1,16 +1,17 @@
 package dev.emortal.velocity.friends.commands;
 
-import dev.emortal.api.service.FriendGrpc;
-import dev.emortal.api.service.FriendProto;
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.service.McPlayerProto;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
-import dev.emortal.velocity.friends.FriendCache;
+
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.grpc.relationship.RelationshipGrpc;
+import dev.emortal.api.grpc.relationship.RelationshipProto;
+import dev.emortal.api.model.mcplayer.McPlayer;
+import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.friends.FriendCache;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -28,12 +29,12 @@ public class FriendRemoveSub {
     private static final String NOT_FRIENDS_MESSAGE = "<light_purple>You are not friends with <color:#c98fff><username></color>";
 
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
-    private final FriendGrpc.FriendFutureStub friendService;
+    private final RelationshipGrpc.RelationshipFutureStub relationshipService;
     private final FriendCache friendCache;
 
-    public FriendRemoveSub(McPlayerGrpc.McPlayerFutureStub mcPlayerService, FriendGrpc.FriendFutureStub friendService, FriendCache friendCache) {
+    public FriendRemoveSub(McPlayerGrpc.McPlayerFutureStub mcPlayerService, RelationshipGrpc.RelationshipFutureStub relationshipService, FriendCache friendCache) {
         this.mcPlayerService = mcPlayerService;
-        this.friendService = friendService;
+        this.relationshipService = relationshipService;
         this.friendCache = friendCache;
     }
 
@@ -41,17 +42,19 @@ public class FriendRemoveSub {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);
 
-        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService
-                .getPlayerByUsername(McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build());
+        var playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
+                McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build()
+        );
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
                 playerResponse -> {
-                    String correctedUsername = playerResponse.getCurrentUsername(); // this will have correct capitalisation
-                    UUID targetId = UUID.fromString(playerResponse.getId());
+                    McPlayer mcPlayer = playerResponse.getPlayer();
+                    String correctedUsername = mcPlayer.getCurrentUsername(); // this will have correct capitalisation
+                    UUID targetId = UUID.fromString(mcPlayer.getId());
 
-                    ListenableFuture<FriendProto.RemoveFriendResponse> removeFriendResponseFuture = this.friendService.removeFriend(FriendProto.RemoveFriendRequest.newBuilder()
-                            .setIssuerId(player.getUniqueId().toString())
-                            .setIssuerUsername(player.getUsername())
+                    var removeFriendResponseFuture = this.relationshipService.removeFriend(RelationshipProto.RemoveFriendRequest.newBuilder()
+                            .setSenderId(player.getUniqueId().toString())
+                            .setSenderUsername(player.getUsername())
                             .setTargetId(targetId.toString())
                             .build());
 

@@ -1,12 +1,11 @@
 package dev.emortal.velocity.friends;
 
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
-import dev.emortal.api.service.FriendGrpc;
-import dev.emortal.api.service.FriendProto;
+import dev.emortal.api.grpc.relationship.RelationshipGrpc;
+import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.GrpcTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
@@ -21,10 +20,10 @@ import java.util.stream.Collectors;
 
 public class FriendCache {
     private final Map<UUID, List<CachedFriend>> friendMap = new ConcurrentHashMap<>();
-    private final FriendGrpc.FriendFutureStub friendService;
+    private final RelationshipGrpc.RelationshipFutureStub relationshipService;
 
     public FriendCache() {
-        this.friendService = GrpcStubCollection.getFriendService().orElse(null);
+        this.relationshipService = GrpcStubCollection.getFriendService().orElse(null);
     }
 
     public List<CachedFriend> get(UUID playerId) {
@@ -51,8 +50,9 @@ public class FriendCache {
     @Subscribe
     public void onPlayerLogin(PostLoginEvent event) {
         String playerId = event.getPlayer().getUniqueId().toString();
-        ListenableFuture<FriendProto.FriendListResponse> response = this.friendService
-                .getFriendList(FriendProto.PlayerRequest.newBuilder().setPlayerId(playerId).build());
+        var response = this.relationshipService.getFriendList(
+                RelationshipProto.GetFriendListRequest.newBuilder().setPlayerId(playerId).build()
+        );
 
         Futures.addCallback(response, FunctionalFutureCallback.create(
                 result -> {

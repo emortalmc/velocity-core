@@ -35,11 +35,6 @@ spec:
               image: emortalmc/velocity:dev
               imagePullPolicy: IfNotPresent
 
-              ports:
-                - containerPort: 9090
-                  name: grpc
-                  protocol: TCP
-
               lifecycle:
                 postStart:
                   exec:

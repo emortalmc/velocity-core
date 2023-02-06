@@ -1,14 +1,13 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
-import dev.emortal.api.service.PermissionProto;
-import dev.emortal.api.service.PermissionServiceGrpc;
+import dev.emortal.api.grpc.permission.PermissionProto;
+import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.Status;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -39,23 +38,23 @@ public class RolePermissionUnsetSub {
         String roleId = context.getArgument("roleId", String.class);
         String permission = context.getArgument("permission", String.class);
 
-        Optional<PermissionCache.Role> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
+        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
 
-        PermissionCache.Role role = optionalRole.get();
+        PermissionCache.CachedRole role = optionalRole.get();
         if (role.getPermissionState(permission) == Tristate.UNDEFINED) {
             source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_NOT_FOUND, Placeholder.unparsed("role_id", roleId), Placeholder.unparsed("permission", permission)));
             return 1;
         }
 
-        ListenableFuture<PermissionProto.RoleResponse> roleResponseFuture = this.permissionService.updateRole(PermissionProto.RoleUpdateRequest.newBuilder()
+        var roleResponseFuture = this.permissionService.updateRole(PermissionProto.RoleUpdateRequest.newBuilder()
                 .setId(roleId)
                 .addUnsetPermissions(permission)
                 .build());
 
         Futures.addCallback(roleResponseFuture, FunctionalFutureCallback.create(
                 response -> {
-                    optionalRole.get().getPermissions().removeIf(node -> node.permission().equals(permission));
+                    role.getPermissions().removeIf(node -> node.permission().equals(permission));
                     source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_UNSET,
                             Placeholder.unparsed("role_id", roleId),
                             Placeholder.unparsed("permission", permission))

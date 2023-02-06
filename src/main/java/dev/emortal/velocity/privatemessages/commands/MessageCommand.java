@@ -1,11 +1,7 @@
 package dev.emortal.velocity.privatemessages.commands;
 
 
-import dev.emortal.velocity.general.UsernameSuggestions;
-import dev.emortal.velocity.privatemessages.LastMessageCache;
-import dev.emortal.velocity.utils.CommandUtils;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -14,12 +10,17 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.service.McPlayerProto;
-import dev.emortal.api.service.PrivateMessageGrpc;
-import dev.emortal.api.service.PrivateMessageProto;
+import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.grpc.privatemessage.PrivateMessageGrpc;
+import dev.emortal.api.grpc.privatemessage.PrivateMessageProto;
+import dev.emortal.api.model.mcplayer.McPlayer;
+import dev.emortal.api.model.privatemessage.PrivateMessage;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.privatemessages.LastMessageCache;
+import dev.emortal.velocity.utils.CommandUtils;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -54,27 +55,30 @@ public class MessageCommand {
     }
 
     public int sendMessage(Player player, String targetUsername, String message) {
-        ListenableFuture<McPlayerProto.PlayerResponse> playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
+        var playerResponseFuture = this.mcPlayerService.getPlayerByUsername(
                 McPlayerProto.PlayerUsernameRequest.newBuilder().setUsername(targetUsername).build()
         );
 
         Futures.addCallback(playerResponseFuture, FunctionalFutureCallback.create(
                 playerResponse -> {
-                    String correctedUsername = playerResponse.getCurrentUsername();
-                    UUID targetId = UUID.fromString(playerResponse.getId());
+                    McPlayer mcPlayer = playerResponse.getPlayer();
+                    String correctedUsername = mcPlayer.getCurrentUsername();
+                    UUID targetId = UUID.fromString(mcPlayer.getId());
 
-                    if (!playerResponse.getCurrentlyOnline()) {
+                    if (!mcPlayer.getCurrentlyOnline()) {
                         player.sendMessage(Component.text(correctedUsername + " is not currently online.", NamedTextColor.RED)); // todo
                         return;
                     }
 
-                    ListenableFuture<PrivateMessageProto.PrivateMessageResponse> messageResponseFuture = this.privateMessageService.sendPrivateMessage(
+                    var messageResponseFuture = this.privateMessageService.sendPrivateMessage(
                             PrivateMessageProto.PrivateMessageRequest.newBuilder()
-                                    .setSenderId(player.getUniqueId().toString())
-                                    .setSenderUsername(player.getUsername())
-                                    .setRecipientId(targetId.toString())
-                                    .setMessage(message)
-                                    .build()
+                                    .setMessage(
+                                            PrivateMessage.newBuilder()
+                                                    .setSenderId(player.getUniqueId().toString())
+                                                    .setSenderUsername(player.getUsername())
+                                                    .setRecipientId(targetId.toString())
+                                                    .setMessage(message)
+                                    ).build()
                     );
 
                     Futures.addCallback(messageResponseFuture, FunctionalFutureCallback.create(
@@ -136,7 +140,7 @@ public class MessageCommand {
                 LiteralArgumentBuilder.<CommandSource>literal("message")
                         .requires(CommandUtils.isPlayer())
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("receiver", StringArgumentType.word())
-                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.McPlayerSearchRequest.FilterMethod.ONLINE))
+                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("message", StringArgumentType.greedyString())
                                         .executes(this::onMessageExecute)
                                 )

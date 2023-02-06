@@ -1,17 +1,16 @@
 package dev.emortal.velocity.friends.commands;
 
-import dev.emortal.api.service.FriendGrpc;
-import dev.emortal.api.service.FriendProto;
-import dev.emortal.api.service.McPlayerGrpc;
-import dev.emortal.api.service.McPlayerProto;
-import dev.emortal.api.utils.GrpcTimestampConverter;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
-import dev.emortal.velocity.utils.DurationFormatter;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.grpc.relationship.RelationshipGrpc;
+import dev.emortal.api.grpc.relationship.RelationshipProto;
+import dev.emortal.api.utils.GrpcTimestampConverter;
+import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.utils.DurationFormatter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -41,11 +40,11 @@ public class FriendRequestsSub {
     private static final Component OUTGOING_MESSAGE_FOOTER = Component.text("--------------------------------", NamedTextColor.LIGHT_PURPLE);
 
 
-    private final FriendGrpc.FriendFutureStub friendService;
+    private final RelationshipGrpc.RelationshipFutureStub relationshipService;
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
 
-    public FriendRequestsSub(FriendGrpc.FriendFutureStub friendService, McPlayerGrpc.McPlayerFutureStub mcPlayerService) {
-        this.friendService = friendService;
+    public FriendRequestsSub(RelationshipGrpc.RelationshipFutureStub relationshipService, McPlayerGrpc.McPlayerFutureStub mcPlayerService) {
+        this.relationshipService = relationshipService;
         this.mcPlayerService = mcPlayerService;
     }
 
@@ -61,8 +60,8 @@ public class FriendRequestsSub {
         Player player = (Player) context.getSource();
         int page = context.getArguments().containsKey("page") ? context.getArgument("page", Integer.class) : 1;
 
-        ListenableFuture<FriendProto.PendingFriendListResponse> pendingResponseFuture = this.friendService.getPendingFriendRequestList(
-                FriendProto.GetPendingFriendRequestListRequest.newBuilder()
+        var pendingResponseFuture = this.relationshipService.getPendingFriendRequestList(
+                RelationshipProto.GetPendingFriendRequestListRequest.newBuilder()
                         .setIssuerId(player.getUniqueId().toString())
                         .setIncoming(incoming)
                         .build()
@@ -70,7 +69,7 @@ public class FriendRequestsSub {
 
         Futures.addCallback(pendingResponseFuture, FunctionalFutureCallback.create(
                 pendingResponse -> {
-                    List<FriendProto.PendingFriendListResponse.RequestedFriendPlayer> pendingFriends = pendingResponse.getRequestsList();
+                    var pendingFriends = pendingResponse.getRequestsList();
                     if (pendingFriends.isEmpty()) {
                         if (incoming) player.sendMessage(NO_INCOMING_REQUESTS_MESSAGE);
                         else player.sendMessage(NO_OUTGOING_REQUESTS_MESSAGE);
@@ -81,14 +80,15 @@ public class FriendRequestsSub {
                         else return friendPlayer.getTargetId();
                     }).toList();
 
-                    ListenableFuture<McPlayerProto.PlayersResponse> playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.PlayersRequest.newBuilder()
+                    var playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.GetPlayersRequest.newBuilder()
                             .addAllPlayerIds(friendIds).build());
 
                     Futures.addCallback(playersResponseFuture, FunctionalFutureCallback.create(
                             playersResponse -> {
                                 Map<UUID, String> usernameMap = new HashMap<>();
-                                for (McPlayerProto.PlayerResponse playerResponse : playersResponse.getPlayersList())
+                                for (var playerResponse : playersResponse.getPlayersList()) {
                                     usernameMap.put(UUID.fromString(playerResponse.getId()), playerResponse.getCurrentUsername());
+                                }
 
                                 int totalPages = (int) Math.ceil(pendingFriends.size() / 10.0);
                                 int limitedPage = Math.min(totalPages, page);
@@ -100,7 +100,7 @@ public class FriendRequestsSub {
                                         .append(Component.newline());
 
                                 for (int i = (page - 1) * 10; i < page * 10 && i < pendingFriends.size(); i++) {
-                                    FriendProto.PendingFriendListResponse.RequestedFriendPlayer requestedFriend = pendingFriends.get(i);
+                                    var requestedFriend = pendingFriends.get(i);
                                     String username = usernameMap.get(UUID.fromString(incoming ? requestedFriend.getRequesterId() : requestedFriend.getTargetId()));
 
                                     message.append(MINI_MESSAGE.deserialize(incoming ? INCOMING_MESSAGE_LINE : OUTGOING_MESSAGE_LINE,

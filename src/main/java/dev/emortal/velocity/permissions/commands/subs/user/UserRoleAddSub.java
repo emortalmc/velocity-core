@@ -1,18 +1,17 @@
 package dev.emortal.velocity.permissions.commands.subs.user;
 
-import dev.emortal.velocity.permissions.PermissionCache;
-import dev.emortal.velocity.permissions.commands.subs.role.RoleSubUtils;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.protobuf.Empty;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.service.PermissionProto;
-import dev.emortal.api.service.PermissionServiceGrpc;
+import dev.emortal.api.grpc.permission.PermissionProto;
+import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
+import dev.emortal.velocity.permissions.PermissionCache;
+import dev.emortal.velocity.permissions.commands.subs.role.RoleSubUtils;
 import io.grpc.Metadata;
 import io.grpc.Status;
+import io.grpc.protobuf.ProtoUtils;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
@@ -30,6 +29,8 @@ public class UserRoleAddSub {
     private static final String ROLE_ADDED = "<green>Role <role_id> added to user <username>";
     private static final String ROLE_ALREADY_ADDED = "<red>User <username> already has role <role_id>";
 
+    private static final String PERMISSION_PLAYER_NOT_FOUND = "<red>Player <uuid> not found in permission service";
+
     private final PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
     private final PermissionCache permissionCache;
 
@@ -43,15 +44,15 @@ public class UserRoleAddSub {
         String targetUsername = context.getArgument("username", String.class);
         String roleId = context.getArgument("roleId", String.class);
 
-        Optional<PermissionCache.Role> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
+        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
-        PermissionCache.Role role = optionalRole.get();
+        PermissionCache.CachedRole role = optionalRole.get();
 
         PlayerResolver.retrievePlayerData(targetUsername, playerData -> {
             UUID targetId = playerData.uuid();
             String correctUsername = playerData.username();
 
-            ListenableFuture<Empty> addRoleFuture = this.permissionService.addRoleToPlayer(PermissionProto.AddRoleToPlayerRequest.newBuilder()
+            var addRoleFuture = this.permissionService.addRoleToPlayer(PermissionProto.AddRoleToPlayerRequest.newBuilder()
                     .setRoleId(roleId)
                     .setPlayerId(targetId.toString())
                     .build());
@@ -66,23 +67,29 @@ public class UserRoleAddSub {
                         this.permissionCache.getUser(targetId).ifPresent(user -> user.getRoleIds().add(role.getId()));
                     },
                     throwable -> {
-                        Status status = Status.fromThrowable(throwable);
-                        if (status == Status.NOT_FOUND) {
-                            source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId)));
+                        Metadata metadata = Status.trailersFromThrowable(throwable);
+                        PermissionProto.AddRoleToPlayerError error = metadata
+                                .get(ProtoUtils.keyForProto(PermissionProto.AddRoleToPlayerError.getDefaultInstance()));
+
+                        if (error == null) {
+                            source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
+                            LOGGER.error("Something went wrong adding role to user", throwable);
                             return;
                         }
 
-                        Metadata metadata = Status.trailersFromThrowable(throwable);
-                        Metadata.Key<String> customCauseKey = Metadata.Key.of("custom_cause", Metadata.ASCII_STRING_MARSHALLER);
-                        String customCause = metadata.get(customCauseKey);
-                        if (status == Status.ALREADY_EXISTS && customCause.equals("ALREADY_HAS_ROLE")) {
-                            source.sendMessage(MINI_MESSAGE.deserialize(ROLE_ALREADY_ADDED,
+                        switch (error.getErrorType()) {
+                            case PLAYER_NOT_FOUND ->
+                                    source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_PLAYER_NOT_FOUND, Placeholder.unparsed("uuid", targetId.toString())));
+                            case ROLE_NOT_FOUND ->
+                                    source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId)));
+                            case ALREADY_HAS_ROLE -> source.sendMessage(MINI_MESSAGE.deserialize(ROLE_ALREADY_ADDED,
                                     Placeholder.unparsed("username", correctUsername),
                                     Placeholder.unparsed("role_id", roleId))
                             );
-                        } else {
-                            source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
-                            LOGGER.error("Something went wrong add role to user", throwable);
+                            default -> {
+                                source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
+                                LOGGER.error("Something went wrong adding role to user", throwable);
+                            }
                         }
                     }
             ), ForkJoinPool.commonPool());

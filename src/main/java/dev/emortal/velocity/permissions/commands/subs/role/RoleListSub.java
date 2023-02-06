@@ -1,23 +1,20 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 public class RoleListSub {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RoleListSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_LIST_HEADER = "<light_purple>Role List (<role_count>):";
@@ -41,14 +38,14 @@ public class RoleListSub {
     public int execute(CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
 
-        List<PermissionCache.Role> roles = this.permissionCache.getRoleCache().values().stream()
-                .sorted(Comparator.comparingInt(PermissionCache.Role::getPriority))
+        List<PermissionCache.CachedRole> roles = this.permissionCache.getRoleCache().values().stream()
+                .sorted(Comparator.comparingInt(PermissionCache.CachedRole::getPriority))
                 .toList();
 
         List<Component> lines = new ArrayList<>();
         lines.add(MINI_MESSAGE.deserialize(ROLE_LIST_HEADER, Placeholder.unparsed("role_count", String.valueOf(roles.size()))));
 
-        for (PermissionCache.Role role : roles) {
+        for (PermissionCache.CachedRole role : roles) {
             Component exampleChat = Component.text()
                     .append(role.getDisplayPrefix())
                     .append(Component.text(" "))
