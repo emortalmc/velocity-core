@@ -1,5 +1,9 @@
 package dev.emortal.velocity.cache;
 
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.connection.PostLoginEvent;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -20,5 +24,15 @@ public class SessionCache {
         return this.sessionIds.remove(playerId);
     }
 
-    public record CachedSession(String sessionId, Instant loginTime) {}
+    public record CachedSession(Instant loginTime) {}
+
+    @Subscribe
+    public void onPlayerConnect(PostLoginEvent event) {
+        this.put(event.getPlayer().getUniqueId(), new CachedSession(Instant.now()));
+    }
+
+    @Subscribe
+    public void onPlayerDisconnect(DisconnectEvent event) {
+        this.remove(event.getPlayer().getUniqueId());
+    }
 }

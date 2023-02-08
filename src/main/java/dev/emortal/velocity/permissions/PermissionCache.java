@@ -83,9 +83,6 @@ public class PermissionCache {
 
         Futures.addCallback(rolesResponseFuture, FunctionalFutureCallback.create(
                 result -> {
-                    LOGGER.info("Loaded roles for " + id + ": " + result.getRoleIdsList());
-                    LOGGER.info("loaded roles: " + this.roleCache.keySet());
-
                     Set<String> roleIds = Sets.newConcurrentHashSet(result.getRoleIdsList());
                     User user = new User(id, roleIds, this.determineActivePrefix(roleIds), this.determineActiveName(roleIds));
                     this.userCache.put(id, user);

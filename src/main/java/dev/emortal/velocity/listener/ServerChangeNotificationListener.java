@@ -9,6 +9,7 @@ import dev.emortal.api.model.common.ConnectableServer;
 import dev.emortal.velocity.rabbitmq.RabbitMqCore;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
 import java.util.HashSet;
@@ -20,7 +21,7 @@ public class ServerChangeNotificationListener {
 
     private static final String TELEPORT_MESSAGE = "<green>Sending you to <gold><server_id><green>...</green>";
 
-    public ServerChangeNotificationListener(ProxyServer proxy, RabbitMqCore rabbitMq) {
+    public ServerChangeNotificationListener(@NotNull ProxyServer proxy, @NotNull RabbitMqCore rabbitMq) {
         rabbitMq.setListener(SwitchPlayersServerMessage.class, message -> {
             Set<Player> presentPlayers = new HashSet<>();
             for (String playerIdStr : message.getPlayerIdsList()) {

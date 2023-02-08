@@ -8,7 +8,6 @@ import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
-import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.kurushimi.Assignment;
 import dev.emortal.api.kurushimi.CreateTicketRequest;
 import dev.emortal.api.kurushimi.FrontendGrpc;
@@ -16,7 +15,6 @@ import dev.emortal.api.kurushimi.KurushimiStubCollection;
 import dev.emortal.api.kurushimi.SearchFields;
 import dev.emortal.api.kurushimi.Ticket;
 import dev.emortal.api.kurushimi.WatchAssignmentRequest;
-import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.callback.FunctionalStreamObserver;
 import net.kyori.adventure.text.Component;
@@ -32,7 +30,6 @@ public class LobbySelectorListener {
 
     private static final Component ERROR_MESSAGE = MiniMessage.miniMessage().deserialize("<red>Failed to connect to lobby");
 
-    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
     private final FrontendGrpc.FrontendFutureStub matchmakingService = KurushimiStubCollection.getFutureStub().orElse(null);
     private final FrontendGrpc.FrontendStub matchmakingServiceBlocking = KurushimiStubCollection.getStub().orElse(null);
     private final ProxyServer proxy;

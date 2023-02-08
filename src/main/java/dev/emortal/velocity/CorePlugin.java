@@ -88,6 +88,8 @@ public class CorePlugin {
             LOGGER.warn("Agones SDK is not enabled. This is only intended for development purposes.");
         }
 
+        this.proxy.getEventManager().register(this, this.sessionCache);
+
         new ServerChangeNotificationListener(this.proxy, this.rabbitMqCore); // Listens for RabbitMQ ProxyServerChangeMessage messages
         this.permissionCache = new PermissionCache(this.stubManager);
 
