@@ -1,4 +1,4 @@
-package dev.emortal.velocity.friends.commands;
+package dev.emortal.velocity.relationships.commands.friend;
 
 import com.google.common.util.concurrent.Futures;
 import com.mojang.brigadier.context.CommandContext;
@@ -10,7 +10,7 @@ import dev.emortal.api.model.relationship.FriendRequest;
 import dev.emortal.api.utils.GrpcTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
-import dev.emortal.velocity.friends.FriendCache;
+import dev.emortal.velocity.relationships.FriendCache;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

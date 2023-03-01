@@ -11,9 +11,10 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.agonessdk.AgonesUtils;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.cache.SessionCache;
-import dev.emortal.velocity.friends.FriendCache;
-import dev.emortal.velocity.friends.commands.FriendCommand;
-import dev.emortal.velocity.friends.listeners.FriendRabbitMqListener;
+import dev.emortal.velocity.relationships.FriendCache;
+import dev.emortal.velocity.relationships.commands.block.BlockCommand;
+import dev.emortal.velocity.relationships.commands.friend.FriendCommand;
+import dev.emortal.velocity.relationships.listeners.FriendRabbitMqListener;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.general.commands.PlaytimeCommand;
 import dev.emortal.velocity.grpc.stub.GrpcStubManager;
@@ -119,6 +120,7 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, new TabList(this, this.proxy));
 
         new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache);
+        new BlockCommand(this.proxy, this.usernameSuggestions);
 
         new PermissionCommand(this.proxy, this.permissionCache, this.usernameSuggestions);
 

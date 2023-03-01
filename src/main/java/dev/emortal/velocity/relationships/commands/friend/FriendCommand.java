@@ -1,4 +1,4 @@
-package dev.emortal.velocity.friends.commands;
+package dev.emortal.velocity.relationships.commands.friend;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -11,7 +11,7 @@ import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.api.grpc.playertracker.PlayerTrackerGrpc;
 import dev.emortal.api.grpc.relationship.RelationshipGrpc;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.friends.FriendCache;
+import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.utils.CommandUtils;
 import net.kyori.adventure.text.Component;
@@ -46,7 +46,7 @@ public class FriendCommand {
         this.usernameSuggestions = usernameSuggestions;
 
         McPlayerGrpc.McPlayerFutureStub mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
-        RelationshipGrpc.RelationshipFutureStub relationshipService = GrpcStubCollection.getFriendService().orElse(null);
+        RelationshipGrpc.RelationshipFutureStub relationshipService = GrpcStubCollection.getRelationshipService().orElse(null);
         PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService = GrpcStubCollection.getPlayerTrackerService().orElse(null);
 
         this.friendAddSub = new FriendAddSub(relationshipService, friendCache);

@@ -1,4 +1,4 @@
-package dev.emortal.velocity.friends.commands;
+package dev.emortal.velocity.relationships.commands.friend;
 
 import com.google.common.util.concurrent.Futures;
 import com.mojang.brigadier.context.CommandContext;

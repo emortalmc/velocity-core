@@ -1,6 +1,7 @@
 package dev.emortal.velocity.general;
 
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.velocitypowered.api.command.CommandSource;
@@ -23,6 +24,10 @@ public class UsernameSuggestions {
 
     public UsernameSuggestions() {
         this.playerService = GrpcStubCollection.getPlayerService().orElse(null);
+    }
+
+    public SuggestionProvider<CommandSource> command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod filterMethod) {
+        return (context, builder) -> this.command(context, builder, filterMethod);
     }
 
     public CompletableFuture<Suggestions> command(

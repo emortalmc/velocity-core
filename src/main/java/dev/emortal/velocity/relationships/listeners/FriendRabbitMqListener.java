@@ -1,12 +1,12 @@
-package dev.emortal.velocity.friends.listeners;
+package dev.emortal.velocity.relationships.listeners;
 
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.message.relationship.FriendAddedMessage;
 import dev.emortal.api.message.relationship.FriendRemovedMessage;
 import dev.emortal.api.message.relationship.FriendRequestReceivedMessage;
 import dev.emortal.api.model.relationship.FriendRequest;
-import dev.emortal.velocity.friends.FriendCache;
-import dev.emortal.velocity.friends.commands.FriendAddSub;
+import dev.emortal.velocity.relationships.FriendCache;
+import dev.emortal.velocity.relationships.commands.friend.FriendAddSub;
 import dev.emortal.velocity.rabbitmq.RabbitMqCore;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;

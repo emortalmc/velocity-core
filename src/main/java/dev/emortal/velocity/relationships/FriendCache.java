@@ -1,4 +1,4 @@
-package dev.emortal.velocity.friends;
+package dev.emortal.velocity.relationships;
 
 import com.google.common.util.concurrent.Futures;
 import com.velocitypowered.api.event.Subscribe;
@@ -23,7 +23,7 @@ public class FriendCache {
     private final RelationshipGrpc.RelationshipFutureStub relationshipService;
 
     public FriendCache() {
-        this.relationshipService = GrpcStubCollection.getFriendService().orElse(null);
+        this.relationshipService = GrpcStubCollection.getRelationshipService().orElse(null);
     }
 
     public List<CachedFriend> get(UUID playerId) {

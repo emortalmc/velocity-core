@@ -1,4 +1,4 @@
-package dev.emortal.velocity.friends.commands;
+package dev.emortal.velocity.relationships.commands.friend;
 
 
 import com.google.common.util.concurrent.Futures;
@@ -11,7 +11,7 @@ import dev.emortal.api.grpc.relationship.RelationshipGrpc;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
-import dev.emortal.velocity.friends.FriendCache;
+import dev.emortal.velocity.relationships.FriendCache;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;

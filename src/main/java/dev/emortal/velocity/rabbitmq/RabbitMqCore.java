@@ -36,7 +36,6 @@ public class RabbitMqCore {
     private final Map<Class<?>, Consumer<AbstractMessage>> protoListeners = new ConcurrentHashMap<>();
     private final Connection connection;
     private final Channel channel;
-    private final String selfQueueName;
 
     public RabbitMqCore() {
         ConnectionFactory connectionFactory = new ConnectionFactory();
@@ -51,10 +50,8 @@ public class RabbitMqCore {
             throw new RuntimeException(e);
         }
 
-        String selfQueueName = null;
-
         try {
-            selfQueueName = this.channel.queueDeclare().getQueue();
+            String selfQueueName = this.channel.queueDeclare(Environment.getHostname(), false, true, true, null).getQueue();
             this.channel.queueBind(selfQueueName, PROXY_ALL_EXCHANGE, "");
 
             LOGGER.info("Listening for messages on queue {}", selfQueueName);
@@ -74,12 +71,15 @@ public class RabbitMqCore {
                     return;
                 }
 
-                listener.accept(message);
+                try {
+                    listener.accept(message);
+                } catch (Exception ex) {
+                    LOGGER.error("Failed to handle message of type {}", type, ex);
+                }
             }, consumerTag -> LOGGER.warn("Consumer cancelled"));
         } catch (IOException ex) {
             LOGGER.error("Failed to bind to proxy all exchange", ex);
         }
-        this.selfQueueName = selfQueueName;
     }
 
     @Subscribe
