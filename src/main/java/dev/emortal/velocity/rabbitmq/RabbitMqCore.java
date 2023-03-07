@@ -12,6 +12,7 @@ import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import dev.emortal.api.message.common.PlayerConnectMessage;
 import dev.emortal.api.message.common.PlayerDisconnectMessage;
 import dev.emortal.api.message.common.PlayerSwitchServerMessage;
+import dev.emortal.api.utils.parser.ParsableProto;
 import dev.emortal.api.utils.parser.ProtoParserRegistry;
 import dev.emortal.velocity.Environment;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -34,6 +36,10 @@ public class RabbitMqCore {
     private static final String PASSWORD = System.getenv("RABBITMQ_PASSWORD");
 
     private final Map<Class<?>, Consumer<AbstractMessage>> protoListeners = new ConcurrentHashMap<>();
+    // boundExchanges contains "exchange:routingKey"
+    private final Set<String> boundExchanges = ConcurrentHashMap.newKeySet();
+
+    private final String selfQueueName;
     private final Connection connection;
     private final Channel channel;
 
@@ -50,8 +56,10 @@ public class RabbitMqCore {
             throw new RuntimeException(e);
         }
 
+        String selfQueueName = null;
+
         try {
-            String selfQueueName = this.channel.queueDeclare(Environment.getHostname(), false, true, true, null).getQueue();
+            selfQueueName = this.channel.queueDeclare(Environment.getHostname(), false, true, true, null).getQueue();
             this.channel.queueBind(selfQueueName, PROXY_ALL_EXCHANGE, "");
 
             LOGGER.info("Listening for messages on queue {}", selfQueueName);
@@ -80,6 +88,8 @@ public class RabbitMqCore {
         } catch (IOException ex) {
             LOGGER.error("Failed to bind to proxy all exchange", ex);
         }
+
+        this.selfQueueName = selfQueueName;
     }
 
     @Subscribe
@@ -98,7 +108,7 @@ public class RabbitMqCore {
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "", properties, message.toByteArray());
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "login", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -117,7 +127,7 @@ public class RabbitMqCore {
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "", properties, message.toByteArray());
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "logout", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -137,7 +147,7 @@ public class RabbitMqCore {
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "", properties, message.toByteArray());
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "switch_server", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -145,6 +155,17 @@ public class RabbitMqCore {
 
     @SuppressWarnings("unchecked")
     public <T extends AbstractMessage> void setListener(Class<T> messageType, Consumer<T> listener) {
+        ParsableProto<T> parser = ProtoParserRegistry.getParser(messageType);
+        if (parser.exchangeName() != null) {
+            String routingKey = parser.routingKey() == null ? "" : parser.routingKey();
+            try {
+                this.channel.queueBind(this.selfQueueName, parser.exchangeName(), routingKey);
+                this.boundExchanges.add(parser.exchangeName() + ":" + routingKey);
+            } catch (IOException e) {
+                LOGGER.error("Failed to bind to exchange {} with routing key {}", parser.exchangeName(), parser.routingKey(), e);
+            }
+        }
+
         this.protoListeners.put(messageType, (Consumer<AbstractMessage>) listener);
     }
 

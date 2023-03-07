@@ -11,6 +11,8 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.agonessdk.AgonesUtils;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.cache.SessionCache;
+import dev.emortal.velocity.party.PartyCache;
+import dev.emortal.velocity.party.commands.PartyCommand;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.relationships.commands.block.BlockCommand;
 import dev.emortal.velocity.relationships.commands.friend.FriendCommand;
@@ -118,6 +120,10 @@ public class CorePlugin {
 
         // tablist
         this.proxy.getEventManager().register(this, new TabList(this, this.proxy));
+
+        // party
+        PartyCache partyCache = new PartyCache(this.proxy, this.rabbitMqCore);
+        new PartyCommand(this.proxy, this.usernameSuggestions, partyCache);
 
         new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache);
         new BlockCommand(this.proxy, this.usernameSuggestions);
