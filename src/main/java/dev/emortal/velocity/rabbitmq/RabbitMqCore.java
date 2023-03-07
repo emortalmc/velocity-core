@@ -108,7 +108,7 @@ public class RabbitMqCore {
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "login", properties, message.toByteArray());
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "player_login", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -127,7 +127,7 @@ public class RabbitMqCore {
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "logout", properties, message.toByteArray());
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "player_logout", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -147,7 +147,7 @@ public class RabbitMqCore {
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "switch_server", properties, message.toByteArray());
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "player_switch_server", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
