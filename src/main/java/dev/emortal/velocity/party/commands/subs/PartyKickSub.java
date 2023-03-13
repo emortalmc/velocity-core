@@ -42,7 +42,7 @@ public class PartyKickSub {
                             kickResponse -> executor.sendMessage(MINI_MESSAGE.deserialize("<green>Kicked " + targetPlayer.username() + " from your party")),
                             throwable -> {
                                 Status status = StatusProto.fromThrowable(throwable);
-                                if (status == null) {
+                                if (status == null || status.getDetailsCount() == 0) {
                                     LOGGER.error("An error occurred PartyKickSub kickPlayerFromParty: ", throwable);
                                     executor.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred kicking " + targetPlayer.username() + " from your party"));
                                     return;
@@ -57,9 +57,6 @@ public class PartyKickSub {
                                         }
                                         case TARGET_IS_LEADER -> {
                                             executor.sendMessage(MINI_MESSAGE.deserialize("<red>You cannot kick the party leader"));
-                                        }
-                                        case SELF_NOT_IN_PARTY -> {
-                                            executor.sendMessage(MINI_MESSAGE.deserialize("<red>You are not in a party"));
                                         }
                                         case TARGET_NOT_IN_PARTY -> {
                                             executor.sendMessage(MINI_MESSAGE.deserialize("<red>" + targetPlayer.username() + " is not in your party"));
@@ -77,7 +74,7 @@ public class PartyKickSub {
                     ), ForkJoinPool.commonPool());
                 },
                 status -> {
-                    if (status == io.grpc.Status.NOT_FOUND) {
+                    if (status.getCode() == io.grpc.Status.Code.NOT_FOUND) {
                         TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
                         return;
                     }

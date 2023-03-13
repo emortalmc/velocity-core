@@ -9,7 +9,6 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.party.PartyCache;
-import dev.emortal.velocity.party.commands.subs.PartyCreateSub;
 import dev.emortal.velocity.party.commands.subs.PartyDisbandSub;
 import dev.emortal.velocity.party.commands.subs.PartyInfoSub;
 import dev.emortal.velocity.party.commands.subs.PartyInviteSub;
@@ -17,6 +16,7 @@ import dev.emortal.velocity.party.commands.subs.PartyJoinSub;
 import dev.emortal.velocity.party.commands.subs.PartyKickSub;
 import dev.emortal.velocity.party.commands.subs.PartyLeaderSub;
 import dev.emortal.velocity.party.commands.subs.PartyLeaveSub;
+import dev.emortal.velocity.party.commands.subs.PartyOpenSub;
 import dev.emortal.velocity.utils.CommandUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -31,6 +31,7 @@ public class PartyCommand {
             /party join <player>
             /party leave
             /party info
+            /party open
                         
             /party kick <player>
             /party leader <player>
@@ -52,13 +53,13 @@ public class PartyCommand {
 
     private final UsernameSuggestions usernameSuggestions;
 
-    private final PartyCreateSub createSub = new PartyCreateSub();
     private final PartyInviteSub inviteSub = new PartyInviteSub();
     private final PartyJoinSub joinSub = new PartyJoinSub();
     private final PartyLeaveSub leaveSub = new PartyLeaveSub();
     private final PartyKickSub kickSub = new PartyKickSub();
     private final PartyLeaderSub leaderSub = new PartyLeaderSub();
     private final PartyDisbandSub disbandSub = new PartyDisbandSub();
+    private final PartyOpenSub openSub;
 
     private final PartyInfoSub infoSub;
 
@@ -66,6 +67,7 @@ public class PartyCommand {
         this.usernameSuggestions = usernameSuggestions;
 
         this.infoSub = new PartyInfoSub(partyCache);
+        this.openSub = new PartyOpenSub(partyCache);
 
         proxy.getCommandManager().register(this.createCommand());
     }
@@ -78,7 +80,6 @@ public class PartyCommand {
                             context.getSource().sendMessage(HELP_MESSAGE);
                             return 1;
                         })
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("create").executes(this.createSub::execute))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("invite").executes(context -> {
                                     context.getSource().sendMessage(USAGE_PARTY_INVITE);
                                     return 1;
@@ -112,6 +113,7 @@ public class PartyCommand {
                                                 .executes(this.leaderSub::execute)
                                         )
                         )
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("open").executes(this.openSub::execute))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("list").executes(this.infoSub::execute))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("info").executes(this.infoSub::execute))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("disband").executes(this.disbandSub::execute))

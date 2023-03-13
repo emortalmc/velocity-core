@@ -8,6 +8,7 @@ import dev.emortal.api.grpc.relationship.RelationshipGrpc;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
+import dev.emortal.velocity.lang.TempLang;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -76,11 +77,12 @@ public class FriendDenySubs {
                     }), ForkJoinPool.commonPool());
         }, errorStatus -> {
             if (errorStatus.getCode() == Status.Code.NOT_FOUND) {
-                player.sendMessage(Component.text("Could not find player " + targetUsername, NamedTextColor.RED));
-            } else {
-                LOGGER.error("Failed to retrieve player UUID", errorStatus.asRuntimeException());
-                player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
+                TempLang.PLAYER_NOT_FOUND.send(player, Placeholder.unparsed("search_username", targetUsername));
+                return;
             }
+
+            LOGGER.error("Failed to retrieve player UUID", errorStatus.asRuntimeException());
+            player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
         });
         return 1;
     }

@@ -31,6 +31,11 @@ public class PartyInviteSub {
         Player executor = (Player) context.getSource();
 
         PlayerResolver.retrievePlayerData(targetUsername, target -> {
+                    if (!target.online()) {
+                        TempLang.PLAYER_NOT_ONLINE.send(executor, Placeholder.unparsed("username", target.username()));
+                        return;
+                    }
+
                     var inviteResponseFuture = this.partyService.invitePlayer(
                             PartyProto.InvitePlayerRequest.newBuilder()
                                     .setIssuerId(executor.getUniqueId().toString())
@@ -44,7 +49,7 @@ public class PartyInviteSub {
                             inviteResponse -> executor.sendMessage(Component.text("Invited " + target.username() + " to your party", NamedTextColor.GREEN)),
                             throwable -> {
                                 com.google.rpc.Status status = StatusProto.fromThrowable(throwable);
-                                if (status == null) {
+                                if (status == null || status.getDetailsCount() == 0) {
                                     LOGGER.error("An error occurred PartyInviteSub invitePlayerToParty: ", throwable);
                                     executor.sendMessage(Component.text("An error occurred inviting " + target.username(), NamedTextColor.RED));
                                     return;
@@ -62,6 +67,7 @@ public class PartyInviteSub {
                                                 Component.text(target.username() + " is already in your party.", NamedTextColor.RED);
                                         case TARGET_ALREADY_IN_ANOTHER_PARTY ->
                                                 Component.text(target.username() + " is already in another party.", NamedTextColor.RED);
+                                        case PARTY_IS_OPEN -> Component.text("Your party is open, anyone can join.", NamedTextColor.RED);
                                         default -> {
                                             LOGGER.error("An error occurred PartyInviteSub invitePlayerToParty: ", throwable);
                                             yield Component.text("An error occurred", NamedTextColor.RED);
@@ -75,7 +81,7 @@ public class PartyInviteSub {
                     ), ForkJoinPool.commonPool());
                 },
                 status -> {
-                    if (status == Status.NOT_FOUND) {
+                    if (status.getCode() == Status.Code.NOT_FOUND) {
                         TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
                         return;
                     }

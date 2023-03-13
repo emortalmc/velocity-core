@@ -27,27 +27,26 @@ public class PartyDisbandSub {
         // context is ignored
         Player executor = (Player) context.getSource();
 
-        var disbandPartyFuture = this.partyService.disbandParty(PartyProto.DisbandPartyRequest.newBuilder()
+        var disbandPartyFuture = this.partyService.emptyParty(PartyProto.EmptyPartyRequest.newBuilder()
                 .setPlayerId(executor.getUniqueId().toString())
                 .build());
 
         Futures.addCallback(disbandPartyFuture, FunctionalFutureCallback.create(
                 response -> {
-                    executor.sendMessage(MINI_MESSAGE.deserialize("<green>Party disbanded"));
+                    executor.sendMessage(MINI_MESSAGE.deserialize("<hover:show_text:'<color:#9fff87>Note: disbanding a party only empties it</color>'><green>Party disbanded</green></hover>"));
                 },
                 throwable -> {
                     Status status = StatusProto.fromThrowable(throwable);
-                    if (status == null) {
+                    if (status == null || status.getDetailsCount() == 0) {
                         LOGGER.error("Failed to disband party", throwable);
                         executor.sendMessage(MINI_MESSAGE.deserialize("<red>Failed to disband party"));
                         return;
                     }
 
                     try {
-                        PartyProto.DisbandPartyErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.DisbandPartyErrorResponse.class);
+                        PartyProto.EmptyPartyErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.EmptyPartyErrorResponse.class);
 
                         executor.sendMessage(switch (errorResponse.getErrorType()) {
-                            case NOT_IN_PARTY -> MINI_MESSAGE.deserialize("<red>You are not in a party");
                             case NOT_LEADER -> MINI_MESSAGE.deserialize("""
                                     <red>You are not the leader of the party
                                     <red>Use /party leave to leave the party instead""");

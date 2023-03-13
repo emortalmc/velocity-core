@@ -4,9 +4,11 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.party.PartyProto;
 import dev.emortal.api.grpc.party.PartyServiceGrpc;
 import dev.emortal.api.message.party.PartyCreatedMessage;
-import dev.emortal.api.message.party.PartyDisbandedMessage;
+import dev.emortal.api.message.party.PartyDeletedMessage;
+import dev.emortal.api.message.party.PartyEmptiedMessage;
 import dev.emortal.api.message.party.PartyInviteCreatedMessage;
 import dev.emortal.api.message.party.PartyLeaderChangedMessage;
+import dev.emortal.api.message.party.PartyOpenChangedMessage;
 import dev.emortal.api.message.party.PartyPlayerJoinedMessage;
 import dev.emortal.api.message.party.PartyPlayerLeftMessage;
 import dev.emortal.api.model.party.Party;
@@ -57,7 +59,9 @@ public class PartyCache {
         this.proxy = proxy;
 
         this.rabbitMqCore.setListener(PartyCreatedMessage.class, this::handleCreateParty);
-        this.rabbitMqCore.setListener(PartyDisbandedMessage.class, this::handleDisbandParty);
+        this.rabbitMqCore.setListener(PartyDeletedMessage.class, this::handlePartyDeleted);
+        this.rabbitMqCore.setListener(PartyEmptiedMessage.class, this::handlePartyEmptied);
+        this.rabbitMqCore.setListener(PartyOpenChangedMessage.class, this::handlePartyOpenChanged);
         this.rabbitMqCore.setListener(PartyPlayerJoinedMessage.class, this::handleJoinParty);
         this.rabbitMqCore.setListener(PartyPlayerLeftMessage.class, this::handleLeaveParty);
         this.rabbitMqCore.setListener(PartyLeaderChangedMessage.class, this::handleLeaderChange);
@@ -83,7 +87,38 @@ public class PartyCache {
         });
     }
 
-    private void handleDisbandParty(@NotNull PartyDisbandedMessage message) {
+    private void handlePartyEmptied(@NotNull PartyEmptiedMessage message) {
+        Party party = message.getParty();
+
+        CachedParty cachedParty = this.partyMap.get(party.getId());
+        if (cachedParty == null) return;
+
+        for (PartyMember member : party.getMembersList()) {
+            // Leave the leader in the party.
+            if (member.getId().equals(party.getLeaderId())) continue;
+            UUID memberId = UUID.fromString(member.getId());
+            CachedParty playerRemoved = this.playerPartyMap.remove(memberId);
+            cachedParty.getMembers().remove(memberId);
+
+            if (playerRemoved != null) {
+                this.proxy.getPlayer(memberId).ifPresent(player -> player.sendMessage(NOTIFICATION_PARTY_DISBANDED));
+            }
+        }
+
+        // When a party is emptied, its state is reset, so it becomes closed.
+        cachedParty.setOpen(false);
+    }
+
+    private void handlePartyOpenChanged(@NotNull PartyOpenChangedMessage message) {
+        String partyId = message.getPartyId();
+
+        CachedParty party = this.partyMap.get(partyId);
+        if (party == null) return;
+
+        party.setOpen(message.getOpen());
+    }
+
+    private void handlePartyDeleted(@NotNull PartyDeletedMessage message) {
         Party party = message.getParty();
 
         CachedParty removed = this.partyMap.remove(party.getId());
@@ -231,11 +266,13 @@ public class PartyCache {
         private final @NotNull String id;
         private final @NotNull Map<UUID, CachedPartyMember> members;
         private @NotNull UUID leaderId;
+        private boolean open;
 
-        public CachedParty(@NotNull String id, @NotNull UUID leaderId, @NotNull Map<UUID, CachedPartyMember> members) {
+        public CachedParty(@NotNull String id, @NotNull UUID leaderId, @NotNull Map<UUID, CachedPartyMember> members, boolean open) {
             this.id = id;
             this.members = members;
             this.leaderId = leaderId;
+            this.open = open;
         }
 
         public static CachedParty fromProto(@NotNull Party party) {
@@ -245,7 +282,7 @@ public class PartyCache {
                 members.put(memberId, CachedPartyMember.fromProto(member));
             }
 
-            return new CachedParty(party.getId(), UUID.fromString(party.getLeaderId()), members);
+            return new CachedParty(party.getId(), UUID.fromString(party.getLeaderId()), members, party.getOpen());
         }
 
         public @NotNull String getId() {
@@ -264,12 +301,21 @@ public class PartyCache {
             this.leaderId = leaderId;
         }
 
+        public void setOpen(boolean open) {
+            this.open = open;
+        }
+
+        public boolean isOpen() {
+            return this.open;
+        }
+
         @Override
         public String toString() {
             return "CachedParty{" +
                     "id='" + this.id + '\'' +
                     ", members=" + this.members +
                     ", leaderId=" + this.leaderId +
+                    ", open=" + this.open +
                     '}';
         }
     }

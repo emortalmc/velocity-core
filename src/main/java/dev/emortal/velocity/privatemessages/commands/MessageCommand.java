@@ -19,6 +19,7 @@ import dev.emortal.api.model.privatemessage.PrivateMessage;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.lang.TempLang;
 import dev.emortal.velocity.privatemessages.LastMessageCache;
 import dev.emortal.velocity.utils.CommandUtils;
 import io.grpc.Status;
@@ -99,11 +100,12 @@ public class MessageCommand {
                     Status status = Status.fromThrowable(throwable);
                     Status.Code code = status.getCode();
                     if (code == Status.Code.NOT_FOUND) {
-                        player.sendMessage(Component.text("Could not find player " + targetUsername, NamedTextColor.RED));
-                    } else {
-                        LOGGER.error("Failed to retrieve player UUID", status.asRuntimeException());
-                        player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
+                        TempLang.PLAYER_NOT_FOUND.send(player, Placeholder.unparsed("search_username", targetUsername));
+                        return;
                     }
+
+                    LOGGER.error("Failed to retrieve player UUID", status.asRuntimeException());
+                    player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
                 }
         ), ForkJoinPool.commonPool());
 

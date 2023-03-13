@@ -10,6 +10,7 @@ import dev.emortal.api.model.relationship.FriendRequest;
 import dev.emortal.api.utils.GrpcTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
+import dev.emortal.velocity.lang.TempLang;
 import dev.emortal.velocity.relationships.FriendCache;
 import io.grpc.Status;
 import net.kyori.adventure.text.Component;
@@ -93,11 +94,12 @@ public class FriendAddSub {
             ), ForkJoinPool.commonPool());
         }, errorStatus -> {
             if (errorStatus.getCode() == Status.Code.NOT_FOUND) {
-                player.sendMessage(Component.text("Could not find player " + targetUsername, NamedTextColor.RED));
-            } else {
-                LOGGER.error("Failed to retrieve player UUID", errorStatus.asRuntimeException());
-                player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
+                TempLang.PLAYER_NOT_FOUND.send(player, Placeholder.unparsed("search_username", targetUsername));
             }
+
+            LOGGER.error("Failed to retrieve player UUID", errorStatus.asRuntimeException());
+            player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
+
         });
         return 1;
     }

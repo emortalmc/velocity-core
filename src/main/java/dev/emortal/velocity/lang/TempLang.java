@@ -11,7 +11,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public enum TempLang {
-    PLAYER_NOT_FOUND("Could not find player <search_username>");
+    PLAYER_NOT_FOUND("Could not find player <search_username>"),
+    PLAYER_NOT_ONLINE("<username> is not online");
 
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 

@@ -31,19 +31,24 @@ public class PartyJoinSub {
         String targetUsername = context.getArgument("player", String.class);
 
         PlayerResolver.retrievePlayerData(targetUsername,
-                targetPlayer -> {
+                target -> {
+                    if (!target.online()) {
+                        TempLang.PLAYER_NOT_ONLINE.send(executor, Placeholder.unparsed("username", target.username()));
+                        return;
+                    }
+
                     var joinResponseFuture = this.partyService.joinParty(
                             PartyProto.JoinPartyRequest.newBuilder()
                                     .setPlayerId(executor.getUniqueId().toString())
                                     .setPlayerUsername(executor.getUsername())
-                                    .setMemberId(targetPlayer.uuid().toString()).build()
+                                    .setTargetPlayerId(target.uuid().toString()).build()
                     );
 
                     Futures.addCallback(joinResponseFuture, FunctionalFutureCallback.create(
-                            joinResponse -> executor.sendMessage(Component.text("Joined " + targetPlayer.username() + "'s party", NamedTextColor.GREEN)),
+                            joinResponse -> executor.sendMessage(Component.text("Joined " + target.username() + "'s party", NamedTextColor.GREEN)),
                             throwable -> {
                                 Status status = StatusProto.fromThrowable(throwable);
-                                if (status == null) {
+                                if (status == null || status.getDetailsCount() == 0) {
                                     LOGGER.error("An error occurred PartyJoinSub joinParty: ", throwable);
                                     executor.sendMessage(Component.text("An error occurred", NamedTextColor.RED));
                                     return;
@@ -53,9 +58,10 @@ public class PartyJoinSub {
                                     PartyProto.JoinPartyErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.JoinPartyErrorResponse.class);
 
                                     executor.sendMessage(switch (errorResponse.getErrorType()) {
-                                        case NOT_INVITED -> Component.text("You are not invited to this party", NamedTextColor.RED);
-                                        case ALREADY_IN_PARTY -> Component.text("You are already in a party", NamedTextColor.RED);
-                                        case PARTY_NOT_FOUND -> Component.text(targetPlayer.username() + " is not in a party", NamedTextColor.RED);
+                                        case NOT_INVITED ->
+                                                Component.text("You are not invited to this party", NamedTextColor.RED);
+                                        case ALREADY_IN_PARTY ->
+                                                Component.text("You are already in a party", NamedTextColor.RED);
                                         default -> {
                                             LOGGER.error("An error occurred PartyJoinSub joinParty: ", throwable);
                                             yield Component.text("An error occurred", NamedTextColor.RED);
@@ -69,7 +75,7 @@ public class PartyJoinSub {
                     ), ForkJoinPool.commonPool());
                 },
                 status -> {
-                    if (status == io.grpc.Status.NOT_FOUND) {
+                    if (status.getCode() == io.grpc.Status.Code.NOT_FOUND) {
                         TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
                         return;
                     }

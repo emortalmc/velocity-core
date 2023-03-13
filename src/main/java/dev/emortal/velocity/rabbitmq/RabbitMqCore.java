@@ -127,7 +127,7 @@ public class RabbitMqCore {
                 .build();
 
         try {
-            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "player_logout", properties, message.toByteArray());
+            this.channel.basicPublish(CONNECTIONS_EXCHANGE, "player_disconnect", properties, message.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

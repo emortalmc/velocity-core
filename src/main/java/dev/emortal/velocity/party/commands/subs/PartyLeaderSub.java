@@ -28,7 +28,7 @@ public class PartyLeaderSub {
     private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
 
     public int execute(CommandContext<CommandSource> context) {
-        String targetUsername = context.getArgument("target", String.class);
+        String targetUsername = context.getArgument("player", String.class);
         Player executor = (Player) context.getSource();
 
         PlayerResolver.retrievePlayerData(targetUsername,
@@ -55,8 +55,6 @@ public class PartyLeaderSub {
                                     executor.sendMessage(switch (errorResponse.getErrorType()) {
                                         case SELF_NOT_LEADER ->
                                                 MINI_MESSAGE.deserialize("<red>You must be the party leader to update the party leader");
-                                        case SELF_NOT_IN_PARTY ->
-                                                MINI_MESSAGE.deserialize("<red>You are not in a party");
                                         case TARGET_NOT_IN_PARTY ->
                                                 MINI_MESSAGE.deserialize("<red>The target is not in your party");
                                         default -> {
@@ -70,10 +68,9 @@ public class PartyLeaderSub {
                                 }
                             }
                     ), ForkJoinPool.commonPool());
-
                 },
                 status -> {
-                    if (status == io.grpc.Status.NOT_FOUND) {
+                    if (status.getCode() == io.grpc.Status.Code.NOT_FOUND) {
                         TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
                         return;
                     }

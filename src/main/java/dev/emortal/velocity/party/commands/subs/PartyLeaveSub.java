@@ -36,7 +36,7 @@ public class PartyLeaveSub {
                 },
                 throwable -> {
                     com.google.rpc.Status status = StatusProto.fromThrowable(throwable);
-                    if (status == null) {
+                    if (status == null || status.getDetailsCount() == 0) {
                         LOGGER.error("Failed to leave party", throwable);
                         executor.sendMessage(MINI_MESSAGE.deserialize("<red>Failed to leave party"));
                         return;
@@ -46,7 +46,6 @@ public class PartyLeaveSub {
                         PartyProto.LeavePartyErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.LeavePartyErrorResponse.class);
 
                         switch (errorResponse.getErrorType()) {
-                            case NOT_IN_PARTY -> executor.sendMessage(MINI_MESSAGE.deserialize("<red>You are not in a party"));
                             case CANNOT_LEAVE_AS_LEADER -> {
                                 executor.sendMessage(MINI_MESSAGE.deserialize("""
                                         <red>You are the leader of the party
