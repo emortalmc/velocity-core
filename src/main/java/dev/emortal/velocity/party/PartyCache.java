@@ -220,7 +220,7 @@ public class PartyCache {
         if (party != null) {
             for (UUID memberId : party.getMembers().keySet()) {
                 this.proxy.getPlayer(memberId).ifPresent(player -> player
-                        .sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED, Placeholder.parsed("username", invite.getSenderUsername()))));
+                        .sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED, Placeholder.parsed("username", invite.getTargetUsername()))));
             }
         }
 
