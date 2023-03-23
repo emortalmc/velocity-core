@@ -1,16 +1,17 @@
 package dev.emortal.velocity.permissions.listener;
 
 import dev.emortal.api.message.permission.RoleUpdateMessage;
+import dev.emortal.velocity.messaging.MessagingCore;
 import dev.emortal.velocity.permissions.PermissionCache;
-import dev.emortal.velocity.rabbitmq.RabbitMqCore;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PermissionUpdateListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionUpdateListener.class);
 
-    public PermissionUpdateListener(PermissionCache cache, RabbitMqCore rabbitMqCore) {
-        rabbitMqCore.setListener(RoleUpdateMessage.class, message -> {
+    public PermissionUpdateListener(PermissionCache cache, @NotNull MessagingCore messagingCore) {
+        messagingCore.setListener(RoleUpdateMessage.class, message -> {
             switch (message.getChangeType()) {
                 case CREATE -> cache.addRole(message.getRole());
                 case DELETE -> {

@@ -6,7 +6,7 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
 import dev.emortal.api.message.common.SwitchPlayersServerMessage;
 import dev.emortal.api.model.common.ConnectableServer;
-import dev.emortal.velocity.rabbitmq.RabbitMqCore;
+import dev.emortal.velocity.messaging.MessagingCore;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
@@ -21,8 +21,8 @@ public class ServerChangeNotificationListener {
 
     private static final String TELEPORT_MESSAGE = "<green>Sending you to <gold><server_id><green>...</green>";
 
-    public ServerChangeNotificationListener(@NotNull ProxyServer proxy, @NotNull RabbitMqCore rabbitMq) {
-        rabbitMq.setListener(SwitchPlayersServerMessage.class, message -> {
+    public ServerChangeNotificationListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging) {
+        messaging.setListener(SwitchPlayersServerMessage.class, message -> {
             Set<Player> presentPlayers = new HashSet<>();
             for (String playerIdStr : message.getPlayerIdsList()) {
                 proxy.getPlayer(UUID.fromString(playerIdStr)).ifPresent(presentPlayers::add);

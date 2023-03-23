@@ -1,4 +1,4 @@
-package dev.emortal.velocity.rabbitmq;
+package dev.emortal.velocity.messaging;
 
 import com.google.protobuf.AbstractMessage;
 import com.rabbitmq.client.AMQP;
@@ -12,7 +12,7 @@ import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import dev.emortal.api.message.common.PlayerConnectMessage;
 import dev.emortal.api.message.common.PlayerDisconnectMessage;
 import dev.emortal.api.message.common.PlayerSwitchServerMessage;
-import dev.emortal.api.utils.parser.ParsableProto;
+import dev.emortal.api.utils.parser.MessageProtoConfig;
 import dev.emortal.api.utils.parser.ProtoParserRegistry;
 import dev.emortal.velocity.Environment;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ public class RabbitMqCore {
     private final Connection connection;
     private final Channel channel;
 
-    public RabbitMqCore() {
+    RabbitMqCore() {
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost(HOST);
         connectionFactory.setUsername(USERNAME);
@@ -154,8 +154,8 @@ public class RabbitMqCore {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends AbstractMessage> void setListener(Class<T> messageType, Consumer<T> listener) {
-        ParsableProto<T> parser = ProtoParserRegistry.getParser(messageType);
+    <T extends AbstractMessage> void setListener(Class<T> messageType, Consumer<T> listener) {
+        MessageProtoConfig<T> parser = ProtoParserRegistry.getParser(messageType);
         if (parser.exchangeName() != null) {
             String routingKey = parser.routingKey() == null ? "" : parser.routingKey();
             try {
@@ -169,7 +169,7 @@ public class RabbitMqCore {
         this.protoListeners.put(messageType, (Consumer<AbstractMessage>) listener);
     }
 
-    public void shutdown() {
+    void shutdown() {
         try {
             this.channel.close();
             this.connection.close();

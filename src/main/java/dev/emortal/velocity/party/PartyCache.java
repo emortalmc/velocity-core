@@ -15,7 +15,7 @@ import dev.emortal.api.model.party.Party;
 import dev.emortal.api.model.party.PartyInvite;
 import dev.emortal.api.model.party.PartyMember;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.rabbitmq.RabbitMqCore;
+import dev.emortal.velocity.messaging.MessagingCore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -51,21 +51,19 @@ public class PartyCache {
     private final @NotNull Map<String, CachedParty> partyMap = new ConcurrentHashMap<>();
 
     private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
-    private final @NotNull RabbitMqCore rabbitMqCore;
     private final @NotNull ProxyServer proxy;
 
-    public PartyCache(@NotNull ProxyServer proxy, @NotNull RabbitMqCore rabbitMqCore) {
-        this.rabbitMqCore = rabbitMqCore;
+    public PartyCache(@NotNull ProxyServer proxy, @NotNull MessagingCore messagingCore) {
         this.proxy = proxy;
 
-        this.rabbitMqCore.setListener(PartyCreatedMessage.class, this::handleCreateParty);
-        this.rabbitMqCore.setListener(PartyDeletedMessage.class, this::handlePartyDeleted);
-        this.rabbitMqCore.setListener(PartyEmptiedMessage.class, this::handlePartyEmptied);
-        this.rabbitMqCore.setListener(PartyOpenChangedMessage.class, this::handlePartyOpenChanged);
-        this.rabbitMqCore.setListener(PartyPlayerJoinedMessage.class, this::handleJoinParty);
-        this.rabbitMqCore.setListener(PartyPlayerLeftMessage.class, this::handleLeaveParty);
-        this.rabbitMqCore.setListener(PartyLeaderChangedMessage.class, this::handleLeaderChange);
-        this.rabbitMqCore.setListener(PartyInviteCreatedMessage.class, this::handleInviteCreated);
+        messagingCore.setListener(PartyCreatedMessage.class, this::handleCreateParty);
+        messagingCore.setListener(PartyDeletedMessage.class, this::handlePartyDeleted);
+        messagingCore.setListener(PartyEmptiedMessage.class, this::handlePartyEmptied);
+        messagingCore.setListener(PartyOpenChangedMessage.class, this::handlePartyOpenChanged);
+        messagingCore.setListener(PartyPlayerJoinedMessage.class, this::handleJoinParty);
+        messagingCore.setListener(PartyPlayerLeftMessage.class, this::handleLeaveParty);
+        messagingCore.setListener(PartyLeaderChangedMessage.class, this::handleLeaderChange);
+        messagingCore.setListener(PartyInviteCreatedMessage.class, this::handleInviteCreated);
     }
 
     public CachedParty getPlayerParty(@NotNull UUID playerId) {

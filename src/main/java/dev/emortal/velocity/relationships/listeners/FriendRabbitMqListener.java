@@ -5,11 +5,12 @@ import dev.emortal.api.message.relationship.FriendAddedMessage;
 import dev.emortal.api.message.relationship.FriendRemovedMessage;
 import dev.emortal.api.message.relationship.FriendRequestReceivedMessage;
 import dev.emortal.api.model.relationship.FriendRequest;
+import dev.emortal.velocity.messaging.MessagingCore;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.relationships.commands.friend.FriendAddSub;
-import dev.emortal.velocity.rabbitmq.RabbitMqCore;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -19,8 +20,8 @@ public class FriendRabbitMqListener {
 
     private static final String FRIEND_REQUEST_RECEIVED_MESSAGE = "<light_purple>You have received a friend request from <color:#c98fff><sender_username></color> <click:run_command:'/friend add <sender_username>'><green>ACCEPT</click> <reset><gray>| <click:run_command:'/friend deny <sender_username>'><red>DENY</click>";
 
-    public FriendRabbitMqListener(RabbitMqCore core, ProxyServer proxy, FriendCache friendCache) {
-        core.setListener(FriendRequestReceivedMessage.class, message -> {
+    public FriendRabbitMqListener(ProxyServer proxy, @NotNull MessagingCore messaging, FriendCache friendCache) {
+        messaging.setListener(FriendRequestReceivedMessage.class, message -> {
             FriendRequest request = message.getRequest();
 
             proxy.getPlayer(UUID.fromString(request.getTargetId())).ifPresent(player -> {
@@ -29,7 +30,7 @@ public class FriendRabbitMqListener {
             });
         });
 
-        core.setListener(FriendAddedMessage.class, message -> {
+        messaging.setListener(FriendAddedMessage.class, message -> {
             proxy.getPlayer(UUID.fromString(message.getRecipientId())).ifPresent(player -> {
                 player.sendMessage(MINI_MESSAGE
                         .deserialize(FriendAddSub.FRIEND_ADDED_MESSAGE, Placeholder.parsed("username", message.getSenderUsername())));
@@ -41,7 +42,7 @@ public class FriendRabbitMqListener {
             });
         });
 
-        core.setListener(FriendRemovedMessage.class, message -> {
+        messaging.setListener(FriendRemovedMessage.class, message -> {
             UUID recipientId = UUID.fromString(message.getRecipientId());
             UUID senderId = UUID.fromString(message.getSenderId());
 

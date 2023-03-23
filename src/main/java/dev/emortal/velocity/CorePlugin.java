@@ -11,12 +11,6 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.agonessdk.AgonesUtils;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.cache.SessionCache;
-import dev.emortal.velocity.party.PartyCache;
-import dev.emortal.velocity.party.commands.PartyCommand;
-import dev.emortal.velocity.relationships.FriendCache;
-import dev.emortal.velocity.relationships.commands.block.BlockCommand;
-import dev.emortal.velocity.relationships.commands.friend.FriendCommand;
-import dev.emortal.velocity.relationships.listeners.FriendRabbitMqListener;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.general.commands.PlaytimeCommand;
 import dev.emortal.velocity.grpc.stub.GrpcStubManager;
@@ -24,13 +18,19 @@ import dev.emortal.velocity.listener.AgonesListener;
 import dev.emortal.velocity.listener.LobbySelectorListener;
 import dev.emortal.velocity.listener.McPlayerListener;
 import dev.emortal.velocity.listener.ServerChangeNotificationListener;
+import dev.emortal.velocity.messaging.MessagingCore;
+import dev.emortal.velocity.party.PartyCache;
+import dev.emortal.velocity.party.commands.PartyCommand;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.PermissionCommand;
 import dev.emortal.velocity.permissions.listener.PermissionCheckListener;
 import dev.emortal.velocity.privatemessages.LastMessageCache;
 import dev.emortal.velocity.privatemessages.PrivateMessageListener;
 import dev.emortal.velocity.privatemessages.commands.MessageCommand;
-import dev.emortal.velocity.rabbitmq.RabbitMqCore;
+import dev.emortal.velocity.relationships.FriendCache;
+import dev.emortal.velocity.relationships.commands.block.BlockCommand;
+import dev.emortal.velocity.relationships.commands.friend.FriendCommand;
+import dev.emortal.velocity.relationships.listeners.FriendRabbitMqListener;
 import dev.emortal.velocity.serverlist.ServerPingListener;
 import dev.emortal.velocity.tablist.TabList;
 import dev.emortal.velocity.utils.ReflectionUtils;
@@ -67,7 +67,7 @@ public class CorePlugin {
 
     private final UsernameSuggestions usernameSuggestions = new UsernameSuggestions();
 
-    private final RabbitMqCore rabbitMqCore = new RabbitMqCore();
+    private MessagingCore messagingCore;
 
     private final FriendCache friendCache = new FriendCache();
     private final SessionCache sessionCache = new SessionCache();
@@ -91,20 +91,23 @@ public class CorePlugin {
             LOGGER.warn("Agones SDK is not enabled. This is only intended for development purposes.");
         }
 
+        // Late init because we need the proxy
+        this.messagingCore = new MessagingCore(this.proxy, this);
+
         this.proxy.getEventManager().register(this, this.sessionCache);
 
-        new ServerChangeNotificationListener(this.proxy, this.rabbitMqCore); // Listens for RabbitMQ ProxyServerChangeMessage messages
+        new ServerChangeNotificationListener(this.proxy, this.messagingCore); // Listens for RabbitMQ ProxyServerChangeMessage messages
         this.permissionCache = new PermissionCache(this.stubManager);
 
         // rabbitmq
-        this.proxy.getEventManager().register(this, this.rabbitMqCore);
+        this.proxy.getEventManager().register(this, this.messagingCore);
 
         // friends
-        new FriendRabbitMqListener(this.rabbitMqCore, this.proxy, this.friendCache);
+        new FriendRabbitMqListener(this.proxy, this.messagingCore, this.friendCache);
         this.proxy.getEventManager().register(this, this.friendCache);
 
         // private messages
-        this.proxy.getEventManager().register(this, new PrivateMessageListener(this.rabbitMqCore, this.proxy, this.lastMessageCache));
+        this.proxy.getEventManager().register(this, new PrivateMessageListener(this.proxy, this.messagingCore, this.lastMessageCache));
         this.proxy.getEventManager().register(this, this.lastMessageCache);
 
         // permissions
@@ -122,7 +125,7 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, new TabList(this, this.proxy));
 
         // party
-        PartyCache partyCache = new PartyCache(this.proxy, this.rabbitMqCore);
+        PartyCache partyCache = new PartyCache(this.proxy, this.messagingCore);
         new PartyCommand(this.proxy, this.usernameSuggestions, partyCache);
 
         new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache);
@@ -218,7 +221,7 @@ public class CorePlugin {
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
-        this.rabbitMqCore.shutdown();
+        this.messagingCore.shutdown();
         AgonesUtils.shutdownHealthTask();
     }
 
