@@ -10,7 +10,7 @@ import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.party.PartyCache;
 import dev.emortal.velocity.party.commands.subs.PartyDisbandSub;
-import dev.emortal.velocity.party.commands.subs.PartyInfoSub;
+import dev.emortal.velocity.party.commands.subs.PartyListSub;
 import dev.emortal.velocity.party.commands.subs.PartyInviteSub;
 import dev.emortal.velocity.party.commands.subs.PartyJoinSub;
 import dev.emortal.velocity.party.commands.subs.PartyKickSub;
@@ -25,12 +25,14 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 public class PartyCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
+    public static final Component ERROR_MESSAGE = MINI_MESSAGE.deserialize("<red>An error occurred");
+
     private static final Component HELP_MESSAGE = MINI_MESSAGE.deserialize("""
             <light_purple>------ Party Help ------
             /party invite <player>
             /party join <player>
             /party leave
-            /party info
+            /party list
             /party open
                         
             /party kick <player>
@@ -61,12 +63,12 @@ public class PartyCommand {
     private final PartyDisbandSub disbandSub = new PartyDisbandSub();
     private final PartyOpenSub openSub;
 
-    private final PartyInfoSub infoSub;
+    private final PartyListSub listSub;
 
     public PartyCommand(ProxyServer proxy, UsernameSuggestions usernameSuggestions, PartyCache partyCache) {
         this.usernameSuggestions = usernameSuggestions;
 
-        this.infoSub = new PartyInfoSub(partyCache);
+        this.listSub = new PartyListSub(partyCache);
         this.openSub = new PartyOpenSub(partyCache);
 
         proxy.getCommandManager().register(this.createCommand());
@@ -114,8 +116,7 @@ public class PartyCommand {
                                         )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("open").executes(this.openSub::execute))
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("list").executes(this.infoSub::execute))
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("info").executes(this.infoSub::execute))
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("list").executes(this.listSub::execute))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("disband").executes(this.disbandSub::execute))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("settings").executes(context -> {
                             context.getSource().sendMessage(SETTINGS_HELP_MESSAGE);

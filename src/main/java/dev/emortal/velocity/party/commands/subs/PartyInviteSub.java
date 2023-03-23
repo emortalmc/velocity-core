@@ -11,10 +11,12 @@ import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.TempLang;
+import dev.emortal.velocity.party.commands.PartyCommand;
 import io.grpc.Status;
 import io.grpc.protobuf.StatusProto;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,16 @@ import java.util.concurrent.ForkJoinPool;
 
 public class PartyInviteSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyInviteSub.class);
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+
+
+    private static final String INVITED_MESSAGE = "<green>Invited <username> to the party";
+    private static final String NO_PERMISSION_MESSAGE = "<red>You must be the leader of the party to invite another player";
+    private static final String ALREADY_INVITED_MESSAGE = "<red><username> has already been invited to your party";
+    private static final String ALREADY_IN_PARTY_MESSAGE = "<red><username> is already in the party";
+    private static final String ALREADY_IN_PARTY_OTHER_MESSAGE = "<red><username> is in another party";
+    private static final String PARTY_IS_OPEN_MESSAGE = "<red>The party is open, anyone can join";
+
 
     private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
 
@@ -46,12 +58,12 @@ public class PartyInviteSub {
                     );
 
                     Futures.addCallback(inviteResponseFuture, FunctionalFutureCallback.create(
-                            inviteResponse -> executor.sendMessage(Component.text("Invited " + target.username() + " to your party", NamedTextColor.GREEN)),
+                            inviteResponse -> executor.sendMessage(MINI_MESSAGE.deserialize(INVITED_MESSAGE, Placeholder.unparsed("username", target.username()))),
                             throwable -> {
                                 com.google.rpc.Status status = StatusProto.fromThrowable(throwable);
                                 if (status == null || status.getDetailsCount() == 0) {
                                     LOGGER.error("An error occurred PartyInviteSub invitePlayerToParty: ", throwable);
-                                    executor.sendMessage(Component.text("An error occurred inviting " + target.username(), NamedTextColor.RED));
+                                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                     return;
                                 }
 
@@ -59,23 +71,21 @@ public class PartyInviteSub {
                                     PartyProto.InvitePlayerErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.InvitePlayerErrorResponse.class);
 
                                     executor.sendMessage(switch (errorResponse.getErrorType()) {
-                                        case NO_PERMISSION ->
-                                                Component.text("You must be the leader of the party to invite another player.", NamedTextColor.RED);
-                                        case TARGET_ALREADY_INVITED ->
-                                                Component.text(target.username() + " is already invited to your party.", NamedTextColor.RED);
-                                        case TARGET_ALREADY_IN_SELF_PARTY ->
-                                                Component.text(target.username() + " is already in your party.", NamedTextColor.RED);
-                                        case TARGET_ALREADY_IN_ANOTHER_PARTY ->
-                                                Component.text(target.username() + " is already in another party.", NamedTextColor.RED);
-                                        case PARTY_IS_OPEN -> Component.text("Your party is open, anyone can join.", NamedTextColor.RED);
+                                        case NO_PERMISSION -> MINI_MESSAGE.deserialize(NO_PERMISSION_MESSAGE);
+                                        case TARGET_ALREADY_INVITED -> MINI_MESSAGE.deserialize(ALREADY_INVITED_MESSAGE, Placeholder.unparsed("username", target.username()));
+                                        case TARGET_ALREADY_IN_SELF_PARTY -> MINI_MESSAGE.deserialize(ALREADY_IN_PARTY_MESSAGE, Placeholder.unparsed("username", target.username()));
+                                        // TODO: Why is this an error?
+                                        case TARGET_ALREADY_IN_ANOTHER_PARTY -> MINI_MESSAGE.deserialize(ALREADY_IN_PARTY_OTHER_MESSAGE, Placeholder.unparsed("username", target.username()));
+                                        // TODO: This too.
+                                        case PARTY_IS_OPEN -> MINI_MESSAGE.deserialize(PARTY_IS_OPEN_MESSAGE);
                                         default -> {
                                             LOGGER.error("An error occurred PartyInviteSub invitePlayerToParty: ", throwable);
-                                            yield Component.text("An error occurred", NamedTextColor.RED);
+                                            yield PartyCommand.ERROR_MESSAGE;
                                         }
                                     });
                                 } catch (InvalidProtocolBufferException e) {
                                     LOGGER.error("An error occurred PartyInviteSub invitePlayerToParty: ", throwable);
-                                    executor.sendMessage(Component.text("An error occurred", NamedTextColor.RED));
+                                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                 }
                             }
                     ), ForkJoinPool.commonPool());
@@ -87,7 +97,7 @@ public class PartyInviteSub {
                     }
 
                     LOGGER.error("An error occurred PartyInviteSub getPlayerByUsername: ", status.asException());
-                    executor.sendMessage(Component.text("An error occurred", NamedTextColor.RED));
+                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                 }
         );
 

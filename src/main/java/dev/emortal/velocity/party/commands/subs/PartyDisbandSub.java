@@ -10,7 +10,9 @@ import dev.emortal.api.grpc.party.PartyProto;
 import dev.emortal.api.grpc.party.PartyServiceGrpc;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.velocity.party.commands.PartyCommand;
 import io.grpc.protobuf.StatusProto;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +20,16 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ForkJoinPool;
 
 public class PartyDisbandSub {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PartyInfoSub.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PartyListSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+
+
+    private static final Component DISBANDED_MESSAGE = MINI_MESSAGE.deserialize("<green>Party disbanded</green>");
+    private static final Component NOT_LEADER_MESSAGE = MINI_MESSAGE.deserialize("""
+        <red>You are not the leader of the party
+        <red>Use <underlined><click:run_command:'/party leave'>/party leave</click></underlined> to leave the party instead"""
+    );
+
 
     private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
 
@@ -33,13 +43,13 @@ public class PartyDisbandSub {
 
         Futures.addCallback(disbandPartyFuture, FunctionalFutureCallback.create(
                 response -> {
-                    executor.sendMessage(MINI_MESSAGE.deserialize("<hover:show_text:'<color:#9fff87>Note: disbanding a party only empties it</color>'><green>Party disbanded</green></hover>"));
+                    executor.sendMessage(DISBANDED_MESSAGE);
                 },
                 throwable -> {
                     Status status = StatusProto.fromThrowable(throwable);
                     if (status == null || status.getDetailsCount() == 0) {
                         LOGGER.error("Failed to disband party", throwable);
-                        executor.sendMessage(MINI_MESSAGE.deserialize("<red>Failed to disband party"));
+                        executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                         return;
                     }
 
@@ -47,17 +57,15 @@ public class PartyDisbandSub {
                         PartyProto.EmptyPartyErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.EmptyPartyErrorResponse.class);
 
                         executor.sendMessage(switch (errorResponse.getErrorType()) {
-                            case NOT_LEADER -> MINI_MESSAGE.deserialize("""
-                                    <red>You are not the leader of the party
-                                    <red>Use /party leave to leave the party instead""");
+                            case NOT_LEADER -> NOT_LEADER_MESSAGE;
                             default -> {
                                 LOGGER.error("Failed to disband party", throwable);
-                                yield MINI_MESSAGE.deserialize("<red>Failed to disband party");
+                                yield PartyCommand.ERROR_MESSAGE;
                             }
                         });
                     } catch (InvalidProtocolBufferException e) {
                         LOGGER.error("Failed to disband party", throwable);
-                        executor.sendMessage(MINI_MESSAGE.deserialize("<red>Failed to disband party"));
+                        executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                     }
                 }
         ), ForkJoinPool.commonPool());

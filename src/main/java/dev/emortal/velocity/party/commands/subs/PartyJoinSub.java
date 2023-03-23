@@ -12,9 +12,11 @@ import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.TempLang;
+import dev.emortal.velocity.party.commands.PartyCommand;
 import io.grpc.protobuf.StatusProto;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,13 @@ import java.util.concurrent.ForkJoinPool;
 
 public class PartyJoinSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyJoinSub.class);
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+
+
+    private static final String PARTY_JOIN_MESSAGE = "<green>Joined <username>'s party";
+    private static final Component NOT_INVITED_MESSAGE = MINI_MESSAGE.deserialize("<red>You were not invited to this party");
+    private static final Component ALREADY_IN_PARTY_MESSAGE = MINI_MESSAGE.deserialize("<red>You are already in the party");
+
 
     private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
 
@@ -45,12 +54,12 @@ public class PartyJoinSub {
                     );
 
                     Futures.addCallback(joinResponseFuture, FunctionalFutureCallback.create(
-                            joinResponse -> executor.sendMessage(Component.text("Joined " + target.username() + "'s party", NamedTextColor.GREEN)),
+                            joinResponse -> executor.sendMessage(MINI_MESSAGE.deserialize(PARTY_JOIN_MESSAGE, Placeholder.unparsed("username", target.username()))),
                             throwable -> {
                                 Status status = StatusProto.fromThrowable(throwable);
                                 if (status == null || status.getDetailsCount() == 0) {
                                     LOGGER.error("An error occurred PartyJoinSub joinParty: ", throwable);
-                                    executor.sendMessage(Component.text("An error occurred", NamedTextColor.RED));
+                                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                     return;
                                 }
 
@@ -58,18 +67,16 @@ public class PartyJoinSub {
                                     PartyProto.JoinPartyErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.JoinPartyErrorResponse.class);
 
                                     executor.sendMessage(switch (errorResponse.getErrorType()) {
-                                        case NOT_INVITED ->
-                                                Component.text("You are not invited to this party", NamedTextColor.RED);
-                                        case ALREADY_IN_PARTY ->
-                                                Component.text("You are already in a party", NamedTextColor.RED);
+                                        case NOT_INVITED -> NOT_INVITED_MESSAGE;
+                                        case ALREADY_IN_PARTY -> ALREADY_IN_PARTY_MESSAGE;
                                         default -> {
                                             LOGGER.error("An error occurred PartyJoinSub joinParty: ", throwable);
-                                            yield Component.text("An error occurred", NamedTextColor.RED);
+                                            yield PartyCommand.ERROR_MESSAGE;
                                         }
                                     });
                                 } catch (InvalidProtocolBufferException e) {
                                     LOGGER.error("An error occurred PartyJoinSub joinParty: ", throwable);
-                                    executor.sendMessage(Component.text("An error occurred", NamedTextColor.RED));
+                                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                 }
                             }
                     ), ForkJoinPool.commonPool());
@@ -81,7 +88,7 @@ public class PartyJoinSub {
                     }
 
                     LOGGER.error("An error occurred PartyJoinSub getPlayerByUsername: ", status.asException());
-                    executor.sendMessage(Component.text("An error occurred", NamedTextColor.RED));
+                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                 }
         );
         return 1;

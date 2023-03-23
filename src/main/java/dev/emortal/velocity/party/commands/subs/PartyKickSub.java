@@ -12,6 +12,7 @@ import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.TempLang;
+import dev.emortal.velocity.party.commands.PartyCommand;
 import io.grpc.protobuf.StatusProto;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -44,7 +45,7 @@ public class PartyKickSub {
                                 Status status = StatusProto.fromThrowable(throwable);
                                 if (status == null || status.getDetailsCount() == 0) {
                                     LOGGER.error("An error occurred PartyKickSub kickPlayerFromParty: ", throwable);
-                                    executor.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred kicking " + targetPlayer.username() + " from your party"));
+                                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                     return;
                                 }
 
@@ -63,12 +64,12 @@ public class PartyKickSub {
                                         }
                                         default -> {
                                             LOGGER.error("An error occurred PartyKickSub kickPlayerFromParty: ", throwable);
-                                            executor.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred kicking " + targetPlayer.username() + " from your party"));
+                                            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                         }
                                     }
                                 } catch (InvalidProtocolBufferException e) {
                                     LOGGER.error("An error occurred PartyKickSub kickPlayerFromParty: ", throwable);
-                                    executor.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred kicking " + targetPlayer.username() + " from your party"));
+                                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                 }
                             }
                     ), ForkJoinPool.commonPool());
@@ -80,7 +81,7 @@ public class PartyKickSub {
                     }
 
                     LOGGER.error("An error occurred PartyKickSub getPlayerByUsername: ", status.asException());
-                    executor.sendMessage(MINI_MESSAGE.deserialize("<red>Could not find player " + targetUsername));
+                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                 }
         );
 
