@@ -4,8 +4,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.velocity.party.PartyCache;
+import dev.emortal.velocity.party.commands.PartyCommand;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -13,8 +13,9 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 
-import javax.inject.Named;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class PartyListSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
@@ -37,7 +38,7 @@ public class PartyListSub {
 
         PartyCache.CachedParty party = this.partyCache.getPlayerParty(executor.getUniqueId());
         if (party == null) {
-            executor.sendMessage(MINI_MESSAGE.deserialize("<red>You are not in a party."));
+            executor.sendMessage(PartyCommand.NOT_IN_PARTY_MESSAGE);
             return 0;
         }
 

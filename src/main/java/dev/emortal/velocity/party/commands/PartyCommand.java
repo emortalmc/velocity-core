@@ -9,14 +9,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.party.PartyCache;
-import dev.emortal.velocity.party.commands.subs.PartyDisbandSub;
-import dev.emortal.velocity.party.commands.subs.PartyListSub;
-import dev.emortal.velocity.party.commands.subs.PartyInviteSub;
-import dev.emortal.velocity.party.commands.subs.PartyJoinSub;
-import dev.emortal.velocity.party.commands.subs.PartyKickSub;
-import dev.emortal.velocity.party.commands.subs.PartyLeaderSub;
-import dev.emortal.velocity.party.commands.subs.PartyLeaveSub;
-import dev.emortal.velocity.party.commands.subs.PartyOpenSub;
+import dev.emortal.velocity.party.commands.subs.*;
 import dev.emortal.velocity.utils.CommandUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -26,6 +19,7 @@ public class PartyCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     public static final Component ERROR_MESSAGE = MINI_MESSAGE.deserialize("<red>An error occurred");
+    public static final Component NOT_IN_PARTY_MESSAGE = MINI_MESSAGE.deserialize("<red>You are not in a party");
 
     private static final Component HELP_MESSAGE = MINI_MESSAGE.deserialize("""
             <light_purple>------ Party Help ------

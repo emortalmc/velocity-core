@@ -12,6 +12,7 @@ import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.TempLang;
+import dev.emortal.velocity.party.commands.PartyCommand;
 import io.grpc.protobuf.StatusProto;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -25,6 +26,12 @@ public class PartyLeaderSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyLeaderSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
+
+    private static final String UPDATED_LEADER_MESSAGE = "<green>Successfully updated the party leader";
+    private static final String NOT_LEADER_MESSAGE = "<red>You must be the party leader to update the party leader";
+    private static final String NOT_IN_PARTY_MESSAGE = "<red><username> is not in your party";
+
+
     private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
 
     public int execute(CommandContext<CommandSource> context) {
@@ -32,20 +39,20 @@ public class PartyLeaderSub {
         Player executor = (Player) context.getSource();
 
         PlayerResolver.retrievePlayerData(targetUsername,
-                targetPlayer -> {
+                target -> {
                     var setLeaderRequestFuture = this.partyService.setPartyLeader(PartyProto.SetPartyLeaderRequest.newBuilder()
                             .setIssuerId(executor.getUniqueId().toString())
                             .setIssuerUsername(executor.getUsername())
-                            .setTargetId(targetPlayer.uuid().toString())
+                            .setTargetId(target.uuid().toString())
                             .build());
 
                     Futures.addCallback(setLeaderRequestFuture, FunctionalFutureCallback.create(
-                            response -> executor.sendMessage(MINI_MESSAGE.deserialize("<green>Successfully updated the party leader")),
+                            response -> executor.sendMessage(MINI_MESSAGE.deserialize(UPDATED_LEADER_MESSAGE)),
                             throwable -> {
                                 Status status = StatusProto.fromThrowable(throwable);
                                 if (status == null || status.getDetailsCount() == 0) {
                                     LOGGER.error("An error occurred PartyLeaderSub setPartyLeader: ", throwable);
-                                    executor.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred updating the party leader"));
+                                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                     return;
                                 }
 
@@ -53,18 +60,16 @@ public class PartyLeaderSub {
                                     PartyProto.SetPartyLeaderErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.SetPartyLeaderErrorResponse.class);
 
                                     executor.sendMessage(switch (errorResponse.getErrorType()) {
-                                        case SELF_NOT_LEADER ->
-                                                MINI_MESSAGE.deserialize("<red>You must be the party leader to update the party leader");
-                                        case TARGET_NOT_IN_PARTY ->
-                                                MINI_MESSAGE.deserialize("<red>The target is not in your party");
+                                        case SELF_NOT_LEADER -> MINI_MESSAGE.deserialize(NOT_LEADER_MESSAGE);
+                                        case TARGET_NOT_IN_PARTY -> MINI_MESSAGE.deserialize(NOT_IN_PARTY_MESSAGE, Placeholder.unparsed("username", target.username()));
                                         default -> {
                                             LOGGER.error("An error occurred PartyLeaderSub setPartyLeader: ", throwable);
-                                            yield MINI_MESSAGE.deserialize("<red>An error occurred updating the party leader");
+                                            yield PartyCommand.ERROR_MESSAGE;
                                         }
                                     });
                                 } catch (InvalidProtocolBufferException e) {
                                     LOGGER.error("An error occurred PartyLeaderSub setPartyLeader: ", e);
-                                    executor.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred updating the party leader"));
+                                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                                 }
                             }
                     ), ForkJoinPool.commonPool());
@@ -76,7 +81,7 @@ public class PartyLeaderSub {
                     }
 
                     LOGGER.error("An error occurred PartyLeaderSub retrievePlayerData: {}", status);
-                    executor.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred updating the party leader"));
+                    executor.sendMessage(PartyCommand.ERROR_MESSAGE);
                 });
         return 1;
     }

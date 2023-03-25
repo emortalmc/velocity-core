@@ -14,8 +14,6 @@ import dev.emortal.velocity.lang.TempLang;
 import dev.emortal.velocity.party.commands.PartyCommand;
 import io.grpc.Status;
 import io.grpc.protobuf.StatusProto;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;

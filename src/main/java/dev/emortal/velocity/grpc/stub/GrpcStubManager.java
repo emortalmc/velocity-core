@@ -1,7 +1,7 @@
 package dev.emortal.velocity.grpc.stub;
 
-import dev.emortal.velocity.Environment;
 import dev.agones.sdk.SDKGrpc;
+import dev.emortal.velocity.Environment;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.jetbrains.annotations.Nullable;

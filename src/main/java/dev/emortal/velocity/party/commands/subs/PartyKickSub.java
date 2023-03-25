@@ -25,6 +25,13 @@ public class PartyKickSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyKickSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
+
+    private static final String KICKED_MESSAGE = "<green>Kicked <username> from your party";
+    private static final String NOT_LEADER_MESSAGE = "<red>You must be the party leader to kick players";
+    private static final String TARGET_IS_LEADER_MESSAGE = "<red>You cannot kick the party leader";
+    private static final String NOT_IN_PARTY_MESSAGE = "<red><username> is not in your party";
+
+
     private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
 
     public int execute(CommandContext<CommandSource> context) {
@@ -32,15 +39,15 @@ public class PartyKickSub {
         String targetUsername = context.getArgument("player", String.class);
 
         PlayerResolver.retrievePlayerData(targetUsername,
-                targetPlayer -> {
+                target -> {
                     var kickFuture = this.partyService.kickPlayer(PartyProto.KickPlayerRequest.newBuilder()
                             .setIssuerId(executor.getUniqueId().toString())
                             .setIssuerUsername(executor.getUsername())
-                            .setTargetId(targetPlayer.uuid().toString())
+                            .setTargetId(target.uuid().toString())
                             .build());
 
                     Futures.addCallback(kickFuture, FunctionalFutureCallback.create(
-                            kickResponse -> executor.sendMessage(MINI_MESSAGE.deserialize("<green>Kicked " + targetPlayer.username() + " from your party")),
+                            kickResponse -> executor.sendMessage(MINI_MESSAGE.deserialize(KICKED_MESSAGE, Placeholder.unparsed("username", target.username()))),
                             throwable -> {
                                 Status status = StatusProto.fromThrowable(throwable);
                                 if (status == null || status.getDetailsCount() == 0) {
@@ -52,21 +59,15 @@ public class PartyKickSub {
                                 try {
                                     PartyProto.KickPlayerErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.KickPlayerErrorResponse.class);
 
-                                    switch (errorResponse.getErrorType()) {
-                                        case SELF_NOT_LEADER -> {
-                                            executor.sendMessage(MINI_MESSAGE.deserialize("<red>You must be the party leader to kick players"));
-                                        }
-                                        case TARGET_IS_LEADER -> {
-                                            executor.sendMessage(MINI_MESSAGE.deserialize("<red>You cannot kick the party leader"));
-                                        }
-                                        case TARGET_NOT_IN_PARTY -> {
-                                            executor.sendMessage(MINI_MESSAGE.deserialize("<red>" + targetPlayer.username() + " is not in your party"));
-                                        }
+                                    executor.sendMessage(switch (errorResponse.getErrorType()) {
+                                        case SELF_NOT_LEADER -> MINI_MESSAGE.deserialize(NOT_LEADER_MESSAGE);
+                                        case TARGET_IS_LEADER -> MINI_MESSAGE.deserialize(TARGET_IS_LEADER_MESSAGE);
+                                        case TARGET_NOT_IN_PARTY -> MINI_MESSAGE.deserialize(NOT_IN_PARTY_MESSAGE, Placeholder.unparsed("username", target.username()));
                                         default -> {
                                             LOGGER.error("An error occurred PartyKickSub kickPlayerFromParty: ", throwable);
-                                            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+                                            yield PartyCommand.ERROR_MESSAGE;
                                         }
-                                    }
+                                    });
                                 } catch (InvalidProtocolBufferException e) {
                                     LOGGER.error("An error occurred PartyKickSub kickPlayerFromParty: ", throwable);
                                     executor.sendMessage(PartyCommand.ERROR_MESSAGE);

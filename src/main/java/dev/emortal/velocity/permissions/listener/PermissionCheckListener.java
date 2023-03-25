@@ -1,6 +1,5 @@
 package dev.emortal.velocity.permissions.listener;
 
-import dev.emortal.velocity.permissions.PermissionCache;
 import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.permission.PermissionsSetupEvent;
@@ -9,6 +8,7 @@ import com.velocitypowered.api.permission.PermissionProvider;
 import com.velocitypowered.api.permission.PermissionSubject;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.velocity.permissions.PermissionCache;
 
 public class PermissionCheckListener {
     private final PermissionCache permissionCache;
