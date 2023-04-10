@@ -21,7 +21,7 @@ public class FriendRabbitMqListener {
     private static final String FRIEND_REQUEST_RECEIVED_MESSAGE = "<light_purple>You have received a friend request from <color:#c98fff><sender_username></color> <click:run_command:'/friend add <sender_username>'><green>ACCEPT</click> <reset><gray>| <click:run_command:'/friend deny <sender_username>'><red>DENY</click>";
 
     public FriendRabbitMqListener(ProxyServer proxy, @NotNull MessagingCore messaging, FriendCache friendCache) {
-        messaging.setListener(FriendRequestReceivedMessage.class, message -> {
+        messaging.addListener(FriendRequestReceivedMessage.class, message -> {
             FriendRequest request = message.getRequest();
 
             proxy.getPlayer(UUID.fromString(request.getTargetId())).ifPresent(player -> {
@@ -30,7 +30,7 @@ public class FriendRabbitMqListener {
             });
         });
 
-        messaging.setListener(FriendAddedMessage.class, message -> {
+        messaging.addListener(FriendAddedMessage.class, message -> {
             proxy.getPlayer(UUID.fromString(message.getRecipientId())).ifPresent(player -> {
                 player.sendMessage(MINI_MESSAGE
                         .deserialize(FriendAddSub.FRIEND_ADDED_MESSAGE, Placeholder.parsed("username", message.getSenderUsername())));
@@ -42,7 +42,7 @@ public class FriendRabbitMqListener {
             });
         });
 
-        messaging.setListener(FriendRemovedMessage.class, message -> {
+        messaging.addListener(FriendRemovedMessage.class, message -> {
             UUID recipientId = UUID.fromString(message.getRecipientId());
             UUID senderId = UUID.fromString(message.getSenderId());
 

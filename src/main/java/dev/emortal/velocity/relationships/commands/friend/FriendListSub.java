@@ -8,9 +8,11 @@ import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.api.grpc.playertracker.PlayerTrackerGrpc;
 import dev.emortal.api.grpc.playertracker.PlayerTrackerProto;
+import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
+import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.model.playertracker.PlayerLocation;
-import dev.emortal.api.utils.GrpcTimestampConverter;
+import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.utils.DurationFormatter;
@@ -45,19 +47,22 @@ public class FriendListSub {
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
     private final PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService;
     private final FriendCache friendCache;
+    private final GameModeCollection gameModeCollection;
 
     public FriendListSub(McPlayerGrpc.McPlayerFutureStub mcPlayerService,
-                         PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService, FriendCache friendCache) {
+                         PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService, FriendCache friendCache,
+                         GameModeCollection gameModeCollection) {
         this.mcPlayerService = mcPlayerService;
         this.playerTrackerService = playerTrackerService;
         this.friendCache = friendCache;
+        this.gameModeCollection = gameModeCollection;
     }
 
     public int execute(CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
 
         List<FriendCache.CachedFriend> friends = this.friendCache.get(player.getUniqueId());
-        int maxPage = (int) Math.ceil(friends.size() / 10.0);
+        int maxPage = (int) Math.ceil(friends.size() / 8.0);
 
         if (maxPage == 0) {
             player.sendMessage(NO_FRIENDS_MESSAGE);
@@ -69,8 +74,8 @@ public class FriendListSub {
         this.retrieveStatuses(friends, friendStatuses -> {
             Collections.sort(friendStatuses);
             List<FriendStatus> pageFriends = friendStatuses.stream()
-                    .skip((page - 1) * 10L)
-                    .limit(10).toList();
+                    .skip((page - 1) * 8L)
+                    .limit(8).toList();
 
             player.sendMessage(this.createMessage(pageFriends, page, maxPage));
         });
@@ -91,7 +96,7 @@ public class FriendListSub {
                 message.append(
                         MINI_MESSAGE.deserialize(ONLINE_LINE,
                                 Placeholder.parsed("username", status.getUsername()),
-                                Placeholder.parsed("server", this.createFriendlyServerName(status.getServerId())))
+                                Placeholder.parsed("server", this.createActivityForServer(status.getServerId())))
                 );
             } else {
                 message.append(
@@ -119,7 +124,7 @@ public class FriendListSub {
                     for (McPlayer player : response.getPlayersList()) {
                         FriendStatus status = statuses.get(UUID.fromString(player.getId()));
                         status.setUsername(player.getCurrentUsername());
-                        status.setLastSeen(GrpcTimestampConverter.reverse(player.getLastOnline()));
+                        status.setLastSeen(ProtoTimestampConverter.fromProto(player.getLastOnline()));
                         status.setOnline(player.getCurrentlyOnline());
                     }
                     boolean errored = false;
@@ -195,14 +200,21 @@ public class FriendListSub {
         }
     }
 
-    private String createFriendlyServerName(String serverId) {
+    private String createActivityForServer(String serverId) {
         String[] parts = serverId.split("-");
         String[] serverTypeIdParts = Arrays.copyOf(parts, parts.length - 2);
-        String serverTypeId = String.join("-", serverTypeIdParts);
+        String fleetId = String.join("-", serverTypeIdParts);
 
-        return switch (serverTypeId) {
-            case "lobby" -> "In the Lobby";
-            default -> "Playing " + serverTypeId;
-        };
+        Optional<GameModeConfig> optionalGameMode = this.gameModeCollection.getAllConfigs().stream()
+                .filter(config -> config.getFleetName().equals(fleetId))
+                .findFirst();
+
+        if (optionalGameMode.isPresent()) {
+            GameModeConfig gameModeConfig = optionalGameMode.get();
+            return gameModeConfig.getActivityNoun() + " " + gameModeConfig.getFriendlyName();
+        }
+
+        LOGGER.warn("Could not find friendly name for fleet {}", fleetId);
+        return fleetId;
     }
 }

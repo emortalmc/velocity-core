@@ -8,7 +8,7 @@ import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.api.grpc.relationship.RelationshipGrpc;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
-import dev.emortal.api.utils.GrpcTimestampConverter;
+import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.utils.DurationFormatter;
 import net.kyori.adventure.text.Component;
@@ -104,7 +104,7 @@ public class FriendRequestsSub {
                                     String username = usernameMap.get(UUID.fromString(incoming ? requestedFriend.getRequesterId() : requestedFriend.getTargetId()));
 
                                     message.append(MINI_MESSAGE.deserialize(incoming ? INCOMING_MESSAGE_LINE : OUTGOING_MESSAGE_LINE,
-                                                    Placeholder.parsed("time", DurationFormatter.formatShortFromInstant(GrpcTimestampConverter.reverse(requestedFriend.getRequestTime()))),
+                                                    Placeholder.parsed("time", DurationFormatter.formatShortFromInstant(ProtoTimestampConverter.fromProto(requestedFriend.getRequestTime()))),
                                                     Placeholder.parsed("username", username)))
                                             .append(Component.newline());
                                 }

@@ -7,7 +7,7 @@ import com.velocitypowered.api.event.connection.PostLoginEvent;
 import dev.emortal.api.grpc.relationship.RelationshipGrpc;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.api.utils.GrpcTimestampConverter;
+import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 
 import java.time.Instant;
@@ -59,7 +59,7 @@ public class FriendCache {
                     this.set(event.getPlayer().getUniqueId(), result.getFriendsList().stream()
                             .map(friendListPlayer -> new CachedFriend(
                                     UUID.fromString(friendListPlayer.getId()),
-                                    GrpcTimestampConverter.reverse(friendListPlayer.getFriendsSince())
+                                    ProtoTimestampConverter.fromProto(friendListPlayer.getFriendsSince())
                             )).collect(Collectors.toList()));
                 },
                 throwable -> this.removeAll(event.getPlayer().getUniqueId())

@@ -7,7 +7,7 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.grpc.relationship.RelationshipGrpc;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.model.relationship.FriendRequest;
-import dev.emortal.api.utils.GrpcTimestampConverter;
+import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.TempLang;
@@ -68,7 +68,7 @@ public class FriendAddSub {
                     friendResponse -> {
                         player.sendMessage(switch (friendResponse.getResult()) {
                             case FRIEND_ADDED -> {
-                                this.friendCache.add(player.getUniqueId(), new FriendCache.CachedFriend(targetId, GrpcTimestampConverter.reverse(friendResponse.getFriendsSince())));
+                                this.friendCache.add(player.getUniqueId(), new FriendCache.CachedFriend(targetId, ProtoTimestampConverter.fromProto(friendResponse.getFriendsSince())));
                                 yield MINI_MESSAGE.deserialize(FRIEND_ADDED_MESSAGE, Placeholder.component("username", Component.text(correctedUsername)));
                             }
                             case ALREADY_FRIENDS ->

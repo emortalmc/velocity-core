@@ -17,7 +17,7 @@ public class PrivateMessageListener {
 
 
     public PrivateMessageListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging, LastMessageCache lastMessageCache) {
-        messaging.setListener(PrivateMessageReceivedMessage.class, message -> {
+        messaging.addListener(PrivateMessageReceivedMessage.class, message -> {
             PrivateMessage privateMessage = message.getPrivateMessage();
 
             proxy.getPlayer(UUID.fromString(privateMessage.getRecipientId())).ifPresent(player -> {

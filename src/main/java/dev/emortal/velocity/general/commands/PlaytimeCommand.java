@@ -14,13 +14,13 @@ import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.api.model.mcplayer.LoginSession;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.api.utils.GrpcTimestampConverter;
+import dev.emortal.api.utils.ProtoDurationConverter;
+import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.cache.SessionCache;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.utils.CommandUtils;
 import dev.emortal.velocity.utils.DurationFormatter;
-import dev.emortal.velocity.utils.GrpcDurationConverter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -63,7 +63,7 @@ public class PlaytimeCommand {
 
                     SessionCache.CachedSession currentSession = this.sessionCache.get(player.getUniqueId());
                     Duration currentSessionDuration = Duration.between(currentSession.loginTime(), Instant.now());
-                    Duration totalDuration = GrpcDurationConverter.reverse(mcPlayer.getHistoricPlayTime()).plus(currentSessionDuration);
+                    Duration totalDuration = ProtoDurationConverter.fromProto(mcPlayer.getHistoricPlayTime()).plus(currentSessionDuration);
 
                     String playtime = DurationFormatter.formatBigToSmall(totalDuration);
                     Component message = MINI_MESSAGE.deserialize(PLAYTIME_SELF_MESSAGE, Placeholder.unparsed("playtime", playtime));
@@ -93,8 +93,8 @@ public class PlaytimeCommand {
                     LoginSession currentSession = targetPlayer.hasCurrentSession() ? targetPlayer.getCurrentSession() : null;
 
                     Duration currentSessionDuration = currentSession == null ? Duration.ZERO
-                            : Duration.between(GrpcTimestampConverter.reverse(currentSession.getLoginTime()), Instant.now());
-                    Duration totalDuration = currentSessionDuration.plus(GrpcDurationConverter.reverse(targetPlayer.getHistoricPlayTime()));
+                            : Duration.between(ProtoTimestampConverter.fromProto(currentSession.getLoginTime()), Instant.now());
+                    Duration totalDuration = currentSessionDuration.plus(ProtoDurationConverter.fromProto(targetPlayer.getHistoricPlayTime()));
 
                     String correctedUsername = targetPlayer.getCurrentUsername();
                     String playtime = DurationFormatter.formatBigToSmall(totalDuration);

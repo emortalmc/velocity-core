@@ -49,14 +49,14 @@ public class PartyCache {
     public PartyCache(@NotNull ProxyServer proxy, @NotNull MessagingCore messagingCore) {
         this.proxy = proxy;
 
-        messagingCore.setListener(PartyCreatedMessage.class, this::handleCreateParty);
-        messagingCore.setListener(PartyDeletedMessage.class, this::handlePartyDeleted);
-        messagingCore.setListener(PartyEmptiedMessage.class, this::handlePartyEmptied);
-        messagingCore.setListener(PartyOpenChangedMessage.class, this::handlePartyOpenChanged);
-        messagingCore.setListener(PartyPlayerJoinedMessage.class, this::handleJoinParty);
-        messagingCore.setListener(PartyPlayerLeftMessage.class, this::handleLeaveParty);
-        messagingCore.setListener(PartyLeaderChangedMessage.class, this::handleLeaderChange);
-        messagingCore.setListener(PartyInviteCreatedMessage.class, this::handleInviteCreated);
+        messagingCore.addListener(PartyCreatedMessage.class, this::handleCreateParty);
+        messagingCore.addListener(PartyDeletedMessage.class, this::handlePartyDeleted);
+        messagingCore.addListener(PartyEmptiedMessage.class, this::handlePartyEmptied);
+        messagingCore.addListener(PartyOpenChangedMessage.class, this::handlePartyOpenChanged);
+        messagingCore.addListener(PartyPlayerJoinedMessage.class, this::handleJoinParty);
+        messagingCore.addListener(PartyPlayerLeftMessage.class, this::handleLeaveParty);
+        messagingCore.addListener(PartyLeaderChangedMessage.class, this::handleLeaderChange);
+        messagingCore.addListener(PartyInviteCreatedMessage.class, this::handleInviteCreated);
     }
 
     public CachedParty getPlayerParty(@NotNull UUID playerId) {
@@ -118,6 +118,8 @@ public class PartyCache {
         }
 
         int remainingMembers = party.getMembersCount();
+        if (remainingMembers <= 1) return; // Don't send any notifications if the party was just themselves.
+
         for (PartyMember member : party.getMembersList()) {
             UUID memberId = UUID.fromString(member.getId());
             CachedParty playerRemoved = this.playerPartyMap.remove(memberId);

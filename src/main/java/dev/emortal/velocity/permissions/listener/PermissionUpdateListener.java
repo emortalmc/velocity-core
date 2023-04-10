@@ -11,7 +11,7 @@ public class PermissionUpdateListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionUpdateListener.class);
 
     public PermissionUpdateListener(PermissionCache cache, @NotNull MessagingCore messagingCore) {
-        messagingCore.setListener(RoleUpdateMessage.class, message -> {
+        messagingCore.addListener(RoleUpdateMessage.class, message -> {
             switch (message.getChangeType()) {
                 case CREATE -> cache.addRole(message.getRole());
                 case DELETE -> {

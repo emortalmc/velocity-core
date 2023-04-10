@@ -28,14 +28,14 @@ import java.util.function.Consumer;
 public class RabbitMqCore {
     private static final Logger LOGGER = LoggerFactory.getLogger(RabbitMqCore.class);
 
-    private static final String CONNECTIONS_EXCHANGE = "mc:connections";
     private static final String PROXY_ALL_EXCHANGE = "mc:proxy:all";
+    private static final String CONNECTIONS_EXCHANGE = "mc:connections";
 
     private static final String HOST = System.getenv("RABBITMQ_HOST");
     private static final String USERNAME = System.getenv("RABBITMQ_USERNAME");
     private static final String PASSWORD = System.getenv("RABBITMQ_PASSWORD");
 
-    private final Map<Class<?>, Consumer<AbstractMessage>> protoListeners = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Set<Consumer<AbstractMessage>>> protoListeners = new ConcurrentHashMap<>();
     // boundExchanges contains "exchange:routingKey"
     private final Set<String> boundExchanges = ConcurrentHashMap.newKeySet();
 
@@ -59,7 +59,8 @@ public class RabbitMqCore {
         String selfQueueName = null;
 
         try {
-            selfQueueName = this.channel.queueDeclare(Environment.getHostname(), false, true, true, null).getQueue();
+            AMQP.Queue.DeclareOk declareOk = this.channel.queueDeclare(Environment.getHostname(), false, true, true, null);
+            selfQueueName = declareOk.getQueue();
             this.channel.queueBind(selfQueueName, PROXY_ALL_EXCHANGE, "");
 
             LOGGER.info("Listening for messages on queue {}", selfQueueName);
@@ -72,15 +73,10 @@ public class RabbitMqCore {
                 }
 
                 AbstractMessage message = ProtoParserRegistry.parse(type, delivery.getBody());
-                Consumer<AbstractMessage> listener = this.protoListeners.get(message.getClass());
-
-                if (listener == null) {
-                    LOGGER.warn("No listener registered for message of type {}", type);
-                    return;
-                }
+                Set<Consumer<AbstractMessage>> listeners = this.protoListeners.get(message.getClass());
 
                 try {
-                    listener.accept(message);
+                    listeners.forEach(consumer -> consumer.accept(message));
                 } catch (Exception ex) {
                     LOGGER.error("Failed to handle message of type {}", type, ex);
                 }
@@ -90,6 +86,22 @@ public class RabbitMqCore {
         }
 
         this.selfQueueName = selfQueueName;
+    }
+
+    @SuppressWarnings("unchecked")
+    <T extends AbstractMessage> void addListener(Class<T> messageType, Consumer<T> listener) {
+        MessageProtoConfig<T> parser = ProtoParserRegistry.getParser(messageType);
+        if (parser.exchangeName() != null) {
+            String routingKey = parser.routingKey() == null ? "" : parser.routingKey();
+            try {
+                this.channel.queueBind(this.selfQueueName, parser.exchangeName(), routingKey);
+                this.boundExchanges.add(parser.exchangeName() + ":" + routingKey);
+            } catch (IOException e) {
+                LOGGER.error("Failed to bind to exchange {} with routing key {}", parser.exchangeName(), parser.routingKey(), e);
+            }
+        }
+
+        this.protoListeners.computeIfAbsent(messageType, k -> ConcurrentHashMap.newKeySet()).add((Consumer<AbstractMessage>) listener);
     }
 
     @Subscribe
@@ -151,22 +163,6 @@ public class RabbitMqCore {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    <T extends AbstractMessage> void setListener(Class<T> messageType, Consumer<T> listener) {
-        MessageProtoConfig<T> parser = ProtoParserRegistry.getParser(messageType);
-        if (parser.exchangeName() != null) {
-            String routingKey = parser.routingKey() == null ? "" : parser.routingKey();
-            try {
-                this.channel.queueBind(this.selfQueueName, parser.exchangeName(), routingKey);
-                this.boundExchanges.add(parser.exchangeName() + ":" + routingKey);
-            } catch (IOException e) {
-                LOGGER.error("Failed to bind to exchange {} with routing key {}", parser.exchangeName(), parser.routingKey(), e);
-            }
-        }
-
-        this.protoListeners.put(messageType, (Consumer<AbstractMessage>) listener);
     }
 
     void shutdown() {

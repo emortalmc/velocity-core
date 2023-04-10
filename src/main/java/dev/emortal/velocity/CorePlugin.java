@@ -9,6 +9,7 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.agonessdk.AgonesUtils;
+import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.cache.SessionCache;
 import dev.emortal.velocity.general.UsernameSuggestions;
@@ -42,6 +43,7 @@ import io.netty.channel.ChannelPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -72,6 +74,7 @@ public class CorePlugin {
     private final FriendCache friendCache = new FriendCache();
     private final SessionCache sessionCache = new SessionCache();
     private final LastMessageCache lastMessageCache = new LastMessageCache();
+    private final GameModeCollection gameModeCollection;
     private PermissionCache permissionCache;
 
     @Inject
@@ -79,6 +82,12 @@ public class CorePlugin {
         this.proxy = server;
 
         PlayerResolver.setPlatformUsernameResolver(username -> this.proxy.getPlayer(username).map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername(), true)).orElse(null));
+
+        try {
+            this.gameModeCollection = new GameModeCollection();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load game modes", e);
+        }
     }
 
     @Subscribe
@@ -115,7 +124,7 @@ public class CorePlugin {
         this.proxy.getEventManager().register(this, new PermissionCheckListener(this.permissionCache));
 
         // generic
-        this.proxy.getEventManager().register(this, new LobbySelectorListener(this.proxy));
+        this.proxy.getEventManager().register(this, new LobbySelectorListener(this.proxy, this.messagingCore));
         this.proxy.getEventManager().register(this, new McPlayerListener(this.sessionCache));
 
         // server list
@@ -128,7 +137,7 @@ public class CorePlugin {
         PartyCache partyCache = new PartyCache(this.proxy, this.messagingCore);
         new PartyCommand(this.proxy, this.usernameSuggestions, partyCache);
 
-        new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache);
+        new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache, this.gameModeCollection);
         new BlockCommand(this.proxy, this.usernameSuggestions);
 
         new PermissionCommand(this.proxy, this.permissionCache, this.usernameSuggestions);

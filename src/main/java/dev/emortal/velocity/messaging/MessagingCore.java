@@ -6,6 +6,7 @@ import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.proxy.ProxyServer;
+import dev.emortal.api.kurushimi.KurushimiUtils;
 import dev.emortal.api.message.common.PlayerConnectMessage;
 import dev.emortal.api.message.common.PlayerDisconnectMessage;
 import dev.emortal.api.message.common.PlayerSwitchServerMessage;
@@ -43,14 +44,17 @@ public class MessagingCore {
         proxy.getEventManager().register(plugin, this.rabbitMqCore);
         // Register Kafka events
         proxy.getEventManager().register(plugin, this);
+
+        // Register matchmaker parsers
+        KurushimiUtils.registerParserRegistry();
     }
 
-    public <T extends AbstractMessage> void setListener(Class<T> messageType, Consumer<T> listener) {
+    public <T extends AbstractMessage> void addListener(Class<T> messageType, Consumer<T> listener) {
         MessageProtoConfig<T> parser = ProtoParserRegistry.getParser(messageType);
 
         switch (parser.service()) {
-            case KAFKA -> this.kafkaConsumer.setListener(messageType, listener);
-            case RABBIT_MQ -> this.rabbitMqCore.setListener(messageType, listener);
+            case KAFKA -> this.kafkaConsumer.addListener(messageType, listener);
+            case RABBIT_MQ -> this.rabbitMqCore.addListener(messageType, listener);
             default -> throw new IllegalStateException("Unexpected value: " + parser.service());
         }
     }

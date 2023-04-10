@@ -10,6 +10,7 @@ import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.api.grpc.playertracker.PlayerTrackerGrpc;
 import dev.emortal.api.grpc.relationship.RelationshipGrpc;
+import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.relationships.FriendCache;
@@ -42,7 +43,8 @@ public class FriendCommand {
     private final FriendRequestPurgeSub friendRequestPurgeSub;
     private final FriendRequestsSub friendRequestsSub;
 
-    public FriendCommand(ProxyServer proxyServer, UsernameSuggestions usernameSuggestions, FriendCache friendCache) {
+    public FriendCommand(ProxyServer proxyServer, UsernameSuggestions usernameSuggestions, FriendCache friendCache,
+                         GameModeCollection gameModeCollection) {
         this.usernameSuggestions = usernameSuggestions;
 
         McPlayerGrpc.McPlayerFutureStub mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
@@ -51,7 +53,7 @@ public class FriendCommand {
 
         this.friendAddSub = new FriendAddSub(relationshipService, friendCache);
         this.friendDenySubs = new FriendDenySubs(relationshipService);
-        this.friendListSub = new FriendListSub(mcPlayerService, playerTrackerService, friendCache);
+        this.friendListSub = new FriendListSub(mcPlayerService, playerTrackerService, friendCache, gameModeCollection);
         this.friendRemoveSub = new FriendRemoveSub(mcPlayerService, relationshipService, friendCache);
         this.friendRequestPurgeSub = new FriendRequestPurgeSub(relationshipService);
         this.friendRequestsSub = new FriendRequestsSub(relationshipService, mcPlayerService);
