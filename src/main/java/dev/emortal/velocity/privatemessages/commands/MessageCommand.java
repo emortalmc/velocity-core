@@ -12,10 +12,10 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
-import dev.emortal.api.grpc.privatemessage.PrivateMessageGrpc;
-import dev.emortal.api.grpc.privatemessage.PrivateMessageProto;
+import dev.emortal.api.grpc.messagehandler.MessageHandlerGrpc;
+import dev.emortal.api.grpc.messagehandler.MessageHandlerProto;
 import dev.emortal.api.model.mcplayer.McPlayer;
-import dev.emortal.api.model.privatemessage.PrivateMessage;
+import dev.emortal.api.model.messagehandler.PrivateMessage;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.general.UsernameSuggestions;
@@ -42,13 +42,13 @@ public class MessageCommand {
     private final LastMessageCache lastMessageCache;
     private final UsernameSuggestions usernameSuggestions;
 
-    private final PrivateMessageGrpc.PrivateMessageFutureStub privateMessageService;
+    private final MessageHandlerGrpc.MessageHandlerFutureStub messageHandler;
     private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
 
     public MessageCommand(ProxyServer proxy, UsernameSuggestions usernameSuggestions, LastMessageCache lastMessageCache) {
         this.usernameSuggestions = usernameSuggestions;
         this.lastMessageCache = lastMessageCache;
-        this.privateMessageService = GrpcStubCollection.getPrivateMessageService().orElse(null);
+        this.messageHandler = GrpcStubCollection.getMessageHandlerService().orElse(null);
         this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
 
         proxy.getCommandManager().register("msg", this.createMessageCommand(), "message");
@@ -71,8 +71,8 @@ public class MessageCommand {
                         return;
                     }
 
-                    var messageResponseFuture = this.privateMessageService.sendPrivateMessage(
-                            PrivateMessageProto.PrivateMessageRequest.newBuilder()
+                    var messageResponseFuture = this.messageHandler.sendPrivateMessage(
+                            MessageHandlerProto.PrivateMessageRequest.newBuilder()
                                     .setMessage(
                                             PrivateMessage.newBuilder()
                                                     .setSenderId(player.getUniqueId().toString())

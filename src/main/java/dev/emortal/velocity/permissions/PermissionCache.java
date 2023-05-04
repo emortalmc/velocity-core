@@ -54,8 +54,7 @@ public class PermissionCache {
                         this.roleCache.put(
                                 role.getId(),
                                 new CachedRole(
-                                        role.getId(), role.getPriority(),
-                                        role.getDisplayPrefix(), role.getDisplayName(),
+                                        role.getId(), role.getPriority(), role.getDisplayName(),
                                         Sets.newConcurrentHashSet(role.getPermissionsList().stream()
                                                 .map(protoNode -> new CachedRole.PermissionNode(
                                                                 protoNode.getNode(),
@@ -136,8 +135,7 @@ public class PermissionCache {
 
     public void addRole(Role roleResponse) {
         CachedRole role = new CachedRole(
-                roleResponse.getId(), roleResponse.getPriority(),
-                roleResponse.getDisplayPrefix(), roleResponse.getDisplayName(),
+                roleResponse.getId(), roleResponse.getPriority(), roleResponse.getDisplayName(),
                 Sets.newConcurrentHashSet(roleResponse.getPermissionsList().stream()
                         .map(protoNode -> new CachedRole.PermissionNode(
                                         protoNode.getNode(),
@@ -234,10 +232,9 @@ public class PermissionCache {
         private Component displayPrefix;
         private String displayName;
 
-        public CachedRole(String id, int priority, String displayPrefix, String displayName, Set<PermissionNode> permissions) {
+        public CachedRole(String id, int priority, String displayName, Set<PermissionNode> permissions) {
             this.id = id;
             this.priority = priority;
-            this.displayPrefix = MiniMessage.miniMessage().deserialize(displayPrefix);
             this.displayName = displayName;
             this.permissions = permissions;
         }

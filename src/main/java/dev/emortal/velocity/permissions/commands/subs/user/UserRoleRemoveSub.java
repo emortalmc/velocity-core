@@ -1,6 +1,8 @@
 package dev.emortal.velocity.permissions.commands.subs.user;
 
 import com.google.common.util.concurrent.Futures;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.rpc.Status;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import dev.emortal.api.grpc.permission.PermissionProto;
@@ -9,9 +11,7 @@ import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleSubUtils;
-import io.grpc.Metadata;
-import io.grpc.Status;
-import io.grpc.protobuf.ProtoUtils;
+import io.grpc.protobuf.StatusProto;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.slf4j.Logger;
@@ -46,7 +46,6 @@ public class UserRoleRemoveSub {
 
         Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
         if (optionalRole.isEmpty()) return 1;
-        PermissionCache.CachedRole role = optionalRole.get();
 
         PlayerResolver.retrievePlayerData(targetUsername, playerData -> {
             UUID targetId = playerData.uuid();
@@ -63,42 +62,41 @@ public class UserRoleRemoveSub {
                                 Placeholder.unparsed("role_id", roleId),
                                 Placeholder.unparsed("username", correctUsername))
                         );
-
-                        this.permissionCache.getUser(targetId).ifPresent(user -> user.getRoleIds().removeIf(loopRoleId -> loopRoleId.equals(roleId)));
                     },
                     throwable -> {
-                        Metadata metadata = Status.trailersFromThrowable(throwable);
+                        Status status = StatusProto.fromThrowable(throwable);
 
-                        PermissionProto.AddRoleToPlayerError error = metadata
-                                .get(ProtoUtils.keyForProto(PermissionProto.AddRoleToPlayerError.getDefaultInstance()));
-
-                        if (error == null) {
+                        if (status == null || status.getDetailsCount() == 0) {
                             source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
                             LOGGER.error("Something went wrong removing role from user", throwable);
                             return;
                         }
 
-                        switch (error.getErrorType()) {
-                            case ALREADY_HAS_ROLE -> source.sendMessage(MINI_MESSAGE.deserialize(DOESNT_HAVE_ROLE,
-                                    Placeholder.unparsed("username", correctUsername),
-                                    Placeholder.unparsed("role_id", roleId))
-                            );
-                            case ROLE_NOT_FOUND -> source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND,
-                                    Placeholder.unparsed("role_id", roleId))
-                            );
-                            case PLAYER_NOT_FOUND ->
-                                    source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_PLAYER_NOT_FOUND,
-                                            Placeholder.unparsed("uuid", targetId.toString()))
-                                    );
-                            default -> {
-                                source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
-                                LOGGER.error("Something went wrong removing role from user", throwable);
-                            }
+                        try {
+                            PermissionProto.AddRoleToPlayerError errorResponse = status.getDetails(0)
+                                    .unpack(PermissionProto.AddRoleToPlayerError.class);
+
+                            source.sendMessage(switch (errorResponse.getErrorType()) {
+                                case ALREADY_HAS_ROLE -> MINI_MESSAGE.deserialize(DOESNT_HAVE_ROLE,
+                                        Placeholder.unparsed("username", correctUsername),
+                                        Placeholder.unparsed("role_id", roleId));
+                                case ROLE_NOT_FOUND -> MINI_MESSAGE.deserialize(ROLE_NOT_FOUND,
+                                        Placeholder.unparsed("role_id", roleId));
+                                case PLAYER_NOT_FOUND -> MINI_MESSAGE.deserialize(PERMISSION_PLAYER_NOT_FOUND,
+                                        Placeholder.unparsed("uuid", targetId.toString()));
+                                default -> {
+                                    LOGGER.error("Something went wrong removing role from user", throwable);
+                                    yield MINI_MESSAGE.deserialize("<red>Something went wrong");
+                                }
+                            });
+                        } catch (InvalidProtocolBufferException e) {
+                            source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
+                            LOGGER.error("Something went wrong removing role from user", throwable);
                         }
                     }
             ), ForkJoinPool.commonPool());
         }, status -> {
-            if (status.getCode() == Status.Code.NOT_FOUND) {
+            if (status.getCode() == io.grpc.Status.Code.NOT_FOUND) {
                 source.sendMessage(MINI_MESSAGE.deserialize("<red>Player <username> not found", Placeholder.unparsed("username", targetUsername)));
             } else {
                 source.sendMessage(MINI_MESSAGE.deserialize("<red>Failed to retrieve player data for <username>", Placeholder.unparsed("username", targetUsername)));

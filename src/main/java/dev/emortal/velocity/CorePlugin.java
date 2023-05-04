@@ -1,6 +1,7 @@
 package dev.emortal.velocity;
 
 import com.google.inject.Inject;
+import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
@@ -31,7 +32,7 @@ import dev.emortal.velocity.privatemessages.commands.MessageCommand;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.relationships.commands.block.BlockCommand;
 import dev.emortal.velocity.relationships.commands.friend.FriendCommand;
-import dev.emortal.velocity.relationships.listeners.FriendRabbitMqListener;
+import dev.emortal.velocity.relationships.listeners.FriendListener;
 import dev.emortal.velocity.serverlist.ServerPingListener;
 import dev.emortal.velocity.tablist.TabList;
 import dev.emortal.velocity.utils.ReflectionUtils;
@@ -92,8 +93,10 @@ public class CorePlugin {
 
     @Subscribe
     public void onProxyInitialize(ProxyInitializeEvent event) {
+        EventManager eventManager = this.proxy.getEventManager();
+
         if (this.stubManager.getAgonesService() != null) {
-            this.proxy.getEventManager().register(this, new AgonesListener(this.stubManager.getAgonesService(),
+            eventManager.register(this, new AgonesListener(this.stubManager.getAgonesService(),
                     this.stubManager.getStandardAgonesService(), this.stubManager.getAlphaAgonesService())
             );
         } else {
@@ -103,35 +106,35 @@ public class CorePlugin {
         // Late init because we need the proxy
         this.messagingCore = new MessagingCore(this.proxy, this);
 
-        this.proxy.getEventManager().register(this, this.sessionCache);
+        eventManager.register(this, this.sessionCache);
 
-        new ServerChangeNotificationListener(this.proxy, this.messagingCore); // Listens for RabbitMQ ProxyServerChangeMessage messages
+        new ServerChangeNotificationListener(this.proxy, this.messagingCore); // Listens for ProxyServerChangeMessage messages
         this.permissionCache = new PermissionCache(this.stubManager);
 
-        // rabbitmq
-        this.proxy.getEventManager().register(this, this.messagingCore);
+        // messaging core
+        eventManager.register(this, this.messagingCore);
 
         // friends
-        new FriendRabbitMqListener(this.proxy, this.messagingCore, this.friendCache);
-        this.proxy.getEventManager().register(this, this.friendCache);
+        new FriendListener(this.proxy, this.messagingCore, this.friendCache);
+        eventManager.register(this, this.friendCache);
 
         // private messages
-        this.proxy.getEventManager().register(this, new PrivateMessageListener(this.proxy, this.messagingCore, this.lastMessageCache));
-        this.proxy.getEventManager().register(this, this.lastMessageCache);
+        eventManager.register(this, new PrivateMessageListener(this.proxy, this.messagingCore, this.lastMessageCache));
+        eventManager.register(this, this.lastMessageCache);
 
         // permissions
-        this.proxy.getEventManager().register(this, this.permissionCache);
-        this.proxy.getEventManager().register(this, new PermissionCheckListener(this.permissionCache));
+        eventManager.register(this, this.permissionCache);
+        eventManager.register(this, new PermissionCheckListener(this.permissionCache));
 
         // generic
-        this.proxy.getEventManager().register(this, new LobbySelectorListener(this.proxy, this.messagingCore));
-        this.proxy.getEventManager().register(this, new McPlayerListener(this.sessionCache));
+        eventManager.register(this, new LobbySelectorListener(this.proxy, this.messagingCore));
+        eventManager.register(this, new McPlayerListener(this.sessionCache));
 
         // server list
-        this.proxy.getEventManager().register(this, new ServerPingListener());
+        eventManager.register(this, new ServerPingListener());
 
         // tablist
-        this.proxy.getEventManager().register(this, new TabList(this, this.proxy));
+        eventManager.register(this, new TabList(this, this.proxy));
 
         // party
         PartyCache partyCache = new PartyCache(this.proxy, this.messagingCore);

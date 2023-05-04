@@ -5,7 +5,7 @@ RUN apk add --no-cache \
     wget
 
 # We manually set the Velocity version to avoid bugs
-ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.2.0-SNAPSHOT/builds/247/downloads/velocity-3.2.0-SNAPSHOT-247.jar"
+ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.2.0-SNAPSHOT/builds/252/downloads/velocity-3.2.0-SNAPSHOT-252.jar"
 ENV VIA_VERSION_JAR_URL "https://github.com/ViaVersion/ViaVersion/releases/download/4.6.2/ViaVersion-4.6.2.jar"
 
 RUN mkdir /app

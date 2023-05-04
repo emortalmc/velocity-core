@@ -13,8 +13,6 @@ import dev.emortal.api.message.common.PlayerSwitchServerMessage;
 import dev.emortal.api.utils.kafka.FriendlyKafkaConsumer;
 import dev.emortal.api.utils.kafka.FriendlyKafkaProducer;
 import dev.emortal.api.utils.kafka.KafkaSettings;
-import dev.emortal.api.utils.parser.MessageProtoConfig;
-import dev.emortal.api.utils.parser.ProtoParserRegistry;
 import dev.emortal.velocity.CorePlugin;
 import dev.emortal.velocity.Environment;
 
@@ -26,13 +24,10 @@ public class MessagingCore {
 
     private static final String KAFKA_CONNECTIONS_TOPIC = "mc-connections";
 
-    private final RabbitMqCore rabbitMqCore;
     private final FriendlyKafkaConsumer kafkaConsumer;
     private final FriendlyKafkaProducer kafkaProducer;
 
     public MessagingCore(ProxyServer proxy, CorePlugin plugin) {
-        this.rabbitMqCore = new RabbitMqCore();
-
         KafkaSettings kafkaSettings = new KafkaSettings()
                 .setAutoCommit(true)
                 .setBootstrapServers(KAFKA_HOST + ":" + KAFKA_PORT);
@@ -40,23 +35,12 @@ public class MessagingCore {
         this.kafkaConsumer = new FriendlyKafkaConsumer(kafkaSettings);
         this.kafkaProducer = new FriendlyKafkaProducer(kafkaSettings);
 
-        // Register RabbitMQ events
-        proxy.getEventManager().register(plugin, this.rabbitMqCore);
-        // Register Kafka events
-        proxy.getEventManager().register(plugin, this);
-
         // Register matchmaker parsers
         KurushimiUtils.registerParserRegistry();
     }
 
     public <T extends AbstractMessage> void addListener(Class<T> messageType, Consumer<T> listener) {
-        MessageProtoConfig<T> parser = ProtoParserRegistry.getParser(messageType);
-
-        switch (parser.service()) {
-            case KAFKA -> this.kafkaConsumer.addListener(messageType, listener);
-            case RABBIT_MQ -> this.rabbitMqCore.addListener(messageType, listener);
-            default -> throw new IllegalStateException("Unexpected value: " + parser.service());
-        }
+        this.kafkaConsumer.addListener(messageType, listener);
     }
 
     // Kafka producing
@@ -91,7 +75,6 @@ public class MessagingCore {
     }
 
     public void shutdown() {
-        this.rabbitMqCore.shutdown();
         this.kafkaConsumer.close();
     }
 }

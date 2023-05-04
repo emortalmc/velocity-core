@@ -1,8 +1,8 @@
 package dev.emortal.velocity.privatemessages;
 
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.message.privatemessage.PrivateMessageReceivedMessage;
-import dev.emortal.api.model.privatemessage.PrivateMessage;
+import dev.emortal.api.message.messagehandler.PrivateMessageCreatedMessage;
+import dev.emortal.api.model.messagehandler.PrivateMessage;
 import dev.emortal.velocity.messaging.MessagingCore;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -17,7 +17,7 @@ public class PrivateMessageListener {
 
 
     public PrivateMessageListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging, LastMessageCache lastMessageCache) {
-        messaging.addListener(PrivateMessageReceivedMessage.class, message -> {
+        messaging.addListener(PrivateMessageCreatedMessage.class, message -> {
             PrivateMessage privateMessage = message.getPrivateMessage();
 
             proxy.getPlayer(UUID.fromString(privateMessage.getRecipientId())).ifPresent(player -> {

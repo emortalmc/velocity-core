@@ -63,7 +63,6 @@ public class PermissionCommand {
     private final RoleListSub roleListSub;
     private final RoleCreateSub roleCreateSub;
     private final RoleDescribeSub roleDescribeSub;
-    private final RoleSetPrefixSub roleSetPrefixSub;
     private final RoleSetUsernameSub roleSetUsernameSub;
     private final RoleSetPrioritySub roleSetPrioritySub;
     private final RolePermissionAddSub rolePermissionAddSub;
@@ -84,7 +83,6 @@ public class PermissionCommand {
         this.roleListSub = new RoleListSub(permissionCache);
         this.roleCreateSub = new RoleCreateSub(permissionService, permissionCache);
         this.roleDescribeSub = new RoleDescribeSub(permissionCache);
-        this.roleSetPrefixSub = new RoleSetPrefixSub(permissionService, permissionCache);
         this.roleSetUsernameSub = new RoleSetUsernameSub(permissionService, permissionCache);
         this.roleSetPrioritySub = new RoleSetPrioritySub(permissionService, permissionCache);
         this.rolePermissionAddSub = new RolePermissionAddSub(permissionService, permissionCache);
@@ -136,11 +134,6 @@ public class PermissionCommand {
                                         .executes(this.roleDescribeSub::execute)
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("create")
                                                 .executes(this.roleCreateSub::execute)
-                                        )
-                                        .then(LiteralArgumentBuilder.<CommandSource>literal("setprefix")
-                                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("prefix", string())
-                                                        .executes(this.roleSetPrefixSub::execute)
-                                                )
                                         )
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("setusername")
                                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("usernameFormat", string())

@@ -15,12 +15,12 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.util.UUID;
 
-public class FriendRabbitMqListener {
+public class FriendListener {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String FRIEND_REQUEST_RECEIVED_MESSAGE = "<light_purple>You have received a friend request from <color:#c98fff><sender_username></color> <click:run_command:'/friend add <sender_username>'><green>ACCEPT</click> <reset><gray>| <click:run_command:'/friend deny <sender_username>'><red>DENY</click>";
 
-    public FriendRabbitMqListener(ProxyServer proxy, @NotNull MessagingCore messaging, FriendCache friendCache) {
+    public FriendListener(ProxyServer proxy, @NotNull MessagingCore messaging, FriendCache friendCache) {
         messaging.addListener(FriendRequestReceivedMessage.class, message -> {
             FriendRequest request = message.getRequest();
 
