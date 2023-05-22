@@ -15,7 +15,7 @@ public class ServerCleanupTask {
 
     public ServerCleanupTask(CorePlugin plugin, @NotNull ProxyServer proxyServer) {
         proxyServer.getScheduler().buildTask(plugin, () -> this.cleanupServers(proxyServer))
-                .repeat(5, TimeUnit.MINUTES)
+                .repeat(1, TimeUnit.MINUTES)
                 .schedule();
     }
 

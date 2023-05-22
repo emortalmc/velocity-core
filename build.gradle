@@ -25,7 +25,7 @@ dependencies {
 
     implementation("dev.emortal.api:common-proto-sdk:987060d")
     implementation("dev.emortal.api:agones-sdk:1.0.5")
-    implementation("dev.emortal.api:kurushimi-sdk:5f9fde3")
+    implementation("dev.emortal.api:kurushimi-sdk:812be0d")
     implementation("dev.emortal.api:live-config-parser:223bf90")
 
     compileOnly("org.jetbrains:annotations:24.0.1")

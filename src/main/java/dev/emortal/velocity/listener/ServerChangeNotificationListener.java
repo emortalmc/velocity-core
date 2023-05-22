@@ -23,7 +23,6 @@ public class ServerChangeNotificationListener {
     public ServerChangeNotificationListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging) {
         messaging.addListener(MatchCreatedMessage.class, message -> {
             Match match = message.getMatch();
-            System.out.println("Match created: " + match);
             if (!match.hasAssignment()) return;
 
             for (Ticket ticket : match.getTicketsList()) {

@@ -14,6 +14,7 @@ import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.cache.SessionCache;
 import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.general.commands.LobbyCommand;
 import dev.emortal.velocity.general.commands.PlaytimeCommand;
 import dev.emortal.velocity.grpc.stub.GrpcStubManager;
 import dev.emortal.velocity.listener.AgonesListener;
@@ -149,6 +150,7 @@ public class CorePlugin {
 
         // generic
         new PlaytimeCommand(this.proxy, this.sessionCache, this.usernameSuggestions);
+        new LobbyCommand(this.proxy);
 
         new ServerCleanupTask(this, this.proxy);
 
