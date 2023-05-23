@@ -34,6 +34,7 @@ import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.relationships.commands.block.BlockCommand;
 import dev.emortal.velocity.relationships.commands.friend.FriendCommand;
 import dev.emortal.velocity.relationships.listeners.FriendListener;
+import dev.emortal.velocity.resourcepack.ResourcePackForcer;
 import dev.emortal.velocity.serverlist.ServerPingListener;
 import dev.emortal.velocity.tablist.TabList;
 import dev.emortal.velocity.utils.ReflectionUtils;
@@ -136,6 +137,9 @@ public class CorePlugin {
 
         // tablist
         eventManager.register(this, new TabList(this, this.proxy));
+
+        // resource pack
+        eventManager.register(this, new ResourcePackForcer(this.proxy));
 
         // party
         PartyCache partyCache = new PartyCache(this.proxy, this.messagingCore);
