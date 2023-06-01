@@ -2,6 +2,7 @@ package dev.emortal.velocity.party.commands.subs;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.rpc.Status;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
@@ -44,7 +45,7 @@ public class PartyLeaveSub {
                     executor.sendMessage(LEFT_MESSAGE);
                 },
                 throwable -> {
-                    com.google.rpc.Status status = StatusProto.fromThrowable(throwable);
+                    Status status = StatusProto.fromThrowable(throwable);
                     if (status == null || status.getDetailsCount() == 0) {
                         LOGGER.error("Failed to leave party", throwable);
                         executor.sendMessage(PartyCommand.ERROR_MESSAGE);

@@ -2,6 +2,7 @@ package dev.emortal.velocity.privatemessages.commands;
 
 
 import com.google.common.util.concurrent.Futures;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -23,6 +24,7 @@ import dev.emortal.velocity.lang.TempLang;
 import dev.emortal.velocity.privatemessages.LastMessageCache;
 import dev.emortal.velocity.utils.CommandUtils;
 import io.grpc.Status;
+import io.grpc.protobuf.StatusProto;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -38,6 +40,9 @@ public class MessageCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageCommand.class);
 
     private static final String MESSAGE_FORMAT = "<dark_purple>(<light_purple>You -> <username><dark_purple>) <light_purple><message>";
+
+    private static final String YOU_BLOCKED_MESSAGE = "<red>You have blocked <username> so you cannot message them.";
+    private static final String THEY_BLOCKED_MESSAGE = "<red><username> has blocked you so you cannot message them.";
 
     private final LastMessageCache lastMessageCache;
     private final UsernameSuggestions usernameSuggestions;
@@ -90,8 +95,35 @@ public class MessageCommand {
                                 ));
                             },
                             throwable -> {
-                                player.sendMessage(Component.text("An error occurred while sending your message.", NamedTextColor.RED)); // todo
-                                LOGGER.error("An error occurred while sending a private message: ", throwable);
+                                com.google.rpc.Status status = StatusProto.fromThrowable(throwable);
+                                if (status == null || status.getDetailsCount() == 0) {
+                                    player.sendMessage(Component.text("An error occurred while sending your message.", NamedTextColor.RED)); // todo
+                                    LOGGER.error("An error occurred while sending a private message: ", throwable);
+                                    return;
+                                }
+
+                                try {
+                                    MessageHandlerProto.PrivateMessageErrorResponse errorResponse = status.getDetails(0)
+                                            .unpack(MessageHandlerProto.PrivateMessageErrorResponse.class);
+
+                                    player.sendMessage(switch (errorResponse.getReason()) {
+                                        case YOU_BLOCKED -> MINI_MESSAGE.deserialize(YOU_BLOCKED_MESSAGE,
+                                                Placeholder.parsed("username", correctedUsername)
+                                        );
+                                        case PRIVACY_BLOCKED -> MINI_MESSAGE.deserialize(THEY_BLOCKED_MESSAGE,
+                                                Placeholder.parsed("username", correctedUsername)
+                                        );
+                                        case PLAYER_NOT_ONLINE ->
+                                                TempLang.PLAYER_NOT_ONLINE.deserialize(Placeholder.unparsed("username", correctedUsername));
+                                        default -> {
+                                            LOGGER.error("An error occurred while sending a private message: ", throwable);
+                                            yield Component.text("An error occurred while sending your message.", NamedTextColor.RED);
+                                        }
+                                    });
+                                } catch (InvalidProtocolBufferException e) {
+                                    player.sendMessage(Component.text("An error occurred while sending your message.", NamedTextColor.RED)); // todo
+                                    LOGGER.error("An error occurred while sending a private message: ", throwable);
+                                }
                             }
                     ), ForkJoinPool.commonPool());
 
