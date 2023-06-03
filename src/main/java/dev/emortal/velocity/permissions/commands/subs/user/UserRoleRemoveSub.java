@@ -26,7 +26,8 @@ public class UserRoleRemoveSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";
-    private static final String ROLE_REMOVED = "<green>Role <role_id> removed from user <user_id>";
+    private static final String ROLE_REMOVED = "<green>Role <role_id> removed from user <username>";
+    private static final String ALREADY_HAS_ROLE = "<red>User <user_id> already has the <role_id> role";
     private static final String DOESNT_HAVE_ROLE = "<red>User <user_id> doesn't have role <role_id>";
 
     private static final String PERMISSION_PLAYER_NOT_FOUND = "<red>Player <uuid> not found in permission service";
@@ -73,14 +74,11 @@ public class UserRoleRemoveSub {
                         }
 
                         try {
-                            PermissionProto.AddRoleToPlayerError errorResponse = status.getDetails(0)
-                                    .unpack(PermissionProto.AddRoleToPlayerError.class);
+                            PermissionProto.RemoveRoleFromPlayerError errorResponse = status.getDetails(0)
+                                    .unpack(PermissionProto.RemoveRoleFromPlayerError.class);
 
                             source.sendMessage(switch (errorResponse.getErrorType()) {
-                                case ALREADY_HAS_ROLE -> MINI_MESSAGE.deserialize(DOESNT_HAVE_ROLE,
-                                        Placeholder.unparsed("username", correctUsername),
-                                        Placeholder.unparsed("role_id", roleId));
-                                case ROLE_NOT_FOUND -> MINI_MESSAGE.deserialize(ROLE_NOT_FOUND,
+                                case DOES_NOT_HAVE_ROLE -> MINI_MESSAGE.deserialize(DOESNT_HAVE_ROLE,
                                         Placeholder.unparsed("role_id", roleId));
                                 case PLAYER_NOT_FOUND -> MINI_MESSAGE.deserialize(PERMISSION_PLAYER_NOT_FOUND,
                                         Placeholder.unparsed("uuid", targetId.toString()));
