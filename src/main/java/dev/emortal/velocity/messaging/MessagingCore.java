@@ -5,6 +5,7 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.kurushimi.KurushimiUtils;
 import dev.emortal.api.message.common.PlayerConnectMessage;
@@ -46,9 +47,11 @@ public class MessagingCore {
     // Kafka producing
     @Subscribe
     public void onPlayerLogin(PostLoginEvent event) {
+        Player player = event.getPlayer();
+
         PlayerConnectMessage message = PlayerConnectMessage.newBuilder()
-                .setPlayerId(event.getPlayer().getUniqueId().toString())
-                .setPlayerUsername(event.getPlayer().getUsername())
+                .setPlayerId(player.getUniqueId().toString())
+                .setPlayerUsername(player.getUsername())
                 .setServerId(Environment.getHostname())
                 .build();
 
@@ -57,8 +60,11 @@ public class MessagingCore {
 
     @Subscribe
     public void onPlayerDisconnect(DisconnectEvent event) {
+        Player player = event.getPlayer();
+
         PlayerDisconnectMessage message = PlayerDisconnectMessage.newBuilder()
-                .setPlayerId(event.getPlayer().getUniqueId().toString())
+                .setPlayerId(player.getUniqueId().toString())
+                .setPlayerUsername(player.getUsername())
                 .build();
 
         this.kafkaProducer.produce(KAFKA_CONNECTIONS_TOPIC, message);
