@@ -19,6 +19,7 @@ import dev.emortal.velocity.general.commands.PlaytimeCommand;
 import dev.emortal.velocity.grpc.stub.GrpcStubManager;
 import dev.emortal.velocity.listener.AgonesListener;
 import dev.emortal.velocity.listener.LobbySelectorListener;
+import dev.emortal.velocity.listener.LunarKicker;
 import dev.emortal.velocity.listener.McPlayerListener;
 import dev.emortal.velocity.listener.ServerChangeNotificationListener;
 import dev.emortal.velocity.messaging.MessagingCore;
@@ -141,6 +142,9 @@ public class CorePlugin {
 
         // resource pack
         eventManager.register(this, new ResourcePackForcer(this.proxy));
+
+        // fuck lunar
+        eventManager.register(this, new LunarKicker());
 
         // party
         PartyCache partyCache = new PartyCache(this.proxy, this.messagingCore);
