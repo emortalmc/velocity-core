@@ -28,17 +28,17 @@ public class PartyCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyCache.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
-    private static final Component NOTIFICATION_PARTY_DISBANDED = MINI_MESSAGE.deserialize("The party you were in has been disbanded");
-    private static final String NOTIFICATION_PARTY_PLAYER_JOINED = "<username> has joined the party";
+    private static final Component NOTIFICATION_PARTY_DISBANDED = MINI_MESSAGE.deserialize("<red>The party you were in has been disbanded");
+    private static final String NOTIFICATION_PARTY_PLAYER_JOINED = "<green><username> has joined the party";
 
-    private static final String NOTIFICATION_PARTY_PLAYER_LEFT = "<username> has left the party";
+    private static final String NOTIFICATION_PARTY_PLAYER_LEFT = "<red><username> has left the party";
     private static final String NOTIFICATION_PARTY_KICKED = "<username> has been kicked from the party by <kicker>";
-    private static final String NOTIFICATION_PLAYER_KICKED = "You have been kicked from the party by <kicker>";
+    private static final String NOTIFICATION_PLAYER_KICKED = "<red>You have been kicked from the party by <kicker>";
 
     private static final String NOTIFICATION_PARTY_LEADER_CHANGED = "<username> is now the party leader";
 
     private static final String NOTIFICATION_PARTY_INVITE_CREATED = "<username> has been invited to the party";
-    private static final String NOTIFICATION_PLAYER_INVITE_CREATED = "You have been invited to join <username>'s party. Click <click:run_command:'/party join <username>'>HERE</click> to accept";
+    private static final String NOTIFICATION_PLAYER_INVITE_CREATED = "<click:run_command:'/party join <username>'><color:#3db83d>You have been invited to join <green><username>'s</green> party. <b><gradient:light_purple:gold>Click to accept</gradient></b></click>";
 
     private final @NotNull Map<UUID, CachedParty> playerPartyMap = new ConcurrentHashMap<>();
     private final @NotNull Map<String, CachedParty> partyMap = new ConcurrentHashMap<>();
