@@ -18,6 +18,7 @@ import dev.emortal.velocity.general.commands.LobbyCommand;
 import dev.emortal.velocity.general.commands.PlaytimeCommand;
 import dev.emortal.velocity.grpc.stub.GrpcStubManager;
 import dev.emortal.velocity.listener.AgonesListener;
+import dev.emortal.velocity.listener.FriendConnectionListener;
 import dev.emortal.velocity.listener.LobbySelectorListener;
 import dev.emortal.velocity.listener.LunarKicker;
 import dev.emortal.velocity.listener.McPlayerListener;
@@ -111,6 +112,8 @@ public class CorePlugin {
         this.messagingCore = new MessagingCore(this.proxy, this);
 
         eventManager.register(this, this.sessionCache);
+
+        new FriendConnectionListener(this.proxy, this.messagingCore); // Listens for FriendConnectionMessage messages
 
         new ServerChangeNotificationListener(this.proxy, this.messagingCore); // Listens for ProxyServerChangeMessage messages
         this.permissionCache = new PermissionCache(this.stubManager);
