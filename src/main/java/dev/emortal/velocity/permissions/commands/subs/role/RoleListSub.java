@@ -23,7 +23,6 @@ public class RoleListSub {
             ID: <role_id>
             Priority: <priority>
             Permissions: <permission_count>
-            Prefix: <prefix>
             Display Name: <display_name>
                         
             Example Chat: <example_chat>""";
@@ -47,8 +46,6 @@ public class RoleListSub {
 
         for (PermissionCache.CachedRole role : roles) {
             Component exampleChat = Component.text()
-                    .append(role.getDisplayPrefix())
-                    .append(Component.text(" "))
                     .append(role.getFormattedDisplayName(source instanceof Player player ? player.getUsername() : "CONSOLE"))
                     .append(Component.text(": Test Chat", NamedTextColor.WHITE))
                     .build();
@@ -56,7 +53,6 @@ public class RoleListSub {
                     Placeholder.unparsed("priority", String.valueOf(role.getPriority())),
                     Placeholder.unparsed("role_id", role.getId()),
                     Placeholder.unparsed("permission_count", String.valueOf(role.getPermissions().size())),
-                    Placeholder.component("prefix", role.getDisplayPrefix()),
                     Placeholder.unparsed("display_name", role.getDisplayName()),
                     Placeholder.component("example_chat", exampleChat)
             ));

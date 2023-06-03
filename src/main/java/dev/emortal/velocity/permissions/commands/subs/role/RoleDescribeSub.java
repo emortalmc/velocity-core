@@ -17,7 +17,6 @@ public class RoleDescribeSub {
             <light_purple>----- Role Summary (<role_id>) -----
             Priority: <priority>
             Permissions: <permission_count>
-            Prefix: <prefix>
             Display Name: <display_name>
             ------------<footer_addon>-----------""";
 
@@ -31,13 +30,15 @@ public class RoleDescribeSub {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
         Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
-        if (optionalRole.isEmpty()) return 1;
+        if (optionalRole.isEmpty()) {
+            source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId)));
+            return 0;
+        }
 
         PermissionCache.CachedRole role = optionalRole.get();
         source.sendMessage(MINI_MESSAGE.deserialize(ROLE_DESCRIPTION, Placeholder.unparsed("role_id", role.getId()),
                 Placeholder.unparsed("priority", String.valueOf(role.getPriority())),
                 Placeholder.unparsed("permission_count", String.valueOf(role.getPermissions().size())),
-                Placeholder.component("prefix", role.getDisplayPrefix()),
                 Placeholder.unparsed("display_name", role.getDisplayName()),
                 Placeholder.unparsed("footer_addon", this.createFooterAddon(roleId))));
 

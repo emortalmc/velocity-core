@@ -77,7 +77,7 @@ public class PermissionCache {
         Futures.addCallback(rolesResponseFuture, FunctionalFutureCallback.create(
                 result -> {
                     Set<String> roleIds = Sets.newConcurrentHashSet(result.getRoleIdsList());
-                    User user = new User(id, roleIds, this.determineActivePrefix(roleIds), this.determineActiveName(roleIds));
+                    User user = new User(id, roleIds, this.determineActiveName(roleIds));
                     this.userCache.put(id, user);
                     callback.run();
                 },
@@ -151,20 +151,6 @@ public class PermissionCache {
         return this.roleCache.remove(id) != null;
     }
 
-    public Component determineActivePrefix(Collection<String> roleIds) {
-        int currentPriority = 0;
-        Component currentPrefix = null;
-        for (CachedRole role : this.roleCache.values()) {
-            if (role.getDisplayPrefix() != null && roleIds.contains(role.getId())) {
-                if (role.getPriority() > currentPriority) {
-                    currentPriority = role.getPriority();
-                    currentPrefix = role.getDisplayPrefix();
-                }
-            }
-        }
-        return currentPrefix;
-    }
-
     public String determineActiveName(Collection<String> roleIds) {
         int currentPriority = 0;
         String currentActiveName = null;
@@ -189,13 +175,11 @@ public class PermissionCache {
         private final UUID id;
         private final Set<String> roleIds;
 
-        private Component displayPrefix;
         private String displayName;
 
-        public User(UUID id, Set<String> roleIds, Component displayPrefix, String displayName) {
+        public User(UUID id, Set<String> roleIds, String displayName) {
             this.id = id;
             this.roleIds = roleIds;
-            this.displayPrefix = displayPrefix;
             this.displayName = displayName;
         }
 
@@ -205,14 +189,6 @@ public class PermissionCache {
 
         public Set<String> getRoleIds() {
             return this.roleIds;
-        }
-
-        public Component getDisplayPrefix() {
-            return this.displayPrefix;
-        }
-
-        public void setDisplayPrefix(Component displayPrefix) {
-            this.displayPrefix = displayPrefix;
         }
 
         public String getDisplayName() {
@@ -229,7 +205,6 @@ public class PermissionCache {
         private final Set<PermissionNode> permissions;
 
         private int priority;
-        private Component displayPrefix;
         private String displayName;
 
         public CachedRole(String id, int priority, String displayName, Set<PermissionNode> permissions) {
@@ -267,14 +242,6 @@ public class PermissionCache {
 
         public void setPriority(int priority) {
             this.priority = priority;
-        }
-
-        public Component getDisplayPrefix() {
-            return this.displayPrefix;
-        }
-
-        public void setDisplayPrefix(String displayPrefix) {
-            this.displayPrefix = MiniMessage.miniMessage().deserialize(displayPrefix);
         }
 
         public String getDisplayName() {

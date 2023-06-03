@@ -32,7 +32,6 @@ public class UserDescribeSub {
             <light_purple>----- User Summary (<username>) -----
             Groups: <groups>
             Permissions: <permission_count>
-            Prefix: <group_prefix>
             Display Name: <group_display_name>
             Example Chat: <reset><example_chat>
             <light_purple>-----------<footer_addon>-------------""";
@@ -71,13 +70,9 @@ public class UserDescribeSub {
                             }
                         }
                         Component groupsValue = Component.join(JoinConfiguration.commas(true), roleComponents);
-                        Component activePrefix = this.permissionCache.determineActivePrefix(roleIds);
                         String activeDisplayName = this.permissionCache.determineActiveName(roleIds);
 
                         TextComponent.Builder exampleChatBuilder = Component.text();
-                        if (activePrefix != null) {
-                            exampleChatBuilder.append(activePrefix).append(Component.text(" "));
-                        }
 
                         if (activeDisplayName != null) {
                             exampleChatBuilder.append(MINI_MESSAGE.deserialize(activeDisplayName, Placeholder.unparsed("username", correctedUsername)));
@@ -90,7 +85,6 @@ public class UserDescribeSub {
                                 Placeholder.unparsed("username", correctedUsername),
                                 Placeholder.component("groups", groupsValue),
                                 Placeholder.unparsed("permission_count", String.valueOf(sortedRoles.stream().map(PermissionCache.CachedRole::getPermissions).mapToInt(Set::size).sum())),
-                                Placeholder.component("group_prefix", activePrefix == null ? Component.text("null") : activePrefix),
                                 Placeholder.unparsed("group_display_name", activeDisplayName == null ? "null" : activeDisplayName),
                                 Placeholder.component("example_chat", exampleChatBuilder.build()),
                                 Placeholder.unparsed("footer_addon", this.createFooterAddon(correctedUsername))

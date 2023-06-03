@@ -42,7 +42,6 @@ public class PermissionCommand {
     private static final Component ROLE_HELP_MESSAGE = MINI_MESSAGE.deserialize("""
             <light_purple>--------- Role Permission Help ---------
             <click:suggest_command:'/perm role '>/perm role <name> create</click>
-            <click:suggest_command:'/perm role '>/perm role <name> setprefix <prefix></click>
             <click:suggest_command:'/perm role '>/perm role <name> setusername <state></click>
             <click:suggest_command:'/perm role '>/perm role <name> setpriority <state></click>
             <click:suggest_command:'/perm role '>/perm role <name> permission add <perm></click>
