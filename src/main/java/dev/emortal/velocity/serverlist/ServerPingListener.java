@@ -28,17 +28,18 @@ public class ServerPingListener {
             "using 3 server softwares!",
             "gradient lover",
             "emortal is watching",
+            "emortal says 2 + 2 = 5",
             "Chuck Norris joined and said it was pretty good",
+            "Chuck Norris doesn't join, the server joins him",
             "private lobbies when?",
+            "I heard SunriseMC was releasing soon...",
     };
 
     @Subscribe
     public void onServerPing(ProxyPingEvent event) {
         String randomMessage = MOTDS[ThreadLocalRandom.current().nextInt(MOTDS.length)];
         ServerPing ping = event.getPing().asBuilder()
-                .description(
-                        MOTD.append(Component.text("\n" + randomMessage, NamedTextColor.YELLOW))
-                )
+                .description(MOTD.append(Component.text("\n" + randomMessage, NamedTextColor.YELLOW)))
                 .build();
 
         event.setPing(ping);
