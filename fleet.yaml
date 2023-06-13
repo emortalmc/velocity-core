@@ -1,0 +1,80 @@
+apiVersion: agones.dev/v1
+kind: Fleet
+metadata:
+  name: velocity
+  namespace: emortalmc
+
+spec:
+  replicas: 1
+  scheduling: Packed
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+
+  template:
+    spec:
+      players:
+        initialCapacity: 1500
+
+      ports:
+        - name: default
+          portPolicy: Static
+          hostPort: 25565
+          containerPort: 25565
+          protocol: TCP
+
+      health:
+        initialDelaySeconds: 10
+        periodSeconds: 6
+        failureThreshold: 2
+
+      template:
+        spec:
+          volumes:
+            - name: gamemodes
+              configMap:
+                name: gamemodes
+
+          containers:
+            - name: velocity
+              image: ghcr.io/emortalmc/velocity-core:1.0.77
+              command: [ "/bin/sh", "-c", "java -XX:+UseZGC -Xmx3G -Xms3G -jar /app/velocity.jar" ]
+
+              lifecycle:
+                postStart:
+                  exec:
+                    command: [ "/bin/sh", "-c", "echo $VELOCITY_FORWARDING_SECRET > /app/forwarding.secret" ]
+
+              volumeMounts:
+                - name: gamemodes
+                  mountPath: /app/config/gamemodes
+
+              env:
+                - name: JAVA_OPTS
+                  value: "-Xms4G -Xmx4G"
+                - name: VELOCITY_FORWARDING_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: velocity-forwarding-token
+                      key: forwarding.secret
+                      optional: false
+                - name: KAFKA_HOST
+                  value: default-kafka-bootstrap
+                - name: KAFKA_PORT
+                  value: "9092"
+                - name: PYROSCOPE_SERVER_ADDRESS
+                  valueFrom:
+                    configMapKeyRef:
+                      name: pyroscope
+                      key: address
+
+              resources:
+                limits:
+                  memory: "8Gi"
+                  cpu: "3"
+                requests:
+                  memory: "8Gi"
+                  cpu: "500m"
