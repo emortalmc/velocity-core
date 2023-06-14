@@ -2,7 +2,8 @@ FROM eclipse-temurin:17-jre-alpine
 
 # Download packages
 RUN apk add --no-cache \
-    wget
+    wget \
+    libstdc++6 libstdc++ # Add libraries required for pyroscope
 
 # We manually set the Velocity version to avoid bugs
 ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.2.0-SNAPSHOT/builds/256/downloads/velocity-3.2.0-SNAPSHOT-256.jar"

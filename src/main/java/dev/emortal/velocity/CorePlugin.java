@@ -87,6 +87,8 @@ public class CorePlugin {
     public CorePlugin(ProxyServer server) {
         this.proxy = server;
 
+        PyroscopeHandler.register();
+
         PlayerResolver.setPlatformUsernameResolver(username -> this.proxy.getPlayer(username).map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername(), true)).orElse(null));
 
         try {
