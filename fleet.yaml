@@ -33,6 +33,9 @@ spec:
 
       template:
         spec:
+          nodeSelector:
+            kubernetes.io/hostname: emc-01 # Only deploy 1 velocity on the main node
+
           volumes:
             - name: gamemodes
               configMap:
