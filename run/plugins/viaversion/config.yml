@@ -111,5 +111,5 @@ use-new-effect-indicator: true
 velocity-ping-interval: -1
 velocity-ping-save: false
 velocity-servers:
-  default: 762
+  default: 763
 vine-climb-fix: false
