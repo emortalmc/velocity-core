@@ -9,10 +9,7 @@ spec:
   scheduling: Packed
 
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 100%
+    type: Recreate
 
   template:
     spec:
