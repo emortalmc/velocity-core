@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre-alpine
+FROM --platform=$BUILDPLATFORM eclipse-temurin:17-jre
 
 # Download packages
 RUN apk add --no-cache \
@@ -6,8 +6,8 @@ RUN apk add --no-cache \
     libstdc++6 libstdc++ # Add libraries required for pyroscope
 
 # We manually set the Velocity version to avoid bugs
-ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.2.0-SNAPSHOT/builds/256/downloads/velocity-3.2.0-SNAPSHOT-256.jar"
-ENV VIA_VERSION_JAR_URL "https://github.com/ViaVersion/ViaVersion/releases/download/4.6.2/ViaVersion-4.6.2.jar"
+ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.2.0-SNAPSHOT/builds/259/downloads/velocity-3.2.0-SNAPSHOT-259.jar"
+ENV VIA_VERSION_JAR_URL "https://github.com/ViaVersion/ViaVersion/releases/download/4.7.0/ViaVersion-4.7.0.jar"
 
 RUN mkdir /app
 WORKDIR /app
