@@ -1,8 +1,7 @@
 FROM --platform=$BUILDPLATFORM eclipse-temurin:17-jre
 
 # Download packages
-RUN apk add --no-cache \
-    wget \
+RUN apt install wget \
     libstdc++6 libstdc++ # Add libraries required for pyroscope
 
 # We manually set the Velocity version to avoid bugs
