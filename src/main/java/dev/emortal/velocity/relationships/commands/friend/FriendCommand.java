@@ -8,7 +8,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
-import dev.emortal.api.grpc.playertracker.PlayerTrackerGrpc;
+import dev.emortal.api.grpc.mcplayer.PlayerTrackerGrpc;
 import dev.emortal.api.grpc.relationship.RelationshipGrpc;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.utils.GrpcStubCollection;

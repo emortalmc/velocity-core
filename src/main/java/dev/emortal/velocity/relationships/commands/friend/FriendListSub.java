@@ -6,12 +6,10 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
-import dev.emortal.api.grpc.playertracker.PlayerTrackerGrpc;
-import dev.emortal.api.grpc.playertracker.PlayerTrackerProto;
+import dev.emortal.api.grpc.mcplayer.PlayerTrackerGrpc;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.model.mcplayer.McPlayer;
-import dev.emortal.api.model.playertracker.PlayerLocation;
 import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.relationships.FriendCache;
@@ -29,7 +27,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
@@ -115,58 +119,35 @@ public class FriendListSub {
         Map<UUID, FriendStatus> statuses = new ConcurrentHashMap<>();
         for (FriendCache.CachedFriend friend : friends)
             statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
-        var playersResponseFuture = this.mcPlayerService.getPlayers(McPlayerProto.GetPlayersRequest.newBuilder()
+
+        var playersRequest = this.mcPlayerService.getPlayers(McPlayerProto.GetPlayersRequest.newBuilder()
                 .addAllPlayerIds(friends.stream().map(FriendCache.CachedFriend::playerId).map(UUID::toString).toList())
                 .build());
 
-        Futures.addCallback(playersResponseFuture, FunctionalFutureCallback.create(
+        Futures.addCallback(playersRequest, FunctionalFutureCallback.create(
                 response -> {
                     for (McPlayer player : response.getPlayersList()) {
                         FriendStatus status = statuses.get(UUID.fromString(player.getId()));
                         status.setUsername(player.getCurrentUsername());
                         status.setLastSeen(ProtoTimestampConverter.fromProto(player.getLastOnline()));
-                        status.setOnline(player.getCurrentlyOnline());
+                        status.setOnline(player.getCurrentServer() != null);
+                        status.setServerId(status.isOnline() ? player.getCurrentServer().getServerId() : null);
                     }
-                    boolean errored = false;
-                    for (Map.Entry<UUID, FriendStatus> statusEntry : statuses.entrySet()) {
-                        if (statusEntry.getValue().getUsername() == null) {
-                            errored = true;
-                            LOGGER.warn("Could not find username for player {}", statusEntry.getKey());
-                            statusEntry.getValue().setUsername(statusEntry.getKey().toString());
-                        }
-                    }
+//                    boolean errored = false;
+//                    for (Map.Entry<UUID, FriendStatus> statusEntry : statuses.entrySet()) {
+//                        if (statusEntry.getValue().getUsername() == null) {
+//                            errored = true;
+//                            LOGGER.warn("Could not find username for player {}", statusEntry.getKey());
+//                            statusEntry.getValue().setUsername(statusEntry.getKey().toString());
+//                        }
+//                    }
 
-                    if (errored) {
-                        LOGGER.warn("Searched Player IDs: {}", statuses.keySet());
-                        LOGGER.warn("Found Players: {}", response.getPlayersList());
-                    }
+//                    if (errored) {
+//                        LOGGER.warn("Searched Player IDs: {}", statuses.keySet());
+//                        LOGGER.warn("Found Players: {}", response.getPlayersList());
+//                    }
 
-                    var playerServersResponseFuture = this.playerTrackerService.getPlayerServers(
-                            PlayerTrackerProto.GetPlayerServersRequest.newBuilder()
-                                    .addAllPlayerIds(statuses.values().stream()
-                                            .filter(FriendStatus::isOnline)
-                                            .map(FriendStatus::getUuid)
-                                            .map(UUID::toString)
-                                            .toList())
-                                    .build());
-
-                    Futures.addCallback(playerServersResponseFuture,
-                            FunctionalFutureCallback.create(
-                                    playerServersResponse -> {
-                                        for (Map.Entry<String, PlayerLocation> entry : playerServersResponse.getPlayerServersMap().entrySet()) {
-                                            UUID playerId = UUID.fromString(entry.getKey());
-                                            FriendStatus status = statuses.get(playerId);
-
-                                            status.setServerId(entry.getValue().getServerId());
-                                        }
-
-                                        callback.accept(new ArrayList<>(statuses.values()));
-                                    },
-                                    error -> {
-                                        LOGGER.error("Failed to retrieve player servers: ", error);
-                                        callback.accept(new ArrayList<>(statuses.values()));
-                                    }
-                            ), ForkJoinPool.commonPool());
+                    callback.accept(new ArrayList<>(statuses.values()));
 
                 },
                 error -> {

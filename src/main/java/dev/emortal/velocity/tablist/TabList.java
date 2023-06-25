@@ -6,9 +6,8 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.grpc.playertracker.PlayerTrackerGrpc;
-import dev.emortal.api.grpc.playertracker.PlayerTrackerProto;
-import dev.emortal.api.model.common.ServerType;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.grpc.mcplayer.PlayerTrackerGrpc;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.CorePlugin;
@@ -55,13 +54,12 @@ public class TabList {
     }
 
     private void updateFooter() {
-        ListenableFuture<PlayerTrackerProto.ServerTypePlayerCountResponse> responseFuture = this.playerTracker.getServerTypePlayerCount(
-                PlayerTrackerProto.GetServerTypePlayerCountRequest.newBuilder()
-                        .setServerType(ServerType.PROXY).build());
+        ListenableFuture<McPlayerProto.GetPlayerCountResponse> responseFuture = this.playerTracker.getPlayerCount(
+                McPlayerProto.GetPlayerCountRequest.getDefaultInstance());
 
         Futures.addCallback(responseFuture, FunctionalFutureCallback.create(
                 response -> {
-                    this.currentFooter = this.createFooter(response.getPlayerCount());
+                    this.currentFooter = this.createFooter(response.getCount());
                     this.updateOnlinePlayers();
 
                 },
@@ -75,7 +73,7 @@ public class TabList {
         }
     }
 
-    private Component createFooter(int playerCount) {
+    private Component createFooter(long playerCount) {
         return Component.text()
                 .append(Component.text(" \n" + playerCount + " online", NamedTextColor.GRAY))
                 .append(Component.text("\nᴍᴄ.ᴇᴍᴏʀᴛᴀʟ.ᴅᴇᴠ", TextColor.color(38, 110, 224)))
