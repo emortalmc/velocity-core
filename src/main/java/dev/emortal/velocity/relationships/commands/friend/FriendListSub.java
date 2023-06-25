@@ -115,7 +115,7 @@ public class FriendListSub {
         return message.build();
     }
 
-    private void retrieveStatuses(List<FriendCache.CachedFriend> friends, Consumer<List<FriendStatus>> callback) {
+    private void retrieveStatuses(@NotNull List<FriendCache.CachedFriend> friends, Consumer<List<FriendStatus>> callback) {
         Map<UUID, FriendStatus> statuses = new ConcurrentHashMap<>();
         for (FriendCache.CachedFriend friend : friends)
             statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
@@ -133,22 +133,8 @@ public class FriendListSub {
                         status.setOnline(player.hasCurrentServer());
                         status.setServerId(player.hasCurrentServer() ? player.getCurrentServer().getServerId() : null);
                     }
-//                    boolean errored = false;
-//                    for (Map.Entry<UUID, FriendStatus> statusEntry : statuses.entrySet()) {
-//                        if (statusEntry.getValue().getUsername() == null) {
-//                            errored = true;
-//                            LOGGER.warn("Could not find username for player {}", statusEntry.getKey());
-//                            statusEntry.getValue().setUsername(statusEntry.getKey().toString());
-//                        }
-//                    }
-
-//                    if (errored) {
-//                        LOGGER.warn("Searched Player IDs: {}", statuses.keySet());
-//                        LOGGER.warn("Found Players: {}", response.getPlayersList());
-//                    }
 
                     callback.accept(new ArrayList<>(statuses.values()));
-
                 },
                 error -> {
                     LOGGER.error("Failed to retrieve player statuses: ", error);
