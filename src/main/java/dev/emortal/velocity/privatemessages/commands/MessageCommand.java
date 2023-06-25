@@ -175,6 +175,7 @@ public class MessageCommand {
                         .executes(this::onMessageUsage)
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("receiver", StringArgumentType.word())
                                 .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
+                                .executes(this::onMessageUsage)
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("message", StringArgumentType.greedyString())
                                         .executes(this::onMessageExecute)
                                 )
