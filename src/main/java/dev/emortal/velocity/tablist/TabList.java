@@ -61,7 +61,6 @@ public class TabList {
                 response -> {
                     this.currentFooter = this.createFooter(response.getCount());
                     this.updateOnlinePlayers();
-
                 },
                 throwable -> LOGGER.error("Failed to update tab list footer: ", throwable)
         ), ForkJoinPool.commonPool());

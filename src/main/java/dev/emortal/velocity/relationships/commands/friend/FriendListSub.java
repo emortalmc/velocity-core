@@ -130,8 +130,8 @@ public class FriendListSub {
                         FriendStatus status = statuses.get(UUID.fromString(player.getId()));
                         status.setUsername(player.getCurrentUsername());
                         status.setLastSeen(ProtoTimestampConverter.fromProto(player.getLastOnline()));
-                        status.setOnline(player.getCurrentServer() != null);
-                        status.setServerId(status.isOnline() ? player.getCurrentServer().getServerId() : null);
+                        status.setOnline(player.hasCurrentServer());
+                        status.setServerId(player.hasCurrentServer() ? player.getCurrentServer().getServerId() : null);
                     }
 //                    boolean errored = false;
 //                    for (Map.Entry<UUID, FriendStatus> statusEntry : statuses.entrySet()) {
