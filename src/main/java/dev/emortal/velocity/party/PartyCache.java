@@ -37,7 +37,8 @@ public class PartyCache {
 
     private static final String NOTIFICATION_PARTY_LEADER_CHANGED = "<username> is now the party leader";
 
-    private static final String NOTIFICATION_PARTY_INVITE_CREATED = "<username> has been invited to the party";
+    private static final String NOTIFICATION_PARTY_INVITE_CREATED_INVITER = "<username> has been invited to the party";
+    private static final String NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS = "<sender_username> has invited <username> to the party";
     private static final String NOTIFICATION_PLAYER_INVITE_CREATED = "<click:run_command:'/party join <username>'><color:#3db83d>You have been invited to join <green><username>'s</green> party. <b><gradient:light_purple:gold>Click to accept</gradient></b></click>";
 
     private final @NotNull Map<UUID, CachedParty> playerPartyMap = new ConcurrentHashMap<>();
@@ -213,10 +214,24 @@ public class PartyCache {
         // Notify the party members of the invite
         CachedParty party = this.cachePartyIfNotPresent(invite.getPartyId());
         if (party != null) {
+            String targetUsername = invite.getTargetUsername();
+            UUID senderId = UUID.fromString(invite.getSenderId());
+
             for (UUID memberId : party.getMembers().keySet()) {
+                if (memberId.equals(senderId)) continue; // Don't send a notification to the sender
+
                 this.proxy.getPlayer(memberId).ifPresent(player -> player
-                        .sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED, Placeholder.parsed("username", invite.getTargetUsername()))));
+                        .sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS,
+                                Placeholder.parsed("username", invite.getTargetUsername()),
+                                Placeholder.parsed("sender_username", invite.getSenderUsername()))));
             }
+
+            this.proxy.getPlayer(senderId).ifPresent(player -> {
+                player.sendMessage(MINI_MESSAGE.deserialize(
+                        NOTIFICATION_PARTY_INVITE_CREATED_INVITER,
+                        Placeholder.parsed("username", targetUsername)
+                ));
+            });
         }
 
         // Notify the invited player

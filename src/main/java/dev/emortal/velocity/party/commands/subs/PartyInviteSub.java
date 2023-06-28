@@ -25,8 +25,6 @@ public class PartyInviteSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyInviteSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
-
-    private static final String INVITED_MESSAGE = "<green>Invited <username> to the party";
     private static final String NO_PERMISSION_MESSAGE = "<red>You must be the leader of the party to invite another player";
     private static final String ALREADY_INVITED_MESSAGE = "<red><username> has already been invited to your party";
     private static final String ALREADY_IN_PARTY_MESSAGE = "<red><username> is already in the party";
@@ -56,7 +54,7 @@ public class PartyInviteSub {
                     );
 
                     Futures.addCallback(inviteResponseFuture, FunctionalFutureCallback.create(
-                            inviteResponse -> executor.sendMessage(MINI_MESSAGE.deserialize(INVITED_MESSAGE, Placeholder.unparsed("username", target.username()))),
+                            inviteResponse -> {}, // do nothing as we listen for Kafka message
                             throwable -> {
                                 com.google.rpc.Status status = StatusProto.fromThrowable(throwable);
                                 if (status == null || status.getDetailsCount() == 0) {
