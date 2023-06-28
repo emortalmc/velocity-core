@@ -166,7 +166,7 @@ public class CorePlugin {
         new PlaytimeCommand(this.proxy, this.sessionCache, this.usernameSuggestions);
         new LobbyCommand(this.proxy);
 
-        new ServerCleanupTask(this, this.proxy);
+        eventManager.register(this, new ServerCleanupTask(this.proxy));
 
         if (DEBUG_PACKETS) {
             this.proxy.getScheduler().buildTask(this, () -> {

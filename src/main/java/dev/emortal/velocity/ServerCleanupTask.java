@@ -1,38 +1,37 @@
 package dev.emortal.velocity;
 
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 public class ServerCleanupTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerCleanupTask.class);
 
-    public ServerCleanupTask(CorePlugin plugin, @NotNull ProxyServer proxyServer) {
-        proxyServer.getScheduler().buildTask(plugin, () -> this.cleanupServers(proxyServer))
-                .repeat(1, TimeUnit.MINUTES)
-                .schedule();
+    private final ProxyServer proxyServer;
+
+    public ServerCleanupTask(@NotNull ProxyServer proxyServer) {
+        this.proxyServer = proxyServer;
     }
 
-    private void cleanupServers(@NotNull ProxyServer proxyServer) {
-        List<RegisteredServer> unRegisteredServers = new ArrayList<>();
-        for (RegisteredServer server : proxyServer.getAllServers()) {
-            if (server.getPlayersConnected().size() == 0) {
-                proxyServer.unregisterServer(server.getServerInfo());
-                unRegisteredServers.add(server);
-            }
-        }
+    @Subscribe
+    public void onPlayerDisconnect(@NotNull DisconnectEvent event) {
+        event.getPlayer().getCurrentServer().ifPresent(conn -> this.checkServer(conn.getServer()));
+    }
 
-        if (unRegisteredServers.size() > 0) {
-            LOGGER.info("Unregistered {} servers:", unRegisteredServers.size());
-            for (RegisteredServer server : unRegisteredServers) {
-                LOGGER.info(" - {}", server.getServerInfo().getName());
-            }
+    @Subscribe
+    public void onPlayerDisconnect(@NotNull ServerConnectedEvent event) {
+        event.getPreviousServer().ifPresent(this::checkServer);
+    }
+
+    private void checkServer(@NotNull RegisteredServer server) {
+        if (server.getPlayersConnected().size() == 0) {
+            this.proxyServer.unregisterServer(server.getServerInfo());
+            LOGGER.info("Unregistered server {}", server.getServerInfo().getName());
         }
     }
 }
