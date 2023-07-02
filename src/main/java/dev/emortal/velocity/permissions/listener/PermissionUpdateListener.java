@@ -32,12 +32,8 @@ public class PermissionUpdateListener {
 
             Optional<PermissionCache.User> optionalUser = cache.getUser(uuid);
             switch (message.getChangeType()) {
-                case REMOVE -> {
-                    optionalUser.ifPresent(user -> user.getRoleIds().remove(message.getRoleId()));
-                }
-                case ADD -> {
-                    optionalUser.ifPresent(user -> user.getRoleIds().add(message.getRoleId()));
-                }
+                case REMOVE -> optionalUser.ifPresent(user -> user.getRoleIds().remove(message.getRoleId()));
+                case ADD -> optionalUser.ifPresent(user -> user.getRoleIds().add(message.getRoleId()));
             }
         });
     }
