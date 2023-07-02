@@ -11,7 +11,6 @@ import dev.emortal.api.model.permission.PermissionNode;
 import dev.emortal.api.model.permission.Role;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.callback.FunctionalFutureCallback;
-import dev.emortal.velocity.grpc.stub.GrpcStubManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -19,7 +18,13 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
@@ -34,7 +39,7 @@ public class PermissionCache {
     private final PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
     private final Set<PermissionBlocker> permissionBlockers;
 
-    public PermissionCache(GrpcStubManager stubManager, PermissionBlocker... permissionBlockers) {
+    public PermissionCache(PermissionBlocker... permissionBlockers) {
         this.permissionService = GrpcStubCollection.getPermissionService().orElse(null);
         this.permissionBlockers = Set.of(permissionBlockers);
 
@@ -133,7 +138,7 @@ public class PermissionCache {
         return Optional.ofNullable(this.userCache.get(id));
     }
 
-    public void addRole(Role roleResponse) {
+    public void setRole(@NotNull Role roleResponse) {
         CachedRole role = new CachedRole(
                 roleResponse.getId(), roleResponse.getPriority(), roleResponse.getDisplayName(),
                 Sets.newConcurrentHashSet(roleResponse.getPermissionsList().stream()

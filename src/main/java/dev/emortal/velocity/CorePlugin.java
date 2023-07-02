@@ -29,6 +29,7 @@ import dev.emortal.velocity.party.commands.PartyCommand;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.PermissionCommand;
 import dev.emortal.velocity.permissions.listener.PermissionCheckListener;
+import dev.emortal.velocity.permissions.listener.PermissionUpdateListener;
 import dev.emortal.velocity.privatemessages.LastMessageCache;
 import dev.emortal.velocity.privatemessages.PrivateMessageListener;
 import dev.emortal.velocity.privatemessages.commands.MessageCommand;
@@ -118,7 +119,8 @@ public class CorePlugin {
         new FriendConnectionListener(this.proxy, this.messagingCore); // Listens for FriendConnectionMessage messages
 
         new ServerChangeNotificationListener(this.proxy, this.messagingCore); // Listens for ProxyServerChangeMessage messages
-        this.permissionCache = new PermissionCache(this.stubManager);
+        this.permissionCache = new PermissionCache();
+        new PermissionUpdateListener(this.permissionCache, this.messagingCore);
 
         // messaging core
         eventManager.register(this, this.messagingCore);

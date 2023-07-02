@@ -9,16 +9,17 @@ import com.velocitypowered.api.permission.PermissionSubject;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.velocity.permissions.PermissionCache;
+import org.jetbrains.annotations.NotNull;
 
 public class PermissionCheckListener {
     private final PermissionCache permissionCache;
 
-    public PermissionCheckListener(PermissionCache permissionCache) {
+    public PermissionCheckListener(@NotNull PermissionCache permissionCache) {
         this.permissionCache = permissionCache;
     }
 
     @Subscribe
-    public void onPermissionsSetup(PermissionsSetupEvent event, Continuation continuation) {
+    public void onPermissionsSetup(@NotNull PermissionsSetupEvent event, @NotNull Continuation continuation) {
         if (!(event.getSubject() instanceof Player player)) {
             continuation.resume();
             return;
@@ -28,12 +29,7 @@ public class PermissionCheckListener {
         event.setProvider(new PlayerPermissionProvider(this.permissionCache));
     }
 
-    private static class PlayerPermissionProvider implements PermissionProvider {
-        private final PermissionCache permissionCache;
-
-        private PlayerPermissionProvider(PermissionCache permissionCache) {
-            this.permissionCache = permissionCache;
-        }
+    private record PlayerPermissionProvider(@NotNull PermissionCache permissionCache) implements PermissionProvider {
 
         @Override
         public PermissionFunction createFunction(PermissionSubject subject) {
@@ -41,14 +37,8 @@ public class PermissionCheckListener {
         }
     }
 
-    private static class PlayerPermissionFunction implements PermissionFunction {
-        private final Player player;
-        private final PermissionCache permissionCache;
-
-        public PlayerPermissionFunction(Player player, PermissionCache permissionCache) {
-            this.player = player;
-            this.permissionCache = permissionCache;
-        }
+    private record PlayerPermissionFunction(@NotNull Player player,
+                                            @NotNull PermissionCache permissionCache) implements PermissionFunction {
 
         @Override
         public Tristate getPermissionValue(String permission) {

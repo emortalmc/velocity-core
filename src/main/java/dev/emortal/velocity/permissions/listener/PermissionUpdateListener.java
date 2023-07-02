@@ -10,16 +10,14 @@ import org.slf4j.LoggerFactory;
 public class PermissionUpdateListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionUpdateListener.class);
 
-    public PermissionUpdateListener(PermissionCache cache, @NotNull MessagingCore messagingCore) {
+    public PermissionUpdateListener(@NotNull PermissionCache cache, @NotNull MessagingCore messagingCore) {
         messagingCore.addListener(RoleUpdateMessage.class, message -> {
             switch (message.getChangeType()) {
-                case CREATE -> cache.addRole(message.getRole());
+                // modify could be more efficient and just update what's changed but that's overcomplicated
+                case CREATE, MODIFY -> cache.setRole(message.getRole());
                 case DELETE -> {
                     boolean result = cache.removeRole(message.getRole().getId());
                     if (!result) LOGGER.warn("Failed to remove role {} from cache", message.getRole().getId());
-                }
-                case MODIFY -> {
-                    // TODO: Implement
                 }
                 default -> LOGGER.warn("Unknown change type: {}", message.getChangeType());
             }
