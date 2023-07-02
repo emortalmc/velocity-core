@@ -40,7 +40,7 @@ spec:
 
           containers:
             - name: velocity
-              image: ghcr.io/emortalmc/velocity-core:06a2a5467289a7228cbec5d03d956aa8d7ae198c
+              image: ghcr.io/emortalmc/velocity-core:80e29d5b546ca71a50afaace382a92c952db84d0
               command: [ "/bin/sh", "-c", "java -XX:+UseZGC -Xmx3G -Xms3G -jar /app/velocity.jar" ]
 
               lifecycle:
