@@ -1,11 +1,15 @@
 package dev.emortal.velocity.permissions.listener;
 
+import dev.emortal.api.message.permission.PlayerRolesUpdateMessage;
 import dev.emortal.api.message.permission.RoleUpdateMessage;
 import dev.emortal.velocity.messaging.MessagingCore;
 import dev.emortal.velocity.permissions.PermissionCache;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
+import java.util.UUID;
 
 public class PermissionUpdateListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionUpdateListener.class);
@@ -20,6 +24,20 @@ public class PermissionUpdateListener {
                     if (!result) LOGGER.warn("Failed to remove role {} from cache", message.getRole().getId());
                 }
                 default -> LOGGER.warn("Unknown change type: {}", message.getChangeType());
+            }
+        });
+
+        messagingCore.addListener(PlayerRolesUpdateMessage.class, message -> {
+            UUID uuid = UUID.fromString(message.getPlayerId());
+
+            Optional<PermissionCache.User> optionalUser = cache.getUser(uuid);
+            switch (message.getChangeType()) {
+                case REMOVE -> {
+                    optionalUser.ifPresent(user -> user.getRoleIds().remove(message.getRoleId()));
+                }
+                case ADD -> {
+                    optionalUser.ifPresent(user -> user.getRoleIds().add(message.getRoleId()));
+                }
             }
         });
     }
