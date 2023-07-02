@@ -6,7 +6,6 @@ import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.kurushimi.KurushimiUtils;
 import dev.emortal.api.message.common.PlayerConnectMessage;
 import dev.emortal.api.message.common.PlayerDisconnectMessage;
@@ -14,7 +13,6 @@ import dev.emortal.api.message.common.PlayerSwitchServerMessage;
 import dev.emortal.api.utils.kafka.FriendlyKafkaConsumer;
 import dev.emortal.api.utils.kafka.FriendlyKafkaProducer;
 import dev.emortal.api.utils.kafka.KafkaSettings;
-import dev.emortal.velocity.CorePlugin;
 import dev.emortal.velocity.Environment;
 
 import java.util.function.Consumer;
@@ -28,9 +26,8 @@ public class MessagingCore {
     private final FriendlyKafkaConsumer kafkaConsumer;
     private final FriendlyKafkaProducer kafkaProducer;
 
-    public MessagingCore(ProxyServer proxy, CorePlugin plugin) {
+    public MessagingCore() {
         KafkaSettings kafkaSettings = new KafkaSettings()
-                .setAutoCommit(true)
                 .setBootstrapServers(KAFKA_HOST + ":" + KAFKA_PORT);
 
         this.kafkaConsumer = new FriendlyKafkaConsumer(kafkaSettings);

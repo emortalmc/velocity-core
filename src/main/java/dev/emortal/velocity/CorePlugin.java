@@ -112,7 +112,7 @@ public class CorePlugin {
         }
 
         // Late init because we need the proxy
-        this.messagingCore = new MessagingCore(this.proxy, this);
+        this.messagingCore = new MessagingCore();
 
         eventManager.register(this, this.sessionCache);
 
