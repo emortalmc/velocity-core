@@ -27,8 +27,7 @@ public class MessagingCore {
     private final FriendlyKafkaProducer kafkaProducer;
 
     public MessagingCore() {
-        KafkaSettings kafkaSettings = new KafkaSettings()
-                .setBootstrapServers(KAFKA_HOST + ":" + KAFKA_PORT);
+        KafkaSettings kafkaSettings = KafkaSettings.builder().bootstrapServers(KAFKA_HOST + ":" + KAFKA_PORT).build();
 
         this.kafkaConsumer = new FriendlyKafkaConsumer(kafkaSettings);
         this.kafkaProducer = new FriendlyKafkaProducer(kafkaSettings);
