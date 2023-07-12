@@ -10,7 +10,6 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.agonessdk.AgonesUtils;
-import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.cache.SessionCache;
 import dev.emortal.velocity.general.UsernameSuggestions;
@@ -23,6 +22,7 @@ import dev.emortal.velocity.listener.LobbySelectorListener;
 import dev.emortal.velocity.listener.LunarKicker;
 import dev.emortal.velocity.listener.McPlayerListener;
 import dev.emortal.velocity.listener.ServerChangeNotificationListener;
+import dev.emortal.velocity.liveconfig.LiveConfigProvider;
 import dev.emortal.velocity.messaging.MessagingCore;
 import dev.emortal.velocity.party.PartyCache;
 import dev.emortal.velocity.party.commands.PartyCommand;
@@ -81,7 +81,7 @@ public class CorePlugin {
     private final FriendCache friendCache = new FriendCache();
     private final SessionCache sessionCache = new SessionCache();
     private final LastMessageCache lastMessageCache = new LastMessageCache();
-    private final GameModeCollection gameModeCollection;
+    private final LiveConfigProvider liveConfigProvider;
     private PermissionCache permissionCache;
 
     @Inject
@@ -92,11 +92,7 @@ public class CorePlugin {
 
         PlayerResolver.setPlatformUsernameResolver(username -> this.proxy.getPlayer(username).map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername(), true)).orElse(null));
 
-        try {
-            this.gameModeCollection = new GameModeCollection();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load game modes", e);
-        }
+        this.liveConfigProvider = new LiveConfigProvider();
     }
 
     @Subscribe
@@ -157,7 +153,7 @@ public class CorePlugin {
         PartyCache partyCache = new PartyCache(this.proxy, this.messagingCore);
         new PartyCommand(this.proxy, this.usernameSuggestions, partyCache);
 
-        new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache, this.gameModeCollection);
+        new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache, this.liveConfigProvider.getGameModes());
         new BlockCommand(this.proxy, this.usernameSuggestions);
 
         new PermissionCommand(this.proxy, this.permissionCache, this.usernameSuggestions);
@@ -253,6 +249,11 @@ public class CorePlugin {
     public void onProxyShutdown(ProxyShutdownEvent event) {
         this.messagingCore.shutdown();
         AgonesUtils.shutdownHealthTask();
+
+        try {
+            this.liveConfigProvider.close();
+        } catch (IOException ignored) {
+        }
     }
 
     public ProxyServer getProxy() {

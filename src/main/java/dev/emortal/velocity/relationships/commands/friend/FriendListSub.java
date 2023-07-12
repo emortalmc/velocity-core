@@ -173,12 +173,12 @@ public class FriendListSub {
         String fleetId = String.join("-", serverTypeIdParts);
 
         Optional<GameModeConfig> optionalGameMode = this.gameModeCollection.getAllConfigs().stream()
-                .filter(config -> config.getFleetName().equals(fleetId))
+                .filter(config -> config.fleetName().equals(fleetId))
                 .findFirst();
 
         if (optionalGameMode.isPresent()) {
             GameModeConfig gameModeConfig = optionalGameMode.get();
-            return gameModeConfig.getActivityNoun() + " " + gameModeConfig.getFriendlyName();
+            return gameModeConfig.activityNoun() + " " + gameModeConfig.friendlyName();
         }
 
         LOGGER.warn("Could not find friendly name for fleet {}", fleetId);
