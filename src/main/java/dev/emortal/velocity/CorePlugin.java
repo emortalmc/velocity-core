@@ -10,6 +10,12 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.agonessdk.AgonesUtils;
+import dev.emortal.api.service.mcplayer.McPlayerService;
+import dev.emortal.api.service.messagehandler.MessageService;
+import dev.emortal.api.service.party.PartyService;
+import dev.emortal.api.service.permission.PermissionService;
+import dev.emortal.api.service.relationship.RelationshipService;
+import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.cache.SessionCache;
 import dev.emortal.velocity.general.UsernameSuggestions;
@@ -78,11 +84,8 @@ public class CorePlugin {
 
     private MessagingCore messagingCore;
 
-    private final FriendCache friendCache = new FriendCache();
     private final SessionCache sessionCache = new SessionCache();
-    private final LastMessageCache lastMessageCache = new LastMessageCache();
     private final LiveConfigProvider liveConfigProvider;
-    private PermissionCache permissionCache;
 
     @Inject
     public CorePlugin(ProxyServer server) {
@@ -115,23 +118,23 @@ public class CorePlugin {
         new FriendConnectionListener(this.proxy, this.messagingCore); // Listens for FriendConnectionMessage messages
 
         new ServerChangeNotificationListener(this.proxy, this.messagingCore); // Listens for ProxyServerChangeMessage messages
-        this.permissionCache = new PermissionCache();
-        new PermissionUpdateListener(this.permissionCache, this.messagingCore);
 
         // messaging core
         eventManager.register(this, this.messagingCore);
 
-        // friends
-        new FriendListener(this.proxy, this.messagingCore, this.friendCache);
-        eventManager.register(this, this.friendCache);
+        McPlayerService mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
+        if (mcPlayerService != null) {
+            // relationships
+            this.registerRelationshipServices(eventManager, mcPlayerService, this.messagingCore);
+        } else {
+            LOGGER.error("MC player service unavailable.");
+        }
 
         // private messages
-        eventManager.register(this, new PrivateMessageListener(this.proxy, this.messagingCore, this.lastMessageCache));
-        eventManager.register(this, this.lastMessageCache);
+        this.registerMessageServices(eventManager);
 
         // permissions
-        eventManager.register(this, this.permissionCache);
-        eventManager.register(this, new PermissionCheckListener(this.permissionCache));
+        this.registerPermissionServices(eventManager);
 
         // generic
         eventManager.register(this, new LobbySelectorListener(this.proxy, this.messagingCore));
@@ -150,15 +153,10 @@ public class CorePlugin {
         eventManager.register(this, new LunarKicker());
 
         // party
-        PartyCache partyCache = new PartyCache(this.proxy, this.messagingCore);
-        new PartyCommand(this.proxy, this.usernameSuggestions, partyCache);
+        this.registerPartyServices();
 
-        new FriendCommand(this.proxy, this.usernameSuggestions, this.friendCache, this.liveConfigProvider.getGameModes());
-        new BlockCommand(this.proxy, this.usernameSuggestions);
-
-        new PermissionCommand(this.proxy, this.permissionCache, this.usernameSuggestions);
-
-        new MessageCommand(this.proxy, this.usernameSuggestions, this.lastMessageCache);
+        // permission
+        this.registerPermissionServices(eventManager);
 
         // generic
         new PlaytimeCommand(this.proxy, this.sessionCache, this.usernameSuggestions);
@@ -183,6 +181,65 @@ public class CorePlugin {
                 System.out.println(joiner);
             }).repeat(10, TimeUnit.SECONDS).schedule();
         }
+    }
+
+    private void registerPartyServices() {
+        PartyService service = GrpcStubCollection.getPartyService().orElse(null);
+        if (service == null) {
+            LOGGER.error("Party service unavailable. Party command will not be registered.");
+            return;
+        }
+
+        PartyCache partyCache = new PartyCache(this.proxy, service, this.messagingCore);
+        new PartyCommand(this.proxy, service, this.usernameSuggestions, partyCache);
+    }
+
+    private void registerRelationshipServices(@NotNull EventManager eventManager, @NotNull McPlayerService mcPlayerService,
+                                              @NotNull MessagingCore messagingCore) {
+        RelationshipService service = GrpcStubCollection.getRelationshipService().orElse(null);
+        if (service == null) {
+            LOGGER.error("Relationship service unavailable. Friend and block commands will not be registered.");
+            return;
+        }
+
+        FriendCache cache = new FriendCache(service);
+
+        new FriendListener(this.proxy, messagingCore, cache);
+        eventManager.register(this, cache);
+
+        new FriendCommand(this.proxy, mcPlayerService, service, this.usernameSuggestions, cache, this.liveConfigProvider.getGameModes());
+        new BlockCommand(this.proxy, mcPlayerService, service, this.usernameSuggestions);
+    }
+
+    private void registerPermissionServices(@NotNull EventManager eventManager) {
+        PermissionCache cache = new PermissionCache();
+
+        eventManager.register(this, cache);
+        eventManager.register(this, new PermissionCheckListener(cache));
+        new PermissionUpdateListener(cache, this.messagingCore);
+
+        PermissionService service = GrpcStubCollection.getPermissionService().orElse(null);
+        if (service == null) {
+            LOGGER.error("Permission service unavailable. Permission command will not be registered.");
+            return;
+        }
+
+        new PermissionCommand(this.proxy, service, cache, this.usernameSuggestions);
+    }
+
+    private void registerMessageServices(@NotNull EventManager eventManager) {
+        LastMessageCache lastMessageCache = new LastMessageCache();
+
+        eventManager.register(this, new PrivateMessageListener(this.proxy, this.messagingCore, lastMessageCache));
+        eventManager.register(this, lastMessageCache);
+
+        MessageService service = GrpcStubCollection.getMessageHandlerService().orElse(null);
+        if (service == null) {
+            LOGGER.error("Message service unavailable. Message command will not be registered.");
+            return;
+        }
+
+        new MessageCommand(this.proxy, service, this.usernameSuggestions, lastMessageCache);
     }
 
     private record PacketStat(int id, long count) implements Comparable<PacketStat> {

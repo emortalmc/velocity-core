@@ -1,6 +1,6 @@
 package dev.emortal.velocity.listener;
 
-import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
+import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.cache.SessionCache;
 import org.slf4j.Logger;
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 public class McPlayerListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(McPlayerListener.class);
 
-    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
+    private final McPlayerService mcPlayerService;
     private final SessionCache sessionCache;
 
     public McPlayerListener(SessionCache sessionCache) {

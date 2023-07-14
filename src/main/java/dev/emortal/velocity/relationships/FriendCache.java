@@ -1,29 +1,27 @@
 package dev.emortal.velocity.relationships;
 
-import com.google.common.util.concurrent.Futures;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
-import dev.emortal.api.grpc.relationship.RelationshipGrpc;
-import dev.emortal.api.grpc.relationship.RelationshipProto;
-import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.api.utils.ProtoTimestampConverter;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.api.service.relationship.Friend;
+import dev.emortal.api.service.relationship.RelationshipService;
+import io.grpc.StatusRuntimeException;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Collectors;
 
 public class FriendCache {
-    private final Map<UUID, List<CachedFriend>> friendMap = new ConcurrentHashMap<>();
-    private final RelationshipGrpc.RelationshipFutureStub relationshipService;
 
-    public FriendCache() {
-        this.relationshipService = GrpcStubCollection.getRelationshipService().orElse(null);
+    private final Map<UUID, List<CachedFriend>> friendMap = new ConcurrentHashMap<>();
+    private final RelationshipService relationshipService;
+
+    public FriendCache(@NotNull RelationshipService relationshipService) {
+        this.relationshipService = relationshipService;
     }
 
     public List<CachedFriend> get(UUID playerId) {
@@ -49,21 +47,22 @@ public class FriendCache {
 
     @Subscribe
     public void onPlayerLogin(PostLoginEvent event) {
-        String playerId = event.getPlayer().getUniqueId().toString();
-        var response = this.relationshipService.getFriendList(
-                RelationshipProto.GetFriendListRequest.newBuilder().setPlayerId(playerId).build()
-        );
+        UUID playerId = event.getPlayer().getUniqueId();
 
-        Futures.addCallback(response, FunctionalFutureCallback.create(
-                result -> {
-                    this.set(event.getPlayer().getUniqueId(), result.getFriendsList().stream()
-                            .map(friendListPlayer -> new CachedFriend(
-                                    UUID.fromString(friendListPlayer.getId()),
-                                    ProtoTimestampConverter.fromProto(friendListPlayer.getFriendsSince())
-                            )).collect(Collectors.toList()));
-                },
-                throwable -> this.removeAll(event.getPlayer().getUniqueId())
-        ), ForkJoinPool.commonPool());
+        List<Friend> friends;
+        try {
+            friends = this.relationshipService.listFriends(playerId);
+        } catch (StatusRuntimeException exception) {
+            this.removeAll(playerId);
+            return;
+        }
+
+        List<CachedFriend> cachedFriends = new ArrayList<>();
+        for (Friend friend : friends) {
+            cachedFriends.add(new CachedFriend(friend.id(), friend.friendsSince()));
+        }
+
+        this.set(playerId, cachedFriends);
     }
 
     @Subscribe
@@ -73,5 +72,4 @@ public class FriendCache {
 
     public record CachedFriend(UUID playerId, Instant friendsSince) {
     }
-
 }

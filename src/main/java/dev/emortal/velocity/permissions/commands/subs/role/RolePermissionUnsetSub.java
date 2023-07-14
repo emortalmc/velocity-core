@@ -1,21 +1,21 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import com.google.common.util.concurrent.Futures;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
-import dev.emortal.api.grpc.permission.PermissionProto;
-import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.api.model.permission.Role;
+import dev.emortal.api.service.permission.PermissionService;
+import dev.emortal.api.service.permission.RoleUpdate;
+import dev.emortal.api.service.permission.UpdateRoleResult;
 import dev.emortal.velocity.permissions.PermissionCache;
-import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
-import java.util.concurrent.ForkJoinPool;
 
 public class RolePermissionUnsetSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(RolePermissionUnsetSub.class);
@@ -25,51 +25,48 @@ public class RolePermissionUnsetSub {
     private static final String PERMISSION_UNSET = "<green>Permission <permission> unset from role <role_id>";
     private static final String PERMISSION_NOT_FOUND = "<red>Permission <permission> not found for role <role_id>";
 
-    private final PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
+    private final PermissionService permissionService;
     private final PermissionCache permissionCache;
 
-    public RolePermissionUnsetSub(PermissionServiceGrpc.PermissionServiceFutureStub permissionService, PermissionCache permissionCache) {
+    public RolePermissionUnsetSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache) {
         this.permissionService = permissionService;
         this.permissionCache = permissionCache;
     }
 
-    public int execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
         String permission = context.getArgument("permission", String.class);
 
-        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
-        if (optionalRole.isEmpty()) return 1;
+        var roleIdPlaceholder = Placeholder.unparsed("role_id", roleId);
+        PermissionCache.CachedRole role = RoleSubUtils.getRole(this.permissionCache, context);
+        if (role == null) return;
 
-        PermissionCache.CachedRole role = optionalRole.get();
         if (role.getPermissionState(permission) == Tristate.UNDEFINED) {
-            source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_NOT_FOUND, Placeholder.unparsed("role_id", roleId), Placeholder.unparsed("permission", permission)));
-            return 1;
+            source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_NOT_FOUND, roleIdPlaceholder, Placeholder.unparsed("permission", permission)));
+            return;
         }
 
-        var roleResponseFuture = this.permissionService.updateRole(PermissionProto.RoleUpdateRequest.newBuilder()
-                .setId(roleId)
-                .addUnsetPermissions(permission)
-                .build());
+        RoleUpdate update = RoleUpdate.builder(roleId).unsetPermission(permission).build();
 
-        Futures.addCallback(roleResponseFuture, FunctionalFutureCallback.create(
-                response -> {
-                    role.getPermissions().removeIf(node -> node.permission().equals(permission));
-                    source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_UNSET,
-                            Placeholder.unparsed("role_id", roleId),
-                            Placeholder.unparsed("permission", permission))
-                    );
-                },
-                throwable -> {
-                    if (Status.fromThrowable(throwable) == Status.NOT_FOUND) {
-                        source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId)));
-                        return;
-                    }
-                    LOGGER.error("Error while unsetting permission from role", throwable);
-                    source.sendMessage(MINI_MESSAGE.deserialize("<red>Error while unsetting permission from role"));
-                }
-        ), ForkJoinPool.commonPool());
+        UpdateRoleResult result;
+        try {
+            result = this.permissionService.updateRole(update);
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Error while unsetting permission from role", exception);
+            source.sendMessage(MINI_MESSAGE.deserialize("<red>Error while unsetting permission from role"));
+            return;
+        }
 
-        return 1;
+        var message = switch (result) {
+            case UpdateRoleResult.Success(Role newRole) -> {
+                this.permissionCache.setRole(newRole);
+                yield MINI_MESSAGE.deserialize(PERMISSION_UNSET, roleIdPlaceholder, Placeholder.unparsed("permission", permission));
+            }
+            case UpdateRoleResult.Error error -> switch (error) {
+                case ROLE_NOT_FOUND -> MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, roleIdPlaceholder);
+            };
+        };
+        source.sendMessage(message);
     }
 }

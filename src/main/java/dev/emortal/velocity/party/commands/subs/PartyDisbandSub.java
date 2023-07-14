@@ -1,23 +1,17 @@
 package dev.emortal.velocity.party.commands.subs;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.rpc.Status;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.grpc.party.PartyProto;
-import dev.emortal.api.grpc.party.PartyServiceGrpc;
-import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.api.service.party.ModifyPartyResult;
+import dev.emortal.api.service.party.PartyService;
 import dev.emortal.velocity.party.commands.PartyCommand;
-import io.grpc.protobuf.StatusProto;
+import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ForkJoinPool;
 
 public class PartyDisbandSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyListSub.class);
@@ -31,45 +25,29 @@ public class PartyDisbandSub {
     );
 
 
-    private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
+    private final @NotNull PartyService partyService;
 
-    public int execute(CommandContext<CommandSource> context) {
+    public PartyDisbandSub(@NotNull PartyService partyService) {
+        this.partyService = partyService;
+    }
+
+    public void execute(CommandContext<CommandSource> context) {
         // context is ignored
         Player executor = (Player) context.getSource();
 
-        var disbandPartyFuture = this.partyService.emptyParty(PartyProto.EmptyPartyRequest.newBuilder()
-                .setPlayerId(executor.getUniqueId().toString())
-                .build());
+        ModifyPartyResult result;
+        try {
+            result = this.partyService.emptyPartyByPlayer(executor.getUniqueId());
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to disband party", exception);
+            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            return;
+        }
 
-        Futures.addCallback(disbandPartyFuture, FunctionalFutureCallback.create(
-                response -> {
-                    executor.sendMessage(DISBANDED_MESSAGE);
-                },
-                throwable -> {
-                    Status status = StatusProto.fromThrowable(throwable);
-                    if (status == null || status.getDetailsCount() == 0) {
-                        LOGGER.error("Failed to disband party", throwable);
-                        executor.sendMessage(PartyCommand.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    try {
-                        PartyProto.EmptyPartyErrorResponse errorResponse = status.getDetails(0).unpack(PartyProto.EmptyPartyErrorResponse.class);
-
-                        executor.sendMessage(switch (errorResponse.getErrorType()) {
-                            case NOT_LEADER -> NOT_LEADER_MESSAGE;
-                            default -> {
-                                LOGGER.error("Failed to disband party", throwable);
-                                yield PartyCommand.ERROR_MESSAGE;
-                            }
-                        });
-                    } catch (InvalidProtocolBufferException e) {
-                        LOGGER.error("Failed to disband party", throwable);
-                        executor.sendMessage(PartyCommand.ERROR_MESSAGE);
-                    }
-                }
-        ), ForkJoinPool.commonPool());
-
-        return 1;
+        var message = switch (result) {
+            case SUCCESS -> DISBANDED_MESSAGE;
+            case NOT_LEADER -> NOT_LEADER_MESSAGE;
+        };
+        executor.sendMessage(message);
     }
 }

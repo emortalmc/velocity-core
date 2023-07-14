@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LastMessageCache {
+
     // recipient, last person who messaged them
     private final Map<UUID, String> lastMessageMap = new ConcurrentHashMap<>();
 

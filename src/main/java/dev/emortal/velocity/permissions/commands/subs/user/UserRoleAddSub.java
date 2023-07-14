@@ -1,25 +1,22 @@
 package dev.emortal.velocity.permissions.commands.subs.user;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.rpc.Status;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.grpc.permission.PermissionProto;
-import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.api.service.permission.AddRoleToPlayerResult;
+import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleSubUtils;
-import io.grpc.protobuf.StatusProto;
+import io.grpc.Status;
+import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ForkJoinPool;
 
 public class UserRoleAddSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRoleAddSub.class);
@@ -31,79 +28,62 @@ public class UserRoleAddSub {
 
     private static final String PERMISSION_PLAYER_NOT_FOUND = "<red>Player <uuid> not found in permission service";
 
-    private final PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
+    private final PermissionService permissionService;
     private final PermissionCache permissionCache;
 
-    public UserRoleAddSub(PermissionServiceGrpc.PermissionServiceFutureStub permissionService, PermissionCache permissionCache) {
+    public UserRoleAddSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache) {
         this.permissionService = permissionService;
         this.permissionCache = permissionCache;
     }
 
-    public int execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String targetUsername = context.getArgument("username", String.class);
         String roleId = context.getArgument("roleId", String.class);
 
-        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
-        if (optionalRole.isEmpty()) return 1;
-        PermissionCache.CachedRole role = optionalRole.get();
+        PermissionCache.CachedRole role = RoleSubUtils.getRole(this.permissionCache, context);
+        if (role == null) return;
 
-        PlayerResolver.retrievePlayerData(targetUsername, playerData -> {
-            UUID targetId = playerData.uuid();
-            String correctUsername = playerData.username();
-
-            var addRoleFuture = this.permissionService.addRoleToPlayer(PermissionProto.AddRoleToPlayerRequest.newBuilder()
-                    .setRoleId(roleId)
-                    .setPlayerId(targetId.toString())
-                    .build());
-
-            Futures.addCallback(addRoleFuture, FunctionalFutureCallback.create(
-                    response -> {
-                        source.sendMessage(MINI_MESSAGE.deserialize(ROLE_ADDED,
-                                Placeholder.unparsed("role_id", roleId),
-                                Placeholder.unparsed("username", correctUsername))
-                        );
-
-                        this.permissionCache.getUser(targetId).ifPresent(user -> user.getRoleIds().add(role.getId()));
-                    },
-                    throwable -> {
-                        Status status = StatusProto.fromThrowable(throwable);
-
-                        if (status == null || status.getDetailsCount() == 0) {
-                            source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
-                            LOGGER.error("Something went wrong adding role to user", throwable);
-                            return;
-                        }
-                        try {
-                            PermissionProto.AddRoleToPlayerError errorDetails = status.getDetails(0).unpack(PermissionProto.AddRoleToPlayerError.class);
-                            source.sendMessage(switch (errorDetails.getErrorType()) {
-                                case PLAYER_NOT_FOUND ->
-                                        MINI_MESSAGE.deserialize(PERMISSION_PLAYER_NOT_FOUND, Placeholder.unparsed("uuid", targetId.toString()));
-                                case ROLE_NOT_FOUND ->
-                                        MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId));
-                                case ALREADY_HAS_ROLE -> MINI_MESSAGE.deserialize(ROLE_ALREADY_ADDED,
-                                        Placeholder.unparsed("username", correctUsername),
-                                        Placeholder.unparsed("role_id", roleId));
-                                default -> {
-                                    LOGGER.error("Something went wrong adding role to user", throwable);
-                                    yield MINI_MESSAGE.deserialize("<red>Something went wrong");
-                                }
-                            });
-                        } catch (InvalidProtocolBufferException e) {
-                            source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
-                            LOGGER.error("Something went wrong adding role to user", throwable);
-                            return;
-                        }
-                    }
-            ), ForkJoinPool.commonPool());
-        }, status -> {
-            if (status.getCode() == io.grpc.Status.Code.NOT_FOUND) {
-                source.sendMessage(MINI_MESSAGE.deserialize("<red>Player <username> not found", Placeholder.unparsed("username", targetUsername)));
+        PlayerResolver.CachedMcPlayer playerData;
+        try {
+            playerData = PlayerResolver.getPlayerData(targetUsername);
+        } catch (StatusException exception) {
+            Status status = exception.getStatus();
+            var usernamePlaceholder = Placeholder.unparsed("username", targetUsername);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
+                source.sendMessage(MINI_MESSAGE.deserialize("<red>Player <username> not found", usernamePlaceholder));
             } else {
-                source.sendMessage(MINI_MESSAGE.deserialize("<red>Failed to retrieve player data for <username>", Placeholder.unparsed("username", targetUsername)));
+                source.sendMessage(MINI_MESSAGE.deserialize("<red>Failed to retrieve player data for <username>", usernamePlaceholder));
             }
-        });
+            return;
+        }
 
-        return 0;
+        UUID targetId = playerData.uuid();
+        String correctUsername = playerData.username();
+
+        AddRoleToPlayerResult result;
+        try {
+            result = this.permissionService.addRoleToPlayer(targetId, roleId);
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Something went wrong adding role to user", exception);
+            source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
+            return;
+        }
+
+        var roleIdPlaceholder = Placeholder.unparsed("role_id", roleId);
+        var message = switch (result) {
+            case SUCCESS -> {
+                PermissionCache.User user = this.permissionCache.getUser(targetId);
+                if (user != null) user.getRoleIds().add(role.getId());
+
+                yield MINI_MESSAGE.deserialize(ROLE_ADDED, roleIdPlaceholder, Placeholder.unparsed("username", correctUsername));
+            }
+            case PLAYER_NOT_FOUND -> MINI_MESSAGE.deserialize(PERMISSION_PLAYER_NOT_FOUND, Placeholder.unparsed("uuid", targetId.toString()));
+            case ROLE_NOT_FOUND -> MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, roleIdPlaceholder);
+            case ALREADY_HAS_ROLE -> MINI_MESSAGE.deserialize(ROLE_ALREADY_ADDED,
+                    Placeholder.unparsed("username", correctUsername),
+                    roleIdPlaceholder);
+        };
+        source.sendMessage(message);
     }
 }

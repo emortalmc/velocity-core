@@ -1,14 +1,20 @@
 package dev.emortal.velocity.party;
 
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.grpc.party.PartyProto;
-import dev.emortal.api.grpc.party.PartyServiceGrpc;
-import dev.emortal.api.message.party.*;
+import dev.emortal.api.message.party.PartyCreatedMessage;
+import dev.emortal.api.message.party.PartyDeletedMessage;
+import dev.emortal.api.message.party.PartyEmptiedMessage;
+import dev.emortal.api.message.party.PartyInviteCreatedMessage;
+import dev.emortal.api.message.party.PartyLeaderChangedMessage;
+import dev.emortal.api.message.party.PartyOpenChangedMessage;
+import dev.emortal.api.message.party.PartyPlayerJoinedMessage;
+import dev.emortal.api.message.party.PartyPlayerLeftMessage;
 import dev.emortal.api.model.party.Party;
 import dev.emortal.api.model.party.PartyInvite;
 import dev.emortal.api.model.party.PartyMember;
-import dev.emortal.api.utils.GrpcStubCollection;
+import dev.emortal.api.service.party.PartyService;
 import dev.emortal.velocity.messaging.MessagingCore;
+import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -24,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Tracks the parties of users logged into the proxy.
  * Maps a user's UUID to their {@link dev.emortal.api.model.party.Party} and a party's ObjectID to the party.
  */
-public class PartyCache {
+public final class PartyCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyCache.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -44,11 +50,12 @@ public class PartyCache {
     private final @NotNull Map<UUID, CachedParty> playerPartyMap = new ConcurrentHashMap<>();
     private final @NotNull Map<String, CachedParty> partyMap = new ConcurrentHashMap<>();
 
-    private final PartyServiceGrpc.PartyServiceFutureStub partyService = GrpcStubCollection.getPartyService().orElse(null);
+    private final @NotNull PartyService partyService;
     private final @NotNull ProxyServer proxy;
 
-    public PartyCache(@NotNull ProxyServer proxy, @NotNull MessagingCore messagingCore) {
+    public PartyCache(@NotNull ProxyServer proxy, @NotNull PartyService partyService, @NotNull MessagingCore messagingCore) {
         this.proxy = proxy;
+        this.partyService = partyService;
 
         messagingCore.addListener(PartyCreatedMessage.class, this::handleCreateParty);
         messagingCore.addListener(PartyDeletedMessage.class, this::handlePartyDeleted);
@@ -251,19 +258,14 @@ public class PartyCache {
             return cachedParty;
         }
 
-        var getPartyFuture = this.partyService.getParty(PartyProto.GetPartyRequest.newBuilder()
-                .setPartyId(partyId)
-                .build());
-
-        PartyProto.GetPartyResponse response;
+        Party party;
         try {
-            response = getPartyFuture.get();
-        } catch (Exception e) {
-            LOGGER.error("Failed to get party", e);
+            party = this.partyService.getParty(partyId);
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to get party", exception);
             return null;
         }
 
-        Party party = response.getParty();
         cachedParty = CachedParty.fromProto(party);
         this.partyMap.put(party.getId(), cachedParty);
 
