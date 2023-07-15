@@ -6,10 +6,12 @@ metadata:
 
 spec:
   replicas: 1
-  scheduling: Packed
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 100%
 
   template:
     spec:
@@ -65,6 +67,12 @@ spec:
                   value: default-kafka-bootstrap
                 - name: KAFKA_PORT
                   value: "9092"
+                - name: NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: FLEET_NAME
+                  value: velocity
                 - name: PYROSCOPE_SERVER_ADDRESS
                   valueFrom:
                     configMapKeyRef:
