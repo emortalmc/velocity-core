@@ -9,7 +9,6 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.service.mcplayer.McPlayerService;
-import dev.emortal.api.service.playertracker.PlayerTrackerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.relationships.FriendCache;
@@ -28,6 +27,7 @@ public final class FriendCommand {
     private static final Component HELP_MESSAGE = MINI_MESSAGE.deserialize(
             """
                     <light_purple>------ Friend Help ------
+                    <click:run_command:'/friend list'>/friend list</click>
                     <click:suggest_command:'/friend add '>/friend add <name></click>
                     <click:suggest_command:'/friend remove '>/friend remove <name></click>
                     <click:suggest_command:'/friend requests '>/friend requests <incoming/outgoing> [page]</click>
