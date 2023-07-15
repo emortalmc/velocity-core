@@ -9,9 +9,11 @@ import com.velocitypowered.api.permission.PermissionSubject;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.velocity.permissions.PermissionCache;
+import io.grpc.StatusException;
 import org.jetbrains.annotations.NotNull;
 
 public class PermissionCheckListener {
+
     private final PermissionCache permissionCache;
 
     public PermissionCheckListener(@NotNull PermissionCache permissionCache) {
@@ -25,14 +27,19 @@ public class PermissionCheckListener {
             return;
         }
 
-        this.permissionCache.loadUser(player.getUniqueId(), continuation::resume, continuation::resumeWithException);
+        try {
+            this.permissionCache.loadUser(player.getUniqueId());
+            continuation.resume();
+        } catch (StatusException exception) {
+            continuation.resumeWithException(exception);
+        }
         event.setProvider(new PlayerPermissionProvider(this.permissionCache));
     }
 
     private record PlayerPermissionProvider(@NotNull PermissionCache permissionCache) implements PermissionProvider {
 
         @Override
-        public PermissionFunction createFunction(PermissionSubject subject) {
+        public @NotNull PermissionFunction createFunction(@NotNull PermissionSubject subject) {
             return new PlayerPermissionFunction((Player) subject, this.permissionCache);
         }
     }
@@ -41,7 +48,7 @@ public class PermissionCheckListener {
                                             @NotNull PermissionCache permissionCache) implements PermissionFunction {
 
         @Override
-        public Tristate getPermissionValue(String permission) {
+        public @NotNull Tristate getPermissionValue(@NotNull String permission) {
             return this.permissionCache.getPermission(this.player.getUniqueId(), permission);
         }
     }

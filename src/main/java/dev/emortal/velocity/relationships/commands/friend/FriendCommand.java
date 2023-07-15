@@ -6,22 +6,23 @@ import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto;
-import dev.emortal.api.grpc.mcplayer.PlayerTrackerGrpc;
-import dev.emortal.api.grpc.relationship.RelationshipGrpc;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
-import dev.emortal.api.utils.GrpcStubCollection;
+import dev.emortal.api.service.mcplayer.McPlayerService;
+import dev.emortal.api.service.playertracker.PlayerTrackerService;
+import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.utils.CommandUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 
-public class FriendCommand {
+public final class FriendCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final Component HELP_MESSAGE = MINI_MESSAGE.deserialize(
@@ -43,17 +44,14 @@ public class FriendCommand {
     private final FriendRequestPurgeSub friendRequestPurgeSub;
     private final FriendRequestsSub friendRequestsSub;
 
-    public FriendCommand(ProxyServer proxyServer, UsernameSuggestions usernameSuggestions, FriendCache friendCache,
-                         GameModeCollection gameModeCollection) {
+    public FriendCommand(@NotNull ProxyServer proxyServer, @NotNull McPlayerService mcPlayerService,
+                         @NotNull RelationshipService relationshipService, @NotNull UsernameSuggestions usernameSuggestions,
+                         @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
         this.usernameSuggestions = usernameSuggestions;
-
-        McPlayerGrpc.McPlayerFutureStub mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
-        RelationshipGrpc.RelationshipFutureStub relationshipService = GrpcStubCollection.getRelationshipService().orElse(null);
-        PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService = GrpcStubCollection.getPlayerTrackerService().orElse(null);
 
         this.friendAddSub = new FriendAddSub(relationshipService, friendCache);
         this.friendDenySubs = new FriendDenySubs(relationshipService);
-        this.friendListSub = new FriendListSub(mcPlayerService, playerTrackerService, friendCache, gameModeCollection);
+        this.friendListSub = new FriendListSub(mcPlayerService, friendCache, gameModeCollection);
         this.friendRemoveSub = new FriendRemoveSub(mcPlayerService, relationshipService, friendCache);
         this.friendRequestPurgeSub = new FriendRequestPurgeSub(relationshipService);
         this.friendRequestsSub = new FriendRequestsSub(relationshipService, mcPlayerService);
@@ -61,65 +59,64 @@ public class FriendCommand {
         proxyServer.getCommandManager().register(this.createCommand());
     }
 
-    private int executeBase(CommandContext<CommandSource> context) {
+    private void executeBase(@NotNull CommandContext<CommandSource> context) {
         context.getSource().sendMessage(HELP_MESSAGE);
-        return 1;
     }
 
-    private BrigadierCommand createCommand() {
+    private @NotNull BrigadierCommand createCommand() {
         return new BrigadierCommand(
                 LiteralArgumentBuilder.<CommandSource>literal("friend")
                         .requires(CommandUtils.isPlayer())
-                        .executes(this::executeBase)
+                        .executes(CommandUtils.execute(this::executeBase))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("list")
-                                .executes(this.friendListSub::execute)
+                                .executes(CommandUtils.execute(this.friendListSub::execute))
                                 .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", integer(1))
-                                        .executes(this.friendListSub::execute)
+                                        .executes(CommandUtils.execute(this.friendListSub::execute))
                                 ))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("requests")
                                 .then(LiteralArgumentBuilder.<CommandSource>literal("incoming")
-                                        .executes(this.friendRequestsSub::executeIncoming)
+                                        .executes(CommandUtils.executeAsync(this.friendRequestsSub::executeIncoming))
                                         .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", integer(1))
-                                                .executes(this.friendRequestsSub::executeIncoming)
+                                                .executes(CommandUtils.executeAsync(this.friendRequestsSub::executeIncoming))
                                         ))
                                 .then(LiteralArgumentBuilder.<CommandSource>literal("outgoing")
-                                        .executes(this.friendRequestsSub::executeOutgoing)
+                                        .executes(CommandUtils.executeAsync(this.friendRequestsSub::executeOutgoing))
                                         .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("page", integer(1))
-                                                .executes(this.friendRequestsSub::executeOutgoing)
+                                                .executes(CommandUtils.executeAsync(this.friendRequestsSub::executeOutgoing))
                                         ))
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("purge")
                                 .then(LiteralArgumentBuilder.<CommandSource>literal("requests")
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("incoming")
-                                                .executes(this.friendRequestPurgeSub::executeIncoming)
+                                                .executes(CommandUtils.executeAsync(this.friendRequestPurgeSub::executeIncoming))
                                         )
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("outgoing")
-                                                .executes(this.friendRequestPurgeSub::executeOutgoing)
+                                                .executes(CommandUtils.executeAsync(this.friendRequestPurgeSub::executeOutgoing))
                                         )
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("add")
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
-                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.NONE))
-                                        .executes(this.friendAddSub::execute)
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, FilterMethod.NONE))
+                                        .executes(CommandUtils.executeAsync(this.friendAddSub::execute))
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("remove")
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
-                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.FRIENDS))
-                                        .executes(this.friendRemoveSub::execute)
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, FilterMethod.FRIENDS))
+                                        .executes(CommandUtils.executeAsync(this.friendRemoveSub::execute))
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("deny")
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
-                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.NONE))
-                                        .executes(this.friendDenySubs::executeDeny)
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, FilterMethod.NONE))
+                                        .executes(CommandUtils.executeAsync(this.friendDenySubs::executeDeny))
                                 )
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("revoke")
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", string())
-                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.NONE))
-                                        .executes(this.friendDenySubs::executeRevoke)
+                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, FilterMethod.NONE))
+                                        .executes(CommandUtils.executeAsync(this.friendDenySubs::executeRevoke))
                                 )
                         )
                         .build()

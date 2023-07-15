@@ -7,15 +7,24 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.service.party.PartyService;
 import dev.emortal.velocity.general.UsernameSuggestions;
 import dev.emortal.velocity.party.PartyCache;
-import dev.emortal.velocity.party.commands.subs.*;
+import dev.emortal.velocity.party.commands.subs.PartyDisbandSub;
+import dev.emortal.velocity.party.commands.subs.PartyInviteSub;
+import dev.emortal.velocity.party.commands.subs.PartyJoinSub;
+import dev.emortal.velocity.party.commands.subs.PartyKickSub;
+import dev.emortal.velocity.party.commands.subs.PartyLeaderSub;
+import dev.emortal.velocity.party.commands.subs.PartyLeaveSub;
+import dev.emortal.velocity.party.commands.subs.PartyListSub;
+import dev.emortal.velocity.party.commands.subs.PartyOpenSub;
 import dev.emortal.velocity.utils.CommandUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.jetbrains.annotations.NotNull;
 
-public class PartyCommand {
+public final class PartyCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     public static final Component ERROR_MESSAGE = MINI_MESSAGE.deserialize("<red>An error occurred");
@@ -49,26 +58,32 @@ public class PartyCommand {
 
     private final UsernameSuggestions usernameSuggestions;
 
-    private final PartyInviteSub inviteSub = new PartyInviteSub();
-    private final PartyJoinSub joinSub = new PartyJoinSub();
-    private final PartyLeaveSub leaveSub = new PartyLeaveSub();
-    private final PartyKickSub kickSub = new PartyKickSub();
-    private final PartyLeaderSub leaderSub = new PartyLeaderSub();
-    private final PartyDisbandSub disbandSub = new PartyDisbandSub();
+    private final PartyInviteSub inviteSub;
+    private final PartyJoinSub joinSub;
+    private final PartyLeaveSub leaveSub;
+    private final PartyKickSub kickSub;
+    private final PartyLeaderSub leaderSub;
+    private final PartyDisbandSub disbandSub;
     private final PartyOpenSub openSub;
-
     private final PartyListSub listSub;
 
-    public PartyCommand(ProxyServer proxy, UsernameSuggestions usernameSuggestions, PartyCache partyCache) {
+    public PartyCommand(@NotNull ProxyServer proxy, @NotNull PartyService partyService, @NotNull UsernameSuggestions usernameSuggestions,
+                        @NotNull PartyCache partyCache) {
         this.usernameSuggestions = usernameSuggestions;
 
+        this.inviteSub = new PartyInviteSub(partyService);
+        this.joinSub = new PartyJoinSub(partyService);
+        this.leaveSub = new PartyLeaveSub(partyService);
+        this.kickSub = new PartyKickSub(partyService);
+        this.leaderSub = new PartyLeaderSub(partyService);
+        this.disbandSub = new PartyDisbandSub(partyService);
+        this.openSub = new PartyOpenSub(partyService, partyCache);
         this.listSub = new PartyListSub(partyCache);
-        this.openSub = new PartyOpenSub(partyCache);
 
         proxy.getCommandManager().register(this.createCommand());
     }
 
-    public BrigadierCommand createCommand() {
+    public @NotNull BrigadierCommand createCommand() {
         return new BrigadierCommand(
                 LiteralArgumentBuilder.<CommandSource>literal("party")
                         .requires(CommandUtils.isPlayer())
@@ -81,7 +96,7 @@ public class PartyCommand {
                                     return 1;
                                 }).then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
                                         .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
-                                        .executes(this.inviteSub::execute))
+                                        .executes(CommandUtils.executeAsync(this.inviteSub::execute)))
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("join").executes(context -> {
                                             context.getSource().sendMessage(USAGE_PARTY_JOIN);
@@ -89,16 +104,16 @@ public class PartyCommand {
                                         })
                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
                                                 .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
-                                                .executes(this.joinSub::execute))
+                                                .executes(CommandUtils.executeAsync(this.joinSub::execute)))
                         )
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("leave").executes(this.leaveSub::execute))
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("leave").executes(CommandUtils.executeAsync(this.leaveSub::execute)))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("kick").executes(context -> {
                                             context.getSource().sendMessage(USAGE_PARTY_KICK);
                                             return 1;
                                         })
                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
                                                 .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
-                                                .executes(this.kickSub::execute))
+                                                .executes(CommandUtils.executeAsync(this.kickSub::execute)))
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("leader").executes(context -> {
                                             context.getSource().sendMessage(USAGE_PARTY_LEADER);
@@ -106,12 +121,12 @@ public class PartyCommand {
                                         })
                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
                                                 .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
-                                                .executes(this.leaderSub::execute)
+                                                .executes(CommandUtils.executeAsync(this.leaderSub::execute))
                                         )
                         )
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("open").executes(this.openSub::execute))
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("list").executes(this.listSub::execute))
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("disband").executes(this.disbandSub::execute))
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("open").executes(CommandUtils.executeAsync(this.openSub::execute)))
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("list").executes(CommandUtils.executeAsync(this.listSub::execute)))
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("disband").executes(CommandUtils.executeAsync(this.disbandSub::execute)))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("settings").executes(context -> {
                             context.getSource().sendMessage(SETTINGS_HELP_MESSAGE);
                             return 1;

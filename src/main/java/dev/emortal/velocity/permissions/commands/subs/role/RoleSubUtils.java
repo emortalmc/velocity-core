@@ -5,21 +5,21 @@ import com.velocitypowered.api.command.CommandSource;
 import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-
-import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class RoleSubUtils {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";
 
-    public static Optional<PermissionCache.CachedRole> getRole(PermissionCache permissionCache, CommandContext<CommandSource> context) {
+    public static @Nullable PermissionCache.CachedRole getRole(@NotNull PermissionCache permissionCache, @NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
 
-        Optional<PermissionCache.CachedRole> optionalRole = permissionCache.getRole(roleId);
+        PermissionCache.CachedRole role = permissionCache.getRole(roleId);
+        if (role == null) source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId)));
 
-        if (optionalRole.isEmpty()) source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId)));
-        return optionalRole;
+        return role;
     }
 }

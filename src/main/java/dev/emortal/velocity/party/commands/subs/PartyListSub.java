@@ -33,20 +33,18 @@ public class PartyListSub {
         this.partyCache = partyCache;
     }
 
-    public int execute(CommandContext<CommandSource> context) {
+    public void execute(CommandContext<CommandSource> context) {
         Player executor = (Player) context.getSource();
 
         PartyCache.CachedParty party = this.partyCache.getPlayerParty(executor.getUniqueId());
         if (party == null) {
             executor.sendMessage(PartyCommand.NOT_IN_PARTY_MESSAGE);
-            return 0;
+            return;
         }
 
-        executor.sendMessage(MINI_MESSAGE.deserialize(MESSAGE_CONTENT,
-                Placeholder.unparsed("party_size", String.valueOf(party.getMembers().size())),
-                Placeholder.component("member_content", this.createMessageContent(party)))
-        );
-        return 1;
+        var partySize = Placeholder.unparsed("party_size", String.valueOf(party.getMembers().size()));
+        var memberContent = Placeholder.component("member_content", this.createMessageContent(party));
+        executor.sendMessage(MINI_MESSAGE.deserialize(MESSAGE_CONTENT, partySize, memberContent));
     }
 
     private Component createMessageContent(PartyCache.CachedParty party) {

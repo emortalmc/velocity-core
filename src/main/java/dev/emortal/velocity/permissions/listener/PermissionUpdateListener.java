@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public class PermissionUpdateListener {
@@ -30,10 +29,12 @@ public class PermissionUpdateListener {
         messagingCore.addListener(PlayerRolesUpdateMessage.class, message -> {
             UUID uuid = UUID.fromString(message.getPlayerId());
 
-            Optional<PermissionCache.User> optionalUser = cache.getUser(uuid);
+            PermissionCache.User user = cache.getUser(uuid);
+            if (user == null) return;
+
             switch (message.getChangeType()) {
-                case REMOVE -> optionalUser.ifPresent(user -> user.getRoleIds().remove(message.getRoleId()));
-                case ADD -> optionalUser.ifPresent(user -> user.getRoleIds().add(message.getRoleId()));
+                case ADD -> user.getRoleIds().add(message.getRoleId());
+                case REMOVE -> user.getRoleIds().remove(message.getRoleId());
             }
         });
     }

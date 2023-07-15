@@ -1,28 +1,23 @@
 package dev.emortal.velocity.relationships.commands.friend;
 
-import com.google.common.util.concurrent.Futures;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto;
-import dev.emortal.api.grpc.mcplayer.PlayerTrackerGrpc;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.model.mcplayer.McPlayer;
+import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.ProtoTimestampConverter;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.utils.DurationFormatter;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +27,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
-import java.util.function.Consumer;
 
 public class FriendListSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendListSub.class);
@@ -48,21 +40,19 @@ public class FriendListSub {
     private static final String OFFLINE_LINE = "<red><username> - Seen <last_seen></red>";
     private static final Component MESSAGE_FOOTER = Component.text("----------------------------", NamedTextColor.LIGHT_PURPLE);
 
-    private final McPlayerGrpc.McPlayerFutureStub mcPlayerService;
-    private final PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService;
-    private final FriendCache friendCache;
-    private final GameModeCollection gameModeCollection;
+    private final @NotNull McPlayerService mcPlayerService;
+    private final @NotNull FriendCache friendCache;
+    private final @Nullable GameModeCollection gameModeCollection;
 
-    public FriendListSub(McPlayerGrpc.McPlayerFutureStub mcPlayerService,
-                         PlayerTrackerGrpc.PlayerTrackerFutureStub playerTrackerService, FriendCache friendCache,
-                         GameModeCollection gameModeCollection) {
+    public FriendListSub(@NotNull McPlayerService mcPlayerService, @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
         this.mcPlayerService = mcPlayerService;
-        this.playerTrackerService = playerTrackerService;
         this.friendCache = friendCache;
         this.gameModeCollection = gameModeCollection;
+
+        if (gameModeCollection == null) LOGGER.warn("GameModeCollection is null. Friend statuses will not be displayed.");
     }
 
-    public int execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
 
         List<FriendCache.CachedFriend> friends = this.friendCache.get(player.getUniqueId());
@@ -70,43 +60,40 @@ public class FriendListSub {
 
         if (maxPage == 0) {
             player.sendMessage(NO_FRIENDS_MESSAGE);
-            return 1;
+            return;
         }
 
         int page = context.getArguments().containsKey("page") ? Math.min(context.getArgument("page", Integer.class), maxPage) : 1;
 
-        this.retrieveStatuses(friends, friendStatuses -> {
-            Collections.sort(friendStatuses);
-            List<FriendStatus> pageFriends = friendStatuses.stream()
-                    .skip((page - 1) * 8L)
-                    .limit(8).toList();
+        List<FriendStatus> statuses = this.retrieveStatuses(friends);
+        Collections.sort(statuses);
 
-            player.sendMessage(this.createMessage(pageFriends, page, maxPage));
-        });
-
-        return 1;
+        List<FriendStatus> pageFriends = statuses.stream()
+                .skip((page - 1) * 8L)
+                .limit(8)
+                .toList();
+        player.sendMessage(this.createMessage(pageFriends, page, maxPage));
     }
 
-    private Component createMessage(List<FriendStatus> statuses, int page, int maxPage) {
+    private @NotNull Component createMessage(@NotNull List<FriendStatus> statuses, int page, int maxPage) {
         TextComponent.Builder message = Component.text()
-                .append(
-                        MINI_MESSAGE.deserialize(MESSAGE_TITLE,
+                .append(MINI_MESSAGE.deserialize(MESSAGE_TITLE,
                                 Placeholder.parsed("page", String.valueOf(page)),
-                                Placeholder.parsed("max_page", String.valueOf(maxPage)))
-                ).append(Component.newline());
+                                Placeholder.parsed("max_page", String.valueOf(maxPage))))
+                .append(Component.newline());
 
         for (FriendStatus status : statuses) {
-            if (status.isOnline()) {
+            if (status.online()) {
                 message.append(
                         MINI_MESSAGE.deserialize(ONLINE_LINE,
-                                Placeholder.parsed("username", status.getUsername()),
-                                Placeholder.parsed("server", this.createActivityForServer(status.getServerId())))
+                                Placeholder.parsed("username", status.username()),
+                                Placeholder.parsed("server", this.createActivityForServer(status.serverId())))
                 );
             } else {
                 message.append(
                         MINI_MESSAGE.deserialize(OFFLINE_LINE,
-                                Placeholder.parsed("username", status.getUsername()),
-                                Placeholder.parsed("last_seen", DurationFormatter.formatShortFromInstant(status.getLastSeen())))
+                                Placeholder.parsed("username", status.username()),
+                                Placeholder.parsed("last_seen", DurationFormatter.formatShortFromInstant(status.lastSeen())))
                 );
             }
             message.append(Component.newline());
@@ -115,48 +102,48 @@ public class FriendListSub {
         return message.build();
     }
 
-    private void retrieveStatuses(@NotNull List<FriendCache.CachedFriend> friends, Consumer<List<FriendStatus>> callback) {
+    private @NotNull List<FriendStatus> retrieveStatuses(@NotNull List<FriendCache.CachedFriend> friends) {
         Map<UUID, FriendStatus> statuses = new ConcurrentHashMap<>();
-        for (FriendCache.CachedFriend friend : friends)
+        for (FriendCache.CachedFriend friend : friends) {
             statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
+        }
 
-        var playersRequest = this.mcPlayerService.getPlayers(McPlayerProto.GetPlayersRequest.newBuilder()
-                .addAllPlayerIds(friends.stream().map(FriendCache.CachedFriend::playerId).map(UUID::toString).toList())
-                .build());
+        List<UUID> playerIds = new ArrayList<>();
+        for (FriendCache.CachedFriend friend : friends) {
+            playerIds.add(friend.playerId());
+        }
 
-        Futures.addCallback(playersRequest, FunctionalFutureCallback.create(
-                response -> {
-                    for (McPlayer player : response.getPlayersList()) {
-                        FriendStatus status = statuses.get(UUID.fromString(player.getId()));
-                        status.setUsername(player.getCurrentUsername());
-                        status.setLastSeen(ProtoTimestampConverter.fromProto(player.getLastOnline()));
-                        status.setOnline(player.hasCurrentServer());
-                        status.setServerId(player.hasCurrentServer() ? player.getCurrentServer().getServerId() : null);
-                    }
+        List<McPlayer> players;
+        try {
+            players = this.mcPlayerService.getPlayersById(playerIds);
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to retrieve player statuses: ", exception);
+            return new ArrayList<>(statuses.values());
+        }
 
-                    callback.accept(new ArrayList<>(statuses.values()));
-                },
-                error -> {
-                    LOGGER.error("Failed to retrieve player statuses: ", error);
-                    callback.accept(new ArrayList<>(statuses.values()));
-                }
-        ), ForkJoinPool.commonPool());
+        for (McPlayer player : players) {
+            UUID uuid = UUID.fromString(player.getId());
+            FriendStatus status = statuses.get(uuid);
+
+            String serverId = player.hasCurrentServer() ? player.getCurrentServer().getServerId() : null;
+            Instant lastSeen = ProtoTimestampConverter.fromProto(player.getLastOnline());
+            FriendStatus newStatus = status.toFull(player.getCurrentUsername(), player.hasCurrentServer(), serverId, lastSeen);
+
+            statuses.put(uuid, newStatus);
+        }
+
+        return new ArrayList<>(statuses.values());
     }
 
-    @Getter
-    @Setter
-    @ToString
-    private static class FriendStatus implements Comparable<FriendStatus> {
-        private final @NotNull UUID uuid;
-        private final @NotNull Instant friendsSince;
-        private String username;
-        boolean online;
-        private String serverId;
-        private Instant lastSeen;
+    private record FriendStatus(@NotNull UUID uuid, @NotNull Instant friendsSince, @Nullable String username, boolean online,
+                                @Nullable String serverId, @Nullable Instant lastSeen) implements Comparable<FriendStatus> {
 
-        private FriendStatus(@NotNull UUID uuid, @NotNull Instant friendsSince) {
-            this.uuid = uuid;
-            this.friendsSince = friendsSince;
+        FriendStatus(@NotNull UUID uuid, @NotNull Instant friendsSince) {
+            this(uuid, friendsSince, null, false, null, null);
+        }
+
+        @NotNull FriendStatus toFull(@Nullable String username, boolean online, @Nullable String serverId, @Nullable Instant lastSeen) {
+            return new FriendStatus(this.uuid, this.friendsSince, username, online, serverId, lastSeen);
         }
 
         public int compareTo(@NotNull FriendListSub.FriendStatus o) {
@@ -167,21 +154,27 @@ public class FriendListSub {
         }
     }
 
-    private String createActivityForServer(String serverId) {
+    private @NotNull String createActivityForServer(@NotNull String serverId) {
         String[] parts = serverId.split("-");
         String[] serverTypeIdParts = Arrays.copyOf(parts, parts.length - 2);
         String fleetId = String.join("-", serverTypeIdParts);
 
-        Optional<GameModeConfig> optionalGameMode = this.gameModeCollection.getAllConfigs().stream()
-                .filter(config -> config.fleetName().equals(fleetId))
-                .findFirst();
-
-        if (optionalGameMode.isPresent()) {
-            GameModeConfig gameModeConfig = optionalGameMode.get();
-            return gameModeConfig.activityNoun() + " " + gameModeConfig.friendlyName();
-        }
+        GameModeConfig gameModeConfig = this.getGameModeConfig(fleetId);
+        if (gameModeConfig != null) return gameModeConfig.activityNoun() + " " + gameModeConfig.friendlyName();
 
         LOGGER.warn("Could not find friendly name for fleet {}", fleetId);
         return fleetId;
+    }
+
+    private @Nullable GameModeConfig getGameModeConfig(@NotNull String fleetId) {
+        if (this.gameModeCollection == null) return null;
+
+        GameModeConfig gameModeConfig = null;
+        for (GameModeConfig config : this.gameModeCollection.getAllConfigs()) {
+            if (!config.fleetName().equals(fleetId)) continue;
+            gameModeConfig = config;
+            break;
+        }
+        return gameModeConfig;
     }
 }

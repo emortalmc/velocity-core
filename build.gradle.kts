@@ -26,9 +26,8 @@ dependencies {
     annotationProcessor("com.velocitypowered:velocity-api:3.1.1")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
-    implementation("dev.emortal.api:common-proto-sdk:cd11bae")
+    implementation("dev.emortal.api:common-proto-sdk:8572819")
     implementation("dev.emortal.api:agones-sdk:1.0.7")
-    implementation("dev.emortal.api:kurushimi-sdk:9a40144")
     implementation("dev.emortal.api:live-config-parser:e26df7a")
 
     implementation("io.kubernetes:client-java:18.0.0")
