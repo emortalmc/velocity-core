@@ -27,4 +27,5 @@ WORKDIR /app/plugins
 COPY build/libs/*-all.jar velocity-core.jar
 # Go back to the base directory for our server
 WORKDIR /app
-CMD ["java", "-jar", "/app/velocity.jar"]
+
+CMD ["java", "--enable-preview", "-jar", "/app/velocity.jar"]
