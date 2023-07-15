@@ -74,7 +74,7 @@ public class MessageCommand {
         UUID targetId = target.uuid();
 
         if (!target.online()) {
-            player.sendMessage(Component.text(correctedUsername + " is not currently online.", NamedTextColor.RED)); // todo
+            TempLang.PLAYER_NOT_ONLINE.send(player, Placeholder.unparsed("username", correctedUsername));
             return;
         }
 
@@ -96,7 +96,7 @@ public class MessageCommand {
 
         var usernamePlaceholder = Placeholder.parsed("username", correctedUsername);
         var responseMessage = switch (result) {
-            case SendPrivateMessageResult.Success(PrivateMessage newMessage) ->
+            case SendPrivateMessageResult.Success(PrivateMessage ignored) ->
                     MINI_MESSAGE.deserialize(MESSAGE_FORMAT, usernamePlaceholder, Placeholder.unparsed("message", message));
             case SendPrivateMessageResult.Error error -> switch (error) {
                 case YOU_BLOCKED -> MINI_MESSAGE.deserialize(YOU_BLOCKED_MESSAGE, usernamePlaceholder);
