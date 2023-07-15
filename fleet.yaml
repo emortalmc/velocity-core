@@ -6,6 +6,7 @@ metadata:
 
 spec:
   replicas: 1
+  scheduling: Packed
 
   strategy:
     type: RollingUpdate
