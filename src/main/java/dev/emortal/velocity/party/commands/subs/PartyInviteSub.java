@@ -25,9 +25,6 @@ public class PartyInviteSub {
     private static final String NO_PERMISSION_MESSAGE = "<red>You must be the leader of the party to invite another player";
     private static final String ALREADY_INVITED_MESSAGE = "<red><username> has already been invited to your party";
     private static final String ALREADY_IN_PARTY_MESSAGE = "<red><username> is already in the party";
-    private static final String ALREADY_IN_PARTY_OTHER_MESSAGE = "<red><username> is in another party";
-    private static final String PARTY_IS_OPEN_MESSAGE = "<red>The party is open, anyone can join";
-
 
     private final @NotNull PartyService partyService;
 
@@ -69,16 +66,12 @@ public class PartyInviteSub {
         }
 
         switch (result) {
-            case InvitePlayerToPartyResult.Success(PartyInvite invite) -> {} // do nothing as we listen for the Kafka message
+            case InvitePlayerToPartyResult.Success(PartyInvite ignored) -> {} // do nothing as we listen for the Kafka message
             case InvitePlayerToPartyResult.Error error -> {
                 var message = switch (error) {
                     case NO_PERMISSION -> MINI_MESSAGE.deserialize(NO_PERMISSION_MESSAGE);
                     case TARGET_ALREADY_INVITED -> MINI_MESSAGE.deserialize(ALREADY_INVITED_MESSAGE, Placeholder.unparsed("username", target.username()));
                     case TARGET_IN_THIS_PARTY -> MINI_MESSAGE.deserialize(ALREADY_IN_PARTY_MESSAGE, Placeholder.unparsed("username", target.username()));
-                    // TODO: Why is this an error?
-                    case TARGET_IN_OTHER_PARTY -> MINI_MESSAGE.deserialize(ALREADY_IN_PARTY_OTHER_MESSAGE, Placeholder.unparsed("username", target.username()));
-                    // TODO: This too.
-                    case PARTY_OPEN -> MINI_MESSAGE.deserialize(PARTY_IS_OPEN_MESSAGE);
                 };
                 executor.sendMessage(message);
             }
