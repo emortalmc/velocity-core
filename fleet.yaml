@@ -33,6 +33,9 @@ spec:
 
       template:
         spec:
+          serviceAccountName: default-gameserver
+          automountServiceAccountToken: true
+          
           nodeSelector:
             kubernetes.io/hostname: emc-01 # Only deploy 1 velocity on the main node
 
@@ -40,8 +43,8 @@ spec:
             - name: gamemodes
               configMap:
                 name: gamemodes
-
           containers:
+          
             - name: velocity
               image: ghcr.io/emortalmc/velocity-core:81ed1a3f065a53467e3af9ac54ba035a2cfe47d8
               command: [ "/bin/sh", "-c", "java -XX:+UseZGC -Xmx3G -Xms3G -jar /app/velocity.jar" ]
