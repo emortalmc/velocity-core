@@ -1,33 +1,33 @@
 package dev.emortal.velocity.permissions;
 
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Futures;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.permission.Tristate;
 import dev.emortal.api.grpc.permission.PermissionProto;
-import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
-import dev.emortal.api.model.permission.PermissionNode;
+import dev.emortal.api.model.permission.PermissionNode.PermissionState;
 import dev.emortal.api.model.permission.Role;
+import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class PermissionCache {
@@ -36,7 +36,7 @@ public class PermissionCache {
     private final Map<String, CachedRole> roleCache = Collections.synchronizedMap(new LinkedHashMap<>());
     private final Map<UUID, User> userCache = new ConcurrentHashMap<>();
 
-    private final PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
+    private final PermissionService permissionService;
     private final Set<PermissionBlocker> permissionBlockers;
 
     public PermissionCache(PermissionBlocker... permissionBlockers) {
@@ -46,57 +46,47 @@ public class PermissionCache {
         this.loadRoles();
     }
 
+    @Blocking
     private void loadRoles() {
         if (this.permissionService == null) {
             LOGGER.warn("Permission service is not available! Not loading roles");
             return;
         }
-        var response = this.permissionService.getAllRoles(PermissionProto.GetAllRolesRequest.getDefaultInstance());
 
-        Futures.addCallback(response, FunctionalFutureCallback.create(
-                result -> {
-                    for (dev.emortal.api.model.permission.Role role : result.getRolesList()) {
-                        this.roleCache.put(
-                                role.getId(),
-                                new CachedRole(
-                                        role.getId(), role.getPriority(), role.getDisplayName(),
-                                        Sets.newConcurrentHashSet(role.getPermissionsList().stream()
-                                                .map(protoNode -> new CachedRole.PermissionNode(
-                                                                protoNode.getNode(),
-                                                                protoNode.getState() == PermissionNode.PermissionState.ALLOW ? Tristate.TRUE : Tristate.FALSE
-                                                        )
-                                                ).collect(Collectors.toSet()))
-                                )
-                        );
-                    }
-                },
-                error -> LOGGER.error("Failed to load roles", error)
-        ), ForkJoinPool.commonPool());
+        List<Role> roles;
+        try {
+            roles = this.permissionService.getAllRoles();
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to load roles", exception);
+            return;
+        }
+
+        for (Role role : roles) {
+            var cachedRole = CachedRole.fromRole(role);
+            this.roleCache.put(role.getId(), cachedRole);
+        }
     }
 
-    public void loadUser(UUID id, Runnable callback, Consumer<Throwable> errorCallback) {
-        var rolesResponseFuture = this.permissionService.getPlayerRoles(
-                PermissionProto.GetPlayerRolesRequest.newBuilder().setPlayerId(id.toString()).build()
-        );
+    @Blocking
+    public void loadUser(UUID id) throws StatusException {
+        PermissionProto.PlayerRolesResponse response;
+        try {
+            response = this.permissionService.getPlayerRoles(id);
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to load user roles for " + id, exception);
+            throw new StatusException(exception.getStatus(), exception.getTrailers());
+        }
 
-        Futures.addCallback(rolesResponseFuture, FunctionalFutureCallback.create(
-                result -> {
-                    Set<String> roleIds = Sets.newConcurrentHashSet(result.getRoleIdsList());
-                    User user = new User(id, roleIds, this.determineActiveName(roleIds));
-                    this.userCache.put(id, user);
-                    callback.run();
-                },
-                error -> {
-                    errorCallback.accept(error);
-                    LOGGER.error("Failed to load user roles for " + id, error);
-                }
-        ), ForkJoinPool.commonPool());
+        Set<String> roleIds = Sets.newConcurrentHashSet(response.getRoleIdsList());
+        User user = new User(id, roleIds, this.determineActiveName(roleIds));
+        this.userCache.put(id, user);
     }
 
     public Tristate getPermission(UUID id, String permission) {
         // check permission blockers
-        for (PermissionBlocker permissionBlocker : this.permissionBlockers)
+        for (PermissionBlocker permissionBlocker : this.permissionBlockers) {
             if (permissionBlocker.isBlocked(id, permission)) return Tristate.FALSE;
+        }
         // continue for checks if not blocked
 
         User user = this.userCache.get(id);
@@ -130,25 +120,16 @@ public class PermissionCache {
         return userCache;
     }
 
-    public Optional<CachedRole> getRole(String id) {
-        return Optional.ofNullable(this.roleCache.get(id));
+    public @Nullable CachedRole getRole(String id) {
+        return this.roleCache.get(id);
     }
 
-    public Optional<User> getUser(UUID id) {
-        return Optional.ofNullable(this.userCache.get(id));
+    public @Nullable User getUser(UUID id) {
+        return this.userCache.get(id);
     }
 
     public void setRole(@NotNull Role roleResponse) {
-        CachedRole role = new CachedRole(
-                roleResponse.getId(), roleResponse.getPriority(), roleResponse.getDisplayName(),
-                Sets.newConcurrentHashSet(roleResponse.getPermissionsList().stream()
-                        .map(protoNode -> new CachedRole.PermissionNode(
-                                        protoNode.getNode(),
-                                        protoNode.getState() == PermissionNode.PermissionState.ALLOW ? Tristate.TRUE : Tristate.FALSE
-                                )
-                        ).collect(Collectors.toSet()))
-        );
-
+        var role = CachedRole.fromRole(roleResponse);
         this.roleCache.put(roleResponse.getId(), role);
     }
 
@@ -161,7 +142,7 @@ public class PermissionCache {
         String currentActiveName = null;
 
         for (CachedRole role : this.roleCache.values()) {
-            if (role.getDisplayName() != null && roleIds.contains(role.getId())) {
+            if (role.getDisplayName() != null && roleIds.contains(role.id())) {
                 if (role.getPriority() > currentPriority) {
                     currentPriority = role.getPriority();
                     currentActiveName = role.getDisplayName();
@@ -205,18 +186,24 @@ public class PermissionCache {
         }
     }
 
-    public static final class CachedRole implements Comparable<CachedRole> {
-        private final String id;
-        private final Set<PermissionNode> permissions;
+    public record CachedRole(@NotNull String id, int priority, @NotNull String displayName,
+                             @NotNull Set<PermissionNode> permissions) implements Comparable<CachedRole> {
 
-        private int priority;
-        private String displayName;
+        static @NotNull CachedRole fromRole(@NotNull Role role) {
+            return new CachedRole(
+                    role.getId(),
+                    role.getPriority(),
+                    role.getDisplayName(),
+                    role.getPermissionsList().stream()
+                            .filter(node -> node.getState() == PermissionState.ALLOW)
+                            .map(CachedRole::convertPermissionNode)
+                            .collect(Collectors.toCollection(Sets::newConcurrentHashSet))
+            );
+        }
 
-        public CachedRole(String id, int priority, String displayName, Set<PermissionNode> permissions) {
-            this.id = id;
-            this.priority = priority;
-            this.displayName = displayName;
-            this.permissions = permissions;
+        private static @NotNull PermissionNode convertPermissionNode(@NotNull dev.emortal.api.model.permission.PermissionNode node) {
+            Tristate state = node.getState() == PermissionState.ALLOW ? Tristate.TRUE : Tristate.FALSE;
+            return new PermissionNode(node.getNode(), state);
         }
 
         @Override
@@ -245,19 +232,11 @@ public class PermissionCache {
             return this.priority;
         }
 
-        public void setPriority(int priority) {
-            this.priority = priority;
-        }
-
         public String getDisplayName() {
             return this.displayName;
         }
 
-        public void setDisplayName(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public Component getFormattedDisplayName(String username) {
+        public @NotNull Component formatDisplayName(@NotNull String username) {
             return MiniMessage.miniMessage().deserialize(this.displayName, Placeholder.unparsed("username", username));
         }
 

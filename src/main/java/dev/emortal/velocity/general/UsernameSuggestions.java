@@ -6,21 +6,21 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.grpc.mcplayer.McPlayerGrpc;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.api.model.common.Pageable;
 import dev.emortal.api.model.mcplayer.McPlayer;
+import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.GrpcStubCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 public class UsernameSuggestions {
     private static final Logger LOGGER = LoggerFactory.getLogger(UsernameSuggestions.class);
 
-    private final McPlayerGrpc.McPlayerFutureStub playerService;
+    private final McPlayerService playerService;
 
     public UsernameSuggestions() {
         this.playerService = GrpcStubCollection.getPlayerService().orElse(null);
@@ -40,28 +40,14 @@ public class UsernameSuggestions {
         if (currentInput.length() < 3) return CompletableFuture.completedFuture(builder.build());
 
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                var response = this.playerService.searchPlayersByUsername(
-                        McPlayerProto.SearchPlayersByUsernameRequest.newBuilder()
-                                .setIssuerId(player.getUniqueId().toString())
-                                .setSearchUsername(currentInput)
-                                .setFilterMethod(filterMethod)
-                                .setPageable(
-                                        Pageable.newBuilder()
-                                                .setPage(0)
-                                                .setSize(15)
-                                        )
-                                .build()).get();
+            var pageable = Pageable.newBuilder().setPage(0).setSize(15).build();
+            List<McPlayer> players = this.playerService.searchPlayersByUsername(player.getUniqueId(), currentInput, pageable, filterMethod);
 
-                response.getPlayersList()
-                        .stream()
-                        .map(McPlayer::getCurrentUsername)
-                        .forEach(builder::suggest);
-
-                return builder.build();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
+            for (McPlayer mcPlayer : players) {
+                builder.suggest(mcPlayer.getCurrentUsername());
             }
+
+            return builder.build();
         }).exceptionally(throwable -> {
             LOGGER.error("Failed to retrieve player suggestions", throwable);
             return builder.build();

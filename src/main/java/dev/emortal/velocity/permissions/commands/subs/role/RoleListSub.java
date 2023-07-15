@@ -34,7 +34,7 @@ public class RoleListSub {
         this.permissionCache = permissionCache;
     }
 
-    public int execute(CommandContext<CommandSource> context) {
+    public void execute(CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
 
         List<PermissionCache.CachedRole> roles = this.permissionCache.getRoleCache().values().stream()
@@ -46,20 +46,18 @@ public class RoleListSub {
 
         for (PermissionCache.CachedRole role : roles) {
             Component exampleChat = Component.text()
-                    .append(role.getFormattedDisplayName(source instanceof Player player ? player.getUsername() : "CONSOLE"))
+                    .append(role.formatDisplayName(source instanceof Player player ? player.getUsername() : "CONSOLE"))
                     .append(Component.text(": Test Chat", NamedTextColor.WHITE))
                     .build();
             lines.add(MINI_MESSAGE.deserialize(ROLE_LIST_LINE,
-                    Placeholder.unparsed("priority", String.valueOf(role.getPriority())),
-                    Placeholder.unparsed("role_id", role.getId()),
-                    Placeholder.unparsed("permission_count", String.valueOf(role.getPermissions().size())),
-                    Placeholder.unparsed("display_name", role.getDisplayName()),
+                    Placeholder.unparsed("priority", String.valueOf(role.priority())),
+                    Placeholder.unparsed("role_id", role.id()),
+                    Placeholder.unparsed("permission_count", String.valueOf(role.permissions().size())),
+                    Placeholder.unparsed("display_name", role.displayName()),
                     Placeholder.component("example_chat", exampleChat)
             ));
         }
 
         source.sendMessage(Component.join(JoinConfiguration.newlines(), lines));
-
-        return 1;
     }
 }

@@ -1,22 +1,19 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import com.google.common.util.concurrent.Futures;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.grpc.permission.PermissionProto;
-import dev.emortal.api.grpc.permission.PermissionServiceGrpc;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
+import dev.emortal.api.model.permission.Role;
+import dev.emortal.api.service.permission.CreateRoleResult;
+import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.velocity.permissions.PermissionCache;
-import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
-import java.util.concurrent.ForkJoinPool;
 
 public class RoleCreateSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleCreateSub.class);
@@ -25,39 +22,36 @@ public class RoleCreateSub {
     private static final String ROLE_ALREADY_EXISTS = "<red>Role <role_id> already exists";
     private static final String ROLE_CREATED = "<green>Role <role_id> created";
 
-    private final PermissionServiceGrpc.PermissionServiceFutureStub permissionService;
+    private final PermissionService permissionService;
     private final PermissionCache permissionCache;
 
-    public RoleCreateSub(PermissionServiceGrpc.PermissionServiceFutureStub permissionService, PermissionCache permissionCache) {
+    public RoleCreateSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache) {
         this.permissionService = permissionService;
         this.permissionCache = permissionCache;
     }
 
-    public int execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class).toLowerCase();
 
-        Optional<PermissionCache.CachedRole> optionalRole = this.permissionCache.getRole(roleId);
-        if (optionalRole.isPresent()) return 1;
+        CreateRoleResult result;
+        try {
+            result = this.permissionService.createRole(roleId, 0, "<username>");
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("An error occurred while creating role", exception);
+            source.sendMessage(Component.text("An error occurred while creating role", NamedTextColor.RED));
+            return;
+        }
 
-        var roleResponseFuture = this.permissionService.createRole(PermissionProto.RoleCreateRequest.newBuilder()
-                .setId(roleId)
-                .setDisplayName("<username>")
-                .build());
-
-        Futures.addCallback(roleResponseFuture, FunctionalFutureCallback.create(
-                response -> source.sendMessage(MINI_MESSAGE.deserialize(ROLE_CREATED, Placeholder.unparsed("role_id", roleId))),
-                throwable -> {
-                    Status status = Status.fromThrowable(throwable);
-                    if (status == Status.ALREADY_EXISTS) {
-                        source.sendMessage(MINI_MESSAGE.deserialize(ROLE_ALREADY_EXISTS, Placeholder.unparsed("role_id", roleId)));
-                    } else {
-                        source.sendMessage(Component.text("An error occurred while creating role", NamedTextColor.RED));
-                        LOGGER.error("An error occurred while creating role", throwable);
-                    }
-                }
-        ), ForkJoinPool.commonPool());
-
-        return 1;
+        var message = switch (result) {
+            case CreateRoleResult.Success(Role role) -> {
+                this.permissionCache.setRole(role);
+                yield MINI_MESSAGE.deserialize(ROLE_CREATED, Placeholder.unparsed("role_id", role.getId()));
+            }
+            case CreateRoleResult.Error error -> switch (error) {
+                case ROLE_ALREADY_EXISTS -> MINI_MESSAGE.deserialize(ROLE_ALREADY_EXISTS, Placeholder.unparsed("role_id", roleId));
+            };
+        };
+        source.sendMessage(message);
     }
 }

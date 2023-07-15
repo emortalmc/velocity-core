@@ -6,7 +6,6 @@ import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.kurushimi.KurushimiUtils;
 import dev.emortal.api.message.common.PlayerConnectMessage;
 import dev.emortal.api.message.common.PlayerDisconnectMessage;
 import dev.emortal.api.message.common.PlayerSwitchServerMessage;
@@ -31,9 +30,6 @@ public class MessagingCore {
 
         this.kafkaConsumer = new FriendlyKafkaConsumer(kafkaSettings);
         this.kafkaProducer = new FriendlyKafkaProducer(kafkaSettings);
-
-        // Register matchmaker parsers
-        KurushimiUtils.registerParserRegistry();
     }
 
     public <T extends AbstractMessage> void addListener(Class<T> messageType, Consumer<T> listener) {

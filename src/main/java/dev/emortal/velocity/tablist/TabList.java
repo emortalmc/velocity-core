@@ -1,24 +1,21 @@
 package dev.emortal.velocity.tablist;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto;
-import dev.emortal.api.grpc.mcplayer.PlayerTrackerGrpc;
+import dev.emortal.api.service.playertracker.PlayerTrackerService;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.api.utils.callback.FunctionalFutureCallback;
 import dev.emortal.velocity.CorePlugin;
+import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
 public class TabList {
@@ -31,12 +28,12 @@ public class TabList {
             .append(MINI_MESSAGE.deserialize("<gradient:gold:light_purple><bold>EmortalMC"))
             .build();
 
-    private final PlayerTrackerGrpc.PlayerTrackerFutureStub playerTracker;
+    private final PlayerTrackerService playerTracker;
     private final ProxyServer proxy;
 
     private Component currentFooter = Component.empty();
 
-    public TabList(CorePlugin plugin, ProxyServer proxy) {
+    public TabList(@NotNull CorePlugin plugin, @NotNull ProxyServer proxy) {
         this.proxy = proxy;
 
         this.playerTracker = GrpcStubCollection.getPlayerTrackerService().orElse(null);
@@ -44,7 +41,8 @@ public class TabList {
             this.currentFooter = createFooter(0);
         } else {
             this.proxy.getScheduler().buildTask(plugin, this::updateFooter)
-                    .repeat(5, TimeUnit.SECONDS).schedule();
+                    .repeat(5, TimeUnit.SECONDS)
+                    .schedule();
         }
     }
 
@@ -54,16 +52,16 @@ public class TabList {
     }
 
     private void updateFooter() {
-        ListenableFuture<McPlayerProto.GetPlayerCountResponse> responseFuture = this.playerTracker.getPlayerCount(
-                McPlayerProto.GetPlayerCountRequest.getDefaultInstance());
+        long playerCount;
+        try {
+            playerCount = this.playerTracker.getGlobalPlayerCount();
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to update tab list footer: ", exception);
+            return;
+        }
 
-        Futures.addCallback(responseFuture, FunctionalFutureCallback.create(
-                response -> {
-                    this.currentFooter = this.createFooter(response.getCount());
-                    this.updateOnlinePlayers();
-                },
-                throwable -> LOGGER.error("Failed to update tab list footer: ", throwable)
-        ), ForkJoinPool.commonPool());
+        this.currentFooter = this.createFooter(playerCount);
+        this.updateOnlinePlayers();
     }
 
     private void updateOnlinePlayers() {

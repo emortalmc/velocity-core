@@ -5,6 +5,7 @@ import com.velocitypowered.api.command.CommandSource;
 import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -22,30 +23,29 @@ public class RoleDescribeSub {
 
     private final PermissionCache permissionCache;
 
-    public RoleDescribeSub(PermissionCache permissionCache) {
+    public RoleDescribeSub(@NotNull PermissionCache permissionCache) {
         this.permissionCache = permissionCache;
     }
 
-    public int execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
-        Optional<PermissionCache.CachedRole> optionalRole = RoleSubUtils.getRole(this.permissionCache, context);
-        if (optionalRole.isEmpty()) {
-            source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId)));
-            return 0;
+
+        var roleIdPlaceholder = Placeholder.unparsed("role_id", roleId);
+        PermissionCache.CachedRole role = RoleSubUtils.getRole(this.permissionCache, context);
+        if (role == null) {
+            source.sendMessage(MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, roleIdPlaceholder));
+            return;
         }
 
-        PermissionCache.CachedRole role = optionalRole.get();
-        source.sendMessage(MINI_MESSAGE.deserialize(ROLE_DESCRIPTION, Placeholder.unparsed("role_id", role.getId()),
-                Placeholder.unparsed("priority", String.valueOf(role.getPriority())),
-                Placeholder.unparsed("permission_count", String.valueOf(role.getPermissions().size())),
-                Placeholder.unparsed("display_name", role.getDisplayName()),
+        source.sendMessage(MINI_MESSAGE.deserialize(ROLE_DESCRIPTION, roleIdPlaceholder,
+                Placeholder.unparsed("priority", String.valueOf(role.priority())),
+                Placeholder.unparsed("permission_count", String.valueOf(role.permissions().size())),
+                Placeholder.unparsed("display_name", role.displayName()),
                 Placeholder.unparsed("footer_addon", this.createFooterAddon(roleId))));
-
-        return 1;
     }
 
-    private String createFooterAddon(String headerText) {
+    private @NotNull String createFooterAddon(@NotNull String headerText) {
         char[] footerAddon = new char[headerText.length()];
         Arrays.fill(footerAddon, '-');
         return new String(footerAddon);

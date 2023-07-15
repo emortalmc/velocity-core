@@ -29,7 +29,6 @@ public class PrivateMessageListener {
                 lastMessageCache.setLastMessage(player.getUniqueId(), privateMessage.getSenderUsername());
                 lastMessageCache.setLastMessage(UUID.fromString(privateMessage.getSenderId()), player.getUsername());
             });
-
         });
     }
 }
