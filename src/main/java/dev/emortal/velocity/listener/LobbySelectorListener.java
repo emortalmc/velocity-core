@@ -67,6 +67,7 @@ public class LobbySelectorListener {
     }
 
     private void handleMatchCreated(@NotNull MatchCreatedMessage message) {
+        System.out.println("Match created: " + message.getMatch());
         Match match = message.getMatch();
         for (Ticket ticket : match.getTicketsList()) {
             if (ticket.getAutoTeleport()) continue; // We don't care about auto teleport tickets
@@ -92,6 +93,8 @@ public class LobbySelectorListener {
     }
 
     private void onEvict(@NotNull UUID playerId, @NotNull Pair<PlayerChooseInitialServerEvent, Continuation> pair, @NotNull RemovalCause cause) {
+        if (cause != RemovalCause.EXPIRED) return;
+
         pair.left().getPlayer().disconnect(ERROR_MESSAGE);
         pair.right().resume();
     }
