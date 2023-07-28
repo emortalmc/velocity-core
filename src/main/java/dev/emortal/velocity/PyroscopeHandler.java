@@ -8,15 +8,14 @@ import io.pyroscope.labels.Pyroscope;
 
 import java.util.Map;
 
-public class PyroscopeHandler {
+public final class PyroscopeHandler {
     private static final String FLEET_NAME = "velocity";
     private static final String PYROSCOPE_ADDRESS = System.getenv("PYROSCOPE_SERVER_ADDRESS");
 
     public static void register() {
         Pyroscope.setStaticLabels(Map.of(
-                        "fleet", FLEET_NAME,
-                        "pod", Environment.getHostname()
-                )
+                "fleet", FLEET_NAME,
+                "pod", Environment.getHostname())
         );
 
         PyroscopeAgent.start(

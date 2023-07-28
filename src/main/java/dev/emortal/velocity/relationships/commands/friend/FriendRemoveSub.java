@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class FriendRemoveSub {
+public final class FriendRemoveSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendRemoveSub.class);
 
@@ -44,6 +44,12 @@ public class FriendRemoveSub {
             target = this.mcPlayerService.getPlayerByUsername(targetUsername);
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to get player by username", exception);
+            player.sendMessage(Component.text("Failed to remove friend " + targetUsername));
+            return;
+        }
+
+        if (target == null) {
+            LOGGER.error("Failed to get player {} by username", targetUsername);
             player.sendMessage(Component.text("Failed to remove friend " + targetUsername));
             return;
         }

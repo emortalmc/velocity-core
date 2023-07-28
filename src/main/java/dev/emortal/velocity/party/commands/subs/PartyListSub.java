@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PartyListSub {
+public final class PartyListSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String MESSAGE_CONTENT = """
@@ -33,7 +33,7 @@ public class PartyListSub {
         this.partyCache = partyCache;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         Player executor = (Player) context.getSource();
 
         PartyCache.CachedParty party = this.partyCache.getPlayerParty(executor.getUniqueId());
@@ -47,7 +47,7 @@ public class PartyListSub {
         executor.sendMessage(MINI_MESSAGE.deserialize(MESSAGE_CONTENT, partySize, memberContent));
     }
 
-    private Component createMessageContent(PartyCache.CachedParty party) {
+    private @NotNull Component createMessageContent(@NotNull PartyCache.CachedParty party) {
         Map<UUID, PartyCache.CachedPartyMember> members = new HashMap<>(party.getMembers());
         PartyCache.CachedPartyMember leader = members.remove(party.getLeaderId());
 

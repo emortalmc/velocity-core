@@ -91,38 +91,41 @@ public final class PartyCommand {
                             context.getSource().sendMessage(HELP_MESSAGE);
                             return 1;
                         })
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("invite").executes(context -> {
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("invite")
+                                .executes(context -> {
                                     context.getSource().sendMessage(USAGE_PARTY_INVITE);
                                     return 1;
                                 }).then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
                                         .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
                                         .executes(CommandUtils.executeAsync(this.inviteSub::execute)))
                         )
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("join").executes(context -> {
-                                            context.getSource().sendMessage(USAGE_PARTY_JOIN);
-                                            return 1;
-                                        })
-                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
-                                                .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
-                                                .executes(CommandUtils.executeAsync(this.joinSub::execute)))
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("join")
+                                .executes(context -> {
+                                    context.getSource().sendMessage(USAGE_PARTY_JOIN);
+                                    return 1;
+                                })
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
+                                        .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
+                                        .executes(CommandUtils.executeAsync(this.joinSub::execute)))
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("leave").executes(CommandUtils.executeAsync(this.leaveSub::execute)))
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("kick").executes(context -> {
-                                            context.getSource().sendMessage(USAGE_PARTY_KICK);
-                                            return 1;
-                                        })
-                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
-                                                .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
-                                                .executes(CommandUtils.executeAsync(this.kickSub::execute)))
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("kick")
+                                .executes(context -> {
+                                    context.getSource().sendMessage(USAGE_PARTY_KICK);
+                                    return 1;
+                                })
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
+                                        .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
+                                        .executes(CommandUtils.executeAsync(this.kickSub::execute)))
                         )
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("leader").executes(context -> {
-                                            context.getSource().sendMessage(USAGE_PARTY_LEADER);
-                                            return 1;
-                                        })
-                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
-                                                .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
-                                                .executes(CommandUtils.executeAsync(this.leaderSub::execute))
-                                        )
+                        .then(LiteralArgumentBuilder.<CommandSource>literal("leader")
+                                .executes(context -> {
+                                    context.getSource().sendMessage(USAGE_PARTY_LEADER);
+                                    return 1;
+                                })
+                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("player", StringArgumentType.word())
+                                        .suggests(this.usernameSuggestions.command(McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
+                                        .executes(CommandUtils.executeAsync(this.leaderSub::execute)))
                         )
                         .then(LiteralArgumentBuilder.<CommandSource>literal("open").executes(CommandUtils.executeAsync(this.openSub::execute)))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("list").executes(CommandUtils.executeAsync(this.listSub::execute)))

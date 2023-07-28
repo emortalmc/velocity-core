@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PartyOpenSub {
+public final class PartyOpenSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyOpenSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -32,7 +32,7 @@ public class PartyOpenSub {
         this.partyCache = partyCache;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         Player executor = (Player) context.getSource();
         PartyCache.CachedParty party = this.partyCache.getPlayerParty(executor.getUniqueId());
         if (party == null) {

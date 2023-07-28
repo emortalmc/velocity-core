@@ -9,18 +9,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class CommandUtils {
+public final class CommandUtils {
 
-    public static Predicate<CommandSource> combineRequirements(Predicate<CommandSource>... requirements) {
+    public static @NotNull Predicate<CommandSource> combineRequirements(@NotNull Predicate<CommandSource>... requirements) {
         return source -> {
-            for (Predicate<CommandSource> requirement : requirements) {
+            for (var requirement : requirements) {
                 if (!requirement.test(source)) return false;
             }
             return true;
         };
     }
 
-    public static Predicate<CommandSource> isPlayer() {
+    public static @NotNull Predicate<CommandSource> isPlayer() {
         return source -> source instanceof Player;
     }
 
@@ -36,5 +36,8 @@ public class CommandUtils {
             Thread.startVirtualThread(() -> command.accept(context));
             return 1;
         };
+    }
+
+    private CommandUtils() {
     }
 }

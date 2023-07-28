@@ -10,6 +10,7 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.agonessdk.AgonesUtils;
+import dev.emortal.api.service.matchmaker.MatchmakerService;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.messagehandler.MessageService;
 import dev.emortal.api.service.party.PartyService;
@@ -68,7 +69,7 @@ import java.util.concurrent.atomic.AtomicLong;
         id = "core",
         name = "Core"
 )
-public class CorePlugin {
+public final class CorePlugin {
     private static final Map<Integer, AtomicLong> OUTGOING_PACKET_COUNTER = new ConcurrentHashMap<>();
     private static final Logger LOGGER = LoggerFactory.getLogger(CorePlugin.class);
 
@@ -80,15 +81,13 @@ public class CorePlugin {
 
     private final GrpcStubManager stubManager = new GrpcStubManager();
 
-    private final UsernameSuggestions usernameSuggestions = new UsernameSuggestions();
-
     private MessagingCore messagingCore;
 
     private final SessionCache sessionCache = new SessionCache();
     private final LiveConfigProvider liveConfigProvider;
 
     @Inject
-    public CorePlugin(ProxyServer server) {
+    public CorePlugin(@NotNull ProxyServer server) {
         this.proxy = server;
 
         PyroscopeHandler.register();
@@ -99,13 +98,11 @@ public class CorePlugin {
     }
 
     @Subscribe
-    public void onProxyInitialize(ProxyInitializeEvent event) {
+    public void onProxyInitialize(@NotNull ProxyInitializeEvent event) {
         EventManager eventManager = this.proxy.getEventManager();
 
         if (this.stubManager.getAgonesService() != null) {
-            eventManager.register(this, new AgonesListener(this.stubManager.getAgonesService(),
-                    this.stubManager.getStandardAgonesService(), this.stubManager.getAlphaAgonesService())
-            );
+            eventManager.register(this, new AgonesListener(this.stubManager));
         } else {
             LOGGER.warn("Agones SDK is not enabled. This is only intended for development purposes.");
         }
@@ -122,23 +119,40 @@ public class CorePlugin {
         // messaging core
         eventManager.register(this, this.messagingCore);
 
-        McPlayerService mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
-        if (mcPlayerService != null) {
+        McPlayerService playerService = GrpcStubCollection.getPlayerService().orElse(null);
+        UsernameSuggestions usernameSuggestions;
+        if (playerService != null) {
+            usernameSuggestions = new UsernameSuggestions(playerService);
+
             // relationships
-            this.registerRelationshipServices(eventManager, mcPlayerService, this.messagingCore);
+            this.registerRelationshipServices(eventManager, playerService, this.messagingCore, usernameSuggestions);
+
+            // mc player listener
+            eventManager.register(this, new McPlayerListener(playerService, this.sessionCache));
+
+            // playtime
+            new PlaytimeCommand(this.proxy, playerService, this.sessionCache, usernameSuggestions);
         } else {
+            usernameSuggestions = new UsernameSuggestions(null);
             LOGGER.error("MC player service unavailable.");
         }
 
+        MatchmakerService matchmaker = GrpcStubCollection.getMatchmakerService().orElse(null);
+        if (matchmaker != null) {
+            // lobby selector
+            eventManager.register(this, new LobbySelectorListener(this.proxy, matchmaker, this.messagingCore));
+
+            // lobby command
+            new LobbyCommand(this.proxy, matchmaker);
+        } else {
+            LOGGER.error("Matchmaker service unavailable.");
+        }
+
         // private messages
-        this.registerMessageServices(eventManager);
+        this.registerMessageServices(eventManager, usernameSuggestions);
 
         // permissions
-        this.registerPermissionServices(eventManager);
-
-        // generic
-        eventManager.register(this, new LobbySelectorListener(this.proxy, this.messagingCore));
-        eventManager.register(this, new McPlayerListener(this.sessionCache));
+        this.registerPermissionServices(eventManager, usernameSuggestions);
 
         // server list
         eventManager.register(this, new ServerPingListener());
@@ -153,37 +167,20 @@ public class CorePlugin {
         eventManager.register(this, new LunarKicker());
 
         // party
-        this.registerPartyServices();
+        this.registerPartyServices(usernameSuggestions);
 
         // permission
-        this.registerPermissionServices(eventManager);
+        this.registerPermissionServices(eventManager, usernameSuggestions);
 
-        // generic
-        new PlaytimeCommand(this.proxy, this.sessionCache, this.usernameSuggestions);
-        new LobbyCommand(this.proxy);
-
+        // server cleanup
         eventManager.register(this, new ServerCleanupTask(this.proxy));
 
         if (DEBUG_PACKETS) {
-            this.proxy.getScheduler().buildTask(this, () -> {
-                List<PacketStat> packetStats = OUTGOING_PACKET_COUNTER.entrySet().stream()
-                        .map(entry -> new PacketStat(entry.getKey(), entry.getValue().get()))
-                        .sorted()
-                        .toList();
-
-                StringJoiner joiner = new StringJoiner("\n");
-                joiner.add("Packet Stats:");
-
-                for (int i = 0; i < 10 && i < packetStats.size(); i++) {
-                    PacketStat packetStat = packetStats.get(i);
-                    joiner.add("%s) %s - %s".formatted(i + 1, packetStat.id, packetStat.count));
-                }
-                System.out.println(joiner);
-            }).repeat(10, TimeUnit.SECONDS).schedule();
+            this.proxy.getScheduler().buildTask(this, this::registerDebugStatistics).repeat(10, TimeUnit.SECONDS).schedule();
         }
     }
 
-    private void registerPartyServices() {
+    private void registerPartyServices(@NotNull UsernameSuggestions usernameSuggestions) {
         PartyService service = GrpcStubCollection.getPartyService().orElse(null);
         if (service == null) {
             LOGGER.error("Party service unavailable. Party command will not be registered.");
@@ -191,11 +188,11 @@ public class CorePlugin {
         }
 
         PartyCache partyCache = new PartyCache(this.proxy, service, this.messagingCore);
-        new PartyCommand(this.proxy, service, this.usernameSuggestions, partyCache);
+        new PartyCommand(this.proxy, service, usernameSuggestions, partyCache);
     }
 
     private void registerRelationshipServices(@NotNull EventManager eventManager, @NotNull McPlayerService mcPlayerService,
-                                              @NotNull MessagingCore messagingCore) {
+                                              @NotNull MessagingCore messagingCore, @NotNull UsernameSuggestions usernameSuggestions) {
         RelationshipService service = GrpcStubCollection.getRelationshipService().orElse(null);
         if (service == null) {
             LOGGER.error("Relationship service unavailable. Friend and block commands will not be registered.");
@@ -207,27 +204,27 @@ public class CorePlugin {
         new FriendListener(this.proxy, messagingCore, cache);
         eventManager.register(this, cache);
 
-        new FriendCommand(this.proxy, mcPlayerService, service, this.usernameSuggestions, cache, this.liveConfigProvider.getGameModes());
-        new BlockCommand(this.proxy, mcPlayerService, service, this.usernameSuggestions);
+        new FriendCommand(this.proxy, mcPlayerService, service, usernameSuggestions, cache, this.liveConfigProvider.getGameModes());
+        new BlockCommand(this.proxy, mcPlayerService, service, usernameSuggestions);
     }
 
-    private void registerPermissionServices(@NotNull EventManager eventManager) {
-        PermissionCache cache = new PermissionCache();
-
-        eventManager.register(this, cache);
-        eventManager.register(this, new PermissionCheckListener(cache));
-        new PermissionUpdateListener(cache, this.messagingCore);
-
+    private void registerPermissionServices(@NotNull EventManager eventManager, @NotNull UsernameSuggestions usernameSuggestions) {
         PermissionService service = GrpcStubCollection.getPermissionService().orElse(null);
         if (service == null) {
             LOGGER.error("Permission service unavailable. Permission command will not be registered.");
             return;
         }
 
-        new PermissionCommand(this.proxy, service, cache, this.usernameSuggestions);
+        PermissionCache cache = new PermissionCache(service);
+
+        eventManager.register(this, cache);
+        eventManager.register(this, new PermissionCheckListener(cache));
+        new PermissionUpdateListener(cache, this.messagingCore);
+
+        new PermissionCommand(this.proxy, service, cache, usernameSuggestions);
     }
 
-    private void registerMessageServices(@NotNull EventManager eventManager) {
+    private void registerMessageServices(@NotNull EventManager eventManager, @NotNull UsernameSuggestions usernameSuggestions) {
         LastMessageCache lastMessageCache = new LastMessageCache();
 
         eventManager.register(this, new PrivateMessageListener(this.proxy, this.messagingCore, lastMessageCache));
@@ -239,18 +236,35 @@ public class CorePlugin {
             return;
         }
 
-        new MessageCommand(this.proxy, service, this.usernameSuggestions, lastMessageCache);
+        new MessageCommand(this.proxy, service, usernameSuggestions, lastMessageCache);
+    }
+
+    private void registerDebugStatistics() {
+        List<PacketStat> packetStats = OUTGOING_PACKET_COUNTER.entrySet().stream()
+                .map(entry -> new PacketStat(entry.getKey(), entry.getValue().get()))
+                .sorted()
+                .toList();
+
+        StringJoiner joiner = new StringJoiner("\n");
+        joiner.add("Packet Stats:");
+
+        for (PacketStat(int id, long count) : packetStats) {
+            joiner.add('\t' + id + " - " + count);
+        }
+
+        System.out.println(joiner);
     }
 
     private record PacketStat(int id, long count) implements Comparable<PacketStat> {
+
         @Override
-        public int compareTo(PacketStat o) {
+        public int compareTo(@NotNull PacketStat o) {
             return Long.compare(o.count, this.count);
         }
     }
 
     @Subscribe
-    public void onLogin(PostLoginEvent event) {
+    public void onLogin(@NotNull PostLoginEvent event) {
         if (!DEBUG_PACKETS) return;
 
         Player player = event.getPlayer();
@@ -268,7 +282,7 @@ public class CorePlugin {
                 @Override
                 public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
                     ByteBuf byteBuf = ((ByteBuf) msg).copy();
-                    int packetId = readVarInt(byteBuf);
+                    int packetId = CorePlugin.this.readVarInt(byteBuf);
                     OUTGOING_PACKET_COUNTER.computeIfPresent(packetId, (id, count) -> {
                         count.incrementAndGet();
                         return count;
@@ -283,7 +297,7 @@ public class CorePlugin {
     private static final int SEGMENT_BITS = 0x7F;
     private static final int CONTINUE_BIT = 0x80;
 
-    public int readVarInt(ByteBuf buf) {
+    public int readVarInt(@NotNull ByteBuf buf) {
         int value = 0;
         int position = 0;
         byte currentByte;
@@ -303,7 +317,7 @@ public class CorePlugin {
     }
 
     @Subscribe
-    public void onProxyShutdown(ProxyShutdownEvent event) {
+    public void onProxyShutdown(@NotNull ProxyShutdownEvent event) {
         this.messagingCore.shutdown();
         AgonesUtils.shutdownHealthTask();
 
@@ -313,7 +327,7 @@ public class CorePlugin {
         }
     }
 
-    public ProxyServer getProxy() {
+    public @NotNull ProxyServer getProxy() {
         return this.proxy;
     }
 }

@@ -8,7 +8,6 @@ import dev.emortal.api.service.party.SetPartyLeaderResult;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.TempLang;
 import dev.emortal.velocity.party.commands.PartyCommand;
-import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -17,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PartyLeaderSub {
+public final class PartyLeaderSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyLeaderSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -33,7 +32,7 @@ public class PartyLeaderSub {
         this.partyService = partyService;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         String targetUsername = context.getArgument("player", String.class);
         Player executor = (Player) context.getSource();
 
@@ -41,14 +40,13 @@ public class PartyLeaderSub {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            Status status = exception.getStatus();
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
-                return;
-            }
-
-            LOGGER.error("An error occurred PartyLeaderSub retrievePlayerData: {}", status);
+            LOGGER.error("An error occurred PartyLeaderSub retrievePlayerData: {}", exception);
             executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            return;
+        }
+
+        if (target == null) {
+            TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
             return;
         }
 

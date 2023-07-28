@@ -16,6 +16,7 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class FriendListSub {
+public final class FriendListSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendListSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -78,34 +79,33 @@ public class FriendListSub {
     private @NotNull Component createMessage(@NotNull List<FriendStatus> statuses, int page, int maxPage) {
         TextComponent.Builder message = Component.text()
                 .append(MINI_MESSAGE.deserialize(MESSAGE_TITLE,
-                                Placeholder.parsed("page", String.valueOf(page)),
-                                Placeholder.parsed("max_page", String.valueOf(maxPage))))
+                        Placeholder.parsed("page", String.valueOf(page)),
+                        Placeholder.parsed("max_page", String.valueOf(maxPage))))
                 .append(Component.newline());
 
         for (FriendStatus status : statuses) {
+            var usernamePlaceholder = Placeholder.parsed("username", status.username());
+            String line = status.online() ? ONLINE_LINE : OFFLINE_LINE;
+
+            TagResolver.Single secondPlaceholder;
             if (status.online()) {
-                message.append(
-                        MINI_MESSAGE.deserialize(ONLINE_LINE,
-                                Placeholder.parsed("username", status.username()),
-                                Placeholder.parsed("server", this.createActivityForServer(status.serverId())))
-                );
+                secondPlaceholder = Placeholder.parsed("server", this.createActivityForServer(status.serverId()));
             } else {
-                message.append(
-                        MINI_MESSAGE.deserialize(OFFLINE_LINE,
-                                Placeholder.parsed("username", status.username()),
-                                Placeholder.parsed("last_seen", DurationFormatter.formatShortFromInstant(status.lastSeen())))
-                );
+                secondPlaceholder = Placeholder.parsed("last_seen", DurationFormatter.formatShortFromInstant(status.lastSeen()));
             }
+
+            message.append(MINI_MESSAGE.deserialize(line, usernamePlaceholder, secondPlaceholder));
             message.append(Component.newline());
         }
+
         message.append(MESSAGE_FOOTER);
         return message.build();
     }
 
     private @NotNull List<FriendStatus> retrieveStatuses(@NotNull List<FriendCache.CachedFriend> friends) {
         Map<UUID, FriendStatus> statuses = new ConcurrentHashMap<>();
-        for (FriendCache.CachedFriend friend : friends) {
-            statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
+        for (FriendCache.CachedFriend(UUID playerId, Instant friendsSince) : friends) {
+            statuses.put(playerId, new FriendStatus(playerId, friendsSince));
         }
 
         List<UUID> playerIds = new ArrayList<>();
@@ -175,6 +175,7 @@ public class FriendListSub {
             gameModeConfig = config;
             break;
         }
+
         return gameModeConfig;
     }
 }

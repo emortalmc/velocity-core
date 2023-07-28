@@ -22,6 +22,7 @@ import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +30,13 @@ import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class LobbySelectorListener {
+public final class LobbySelectorListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(LobbySelectorListener.class);
 
     private static final Component ERROR_MESSAGE = MiniMessage.miniMessage().deserialize("<red>Failed to connect to lobby");
+
+    private final ProxyServer proxy;
+    private final MatchmakerService matchmaker;
 
     // NOTE: This is not cleaned up if there's a failed request, we may have problems :skull:
     private final Cache<UUID, Pair<PlayerChooseInitialServerEvent, Continuation>> pendingPlayers = Caffeine.newBuilder()
@@ -40,42 +44,41 @@ public class LobbySelectorListener {
             .evictionListener(this::onEvict)
             .build();
 
-    private final MatchmakerService matchmaker = GrpcStubCollection.getMatchmakerService().orElse(null);
-    private final ProxyServer proxy;
-
-    public LobbySelectorListener(ProxyServer proxy, MessagingCore messaging) {
+    public LobbySelectorListener(@NotNull ProxyServer proxy, @NotNull MatchmakerService matchmaker, @NotNull MessagingCore messaging) {
         this.proxy = proxy;
+        this.matchmaker = matchmaker;
 
         messaging.addListener(MatchCreatedMessage.class, this::handleMatchCreated);
     }
 
     @Subscribe
-    public void onInitialServerChoose(PlayerChooseInitialServerEvent event, Continuation continuation) {
+    public void onInitialServerChoose(@NotNull PlayerChooseInitialServerEvent event, @NotNull Continuation continuation) {
         this.sendToLobbyServer(event, continuation);
     }
 
-    private void sendToLobbyServer(PlayerChooseInitialServerEvent event, Continuation continuation) {
+    private void sendToLobbyServer(@NotNull PlayerChooseInitialServerEvent event, @NotNull Continuation continuation) {
         Player player = event.getPlayer();
-        this.pendingPlayers.put(player.getUniqueId(), new Pair<>(event, continuation));
-
         try {
             this.matchmaker.queueInitialLobby(player.getUniqueId());
         } catch (StatusRuntimeException exception) {
             event.getPlayer().disconnect(ERROR_MESSAGE);
             LOGGER.error("Failed to connect player to lobby", exception);
         }
+
+        this.pendingPlayers.put(player.getUniqueId(), new Pair<>(event, continuation));
     }
 
     private void handleMatchCreated(@NotNull MatchCreatedMessage message) {
         System.out.println("Match created: " + message.getMatch());
         Match match = message.getMatch();
+
         for (Ticket ticket : match.getTicketsList()) {
             if (ticket.getAutoTeleport()) continue; // We don't care about auto teleport tickets
             if (ticket.getPlayerIdsList().size() != 1) continue;
 
             UUID playerId = UUID.fromString(ticket.getPlayerIds(0));
-            Pair<PlayerChooseInitialServerEvent, Continuation> pair = this.pendingPlayers.getIfPresent(playerId);
 
+            Pair<PlayerChooseInitialServerEvent, Continuation> pair = this.pendingPlayers.getIfPresent(playerId);
             if (pair == null) continue; // Likely submitted by a different service.
 
             this.pendingPlayers.invalidate(playerId);
@@ -92,8 +95,9 @@ public class LobbySelectorListener {
         event.setInitialServer(registeredServer);
     }
 
-    private void onEvict(@NotNull UUID playerId, @NotNull Pair<PlayerChooseInitialServerEvent, Continuation> pair, @NotNull RemovalCause cause) {
+    private void onEvict(@Nullable UUID playerId, @Nullable Pair<PlayerChooseInitialServerEvent, Continuation> pair, @NotNull RemovalCause cause) {
         if (cause != RemovalCause.EXPIRED) return;
+        if (playerId == null || pair == null) return;
 
         pair.left().getPlayer().disconnect(ERROR_MESSAGE);
         pair.right().resume();

@@ -9,6 +9,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.model.messagehandler.PrivateMessage;
 import dev.emortal.api.service.messagehandler.MessageService;
 import dev.emortal.api.service.messagehandler.SendPrivateMessageResult;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class MessageCommand {
+public final class MessageCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageCommand.class);
 
@@ -59,14 +60,13 @@ public class MessageCommand {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            Status status = exception.getStatus();
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                TempLang.PLAYER_NOT_FOUND.send(player, Placeholder.unparsed("search_username", targetUsername));
-                return;
-            }
-
-            LOGGER.error("Failed to retrieve player UUID", status.asRuntimeException());
+            LOGGER.error("Failed to retrieve player UUID", exception);
             player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
+            return;
+        }
+
+        if (target == null) {
+            TempLang.PLAYER_NOT_FOUND.send(player, Placeholder.unparsed("search_username", targetUsername));
             return;
         }
 
@@ -147,23 +147,20 @@ public class MessageCommand {
                         .requires(CommandUtils.isPlayer())
                         .executes(CommandUtils.execute(this::onMessageUsage))
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("receiver", StringArgumentType.word())
-                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.ONLINE))
+                                .suggests(this.usernameSuggestions.command(FilterMethod.ONLINE))
                                 .executes(CommandUtils.execute(this::onMessageUsage))
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("message", StringArgumentType.greedyString())
-                                        .executes(CommandUtils.executeAsync(this::onMessageExecute))
-                                )
-                        )
+                                        .executes(CommandUtils.executeAsync(this::onMessageExecute))))
         );
     }
 
-    public BrigadierCommand createReplyCommand() {
+    public @NotNull BrigadierCommand createReplyCommand() {
         return new BrigadierCommand(
                 LiteralArgumentBuilder.<CommandSource>literal("reply")
                         .requires(CommandUtils.isPlayer())
                         .executes(CommandUtils.execute(this::onReplyUsage))
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("message", StringArgumentType.greedyString())
-                                .executes(CommandUtils.executeAsync(this::onReplyExecute))
-                        )
+                                .executes(CommandUtils.executeAsync(this::onReplyExecute)))
         );
     }
 }

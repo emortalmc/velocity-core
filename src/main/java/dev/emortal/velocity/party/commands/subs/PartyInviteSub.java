@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PartyInviteSub {
+public final class PartyInviteSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyInviteSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -32,7 +32,7 @@ public class PartyInviteSub {
         this.partyService = partyService;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         String targetUsername = context.getArgument("player", String.class);
         Player executor = (Player) context.getSource();
 
@@ -40,14 +40,13 @@ public class PartyInviteSub {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            Status status = exception.getStatus();
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
-                return;
-            }
-
-            LOGGER.error("An error occurred PartyInviteSub getPlayerByUsername: ", status.asException());
+            LOGGER.error("An error occurred PartyInviteSub getPlayerByUsername: ", exception);
             executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            return;
+        }
+
+        if (target == null) {
+            TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
             return;
         }
 

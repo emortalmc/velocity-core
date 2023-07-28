@@ -9,13 +9,13 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerCleanupTask {
+public final class ServerCleanupTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerCleanupTask.class);
 
-    private final ProxyServer proxyServer;
+    private final ProxyServer proxy;
 
-    public ServerCleanupTask(@NotNull ProxyServer proxyServer) {
-        this.proxyServer = proxyServer;
+    public ServerCleanupTask(@NotNull ProxyServer proxy) {
+        this.proxy = proxy;
     }
 
     @Subscribe
@@ -29,9 +29,9 @@ public class ServerCleanupTask {
     }
 
     private void checkServer(@NotNull RegisteredServer server) {
-        if (server.getPlayersConnected().size() == 0) {
-            this.proxyServer.unregisterServer(server.getServerInfo());
-            LOGGER.info("Unregistered server {}", server.getServerInfo().getName());
-        }
+        if (!server.getPlayersConnected().isEmpty()) return;
+
+        this.proxy.unregisterServer(server.getServerInfo());
+        LOGGER.info("Unregistered server {}", server.getServerInfo().getName());
     }
 }

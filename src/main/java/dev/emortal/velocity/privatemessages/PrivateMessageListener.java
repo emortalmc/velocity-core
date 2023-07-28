@@ -1,5 +1,6 @@
 package dev.emortal.velocity.privatemessages;
 
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.message.messagehandler.PrivateMessageCreatedMessage;
 import dev.emortal.api.model.messagehandler.PrivateMessage;
@@ -10,25 +11,31 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public class PrivateMessageListener {
+public final class PrivateMessageListener {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String PRIVATE_MESSAGE_RECEIVED_FORMAT = "<dark_purple>(<light_purple><username> -> You<dark_purple>) <light_purple><message>";
 
 
+    private final ProxyServer proxy;
+    private final LastMessageCache lastMessageCache;
+
     public PrivateMessageListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging, LastMessageCache lastMessageCache) {
-        messaging.addListener(PrivateMessageCreatedMessage.class, message -> {
-            PrivateMessage privateMessage = message.getPrivateMessage();
+        this.proxy = proxy;
+        this.lastMessageCache = lastMessageCache;
 
-            proxy.getPlayer(UUID.fromString(privateMessage.getRecipientId())).ifPresent(player -> {
-                player.sendMessage(MINI_MESSAGE.deserialize(PRIVATE_MESSAGE_RECEIVED_FORMAT,
-                        Placeholder.parsed("username", privateMessage.getSenderUsername()),
-                        Placeholder.unparsed("message", privateMessage.getMessage())
-                ));
+        messaging.addListener(PrivateMessageCreatedMessage.class, message -> this.onPrivateMessageCreated(message.getPrivateMessage()));
+    }
 
-                lastMessageCache.setLastMessage(player.getUniqueId(), privateMessage.getSenderUsername());
-                lastMessageCache.setLastMessage(UUID.fromString(privateMessage.getSenderId()), player.getUsername());
-            });
-        });
+    private void onPrivateMessageCreated(@NotNull PrivateMessage message) {
+        Player player = this.proxy.getPlayer(UUID.fromString(message.getRecipientId())).orElse(null);
+        if (player == null) return;
+
+        player.sendMessage(MINI_MESSAGE.deserialize(PRIVATE_MESSAGE_RECEIVED_FORMAT,
+                Placeholder.parsed("username", message.getSenderUsername()),
+                Placeholder.unparsed("message", message.getMessage())));
+
+        this.lastMessageCache.setLastMessage(player.getUniqueId(), message.getSenderUsername());
+        this.lastMessageCache.setLastMessage(UUID.fromString(message.getSenderId()), player.getUsername());
     }
 }

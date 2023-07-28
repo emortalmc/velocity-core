@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-public class UserDescribeSub {
+public final class UserDescribeSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserDescribeSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -84,9 +84,9 @@ public class UserDescribeSub {
         for (int i = 0; i < sortedRoles.size(); i++) {
             PermissionCache.CachedRole role = sortedRoles.get(i);
             if (i == 0) {
-                roleComponents.add(Component.text(role.getId(), Style.style(TextDecoration.BOLD)));
+                roleComponents.add(Component.text(role.id(), Style.style(TextDecoration.BOLD)));
             } else {
-                roleComponents.add(Component.text(role.getId()));
+                roleComponents.add(Component.text(role.id()));
             }
         }
         Component groupsValue = Component.join(JoinConfiguration.commas(true), roleComponents);
@@ -103,7 +103,7 @@ public class UserDescribeSub {
 
         int permissionCount = 0;
         for (PermissionCache.CachedRole role : sortedRoles) {
-            permissionCount += role.getPermissions().size();
+            permissionCount += role.permissions().size();
         }
 
         source.sendMessage(MINI_MESSAGE.deserialize(USER_DESCRIPTION,

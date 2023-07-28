@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PartyJoinSub {
+public final class PartyJoinSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyJoinSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -35,7 +35,7 @@ public class PartyJoinSub {
         this.partyService = partyService;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         Player executor = (Player) context.getSource();
         String targetUsername = context.getArgument("player", String.class);
 
@@ -43,14 +43,13 @@ public class PartyJoinSub {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            Status status = exception.getStatus();
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
-                return;
-            }
-
-            LOGGER.error("An error occurred PartyJoinSub getPlayerByUsername: ", status.asException());
+            LOGGER.error("An error occurred PartyJoinSub getPlayerByUsername: ", exception);
             executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            return;
+        }
+
+        if (target == null) {
+            TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
             return;
         }
 

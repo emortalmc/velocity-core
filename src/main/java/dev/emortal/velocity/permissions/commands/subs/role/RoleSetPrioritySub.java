@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RoleSetPrioritySub {
+public final class RoleSetPrioritySub {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleSetPrioritySub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -29,7 +29,7 @@ public class RoleSetPrioritySub {
         this.permissionCache = permissionCache;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
         int priority = context.getArgument("priority", Integer.class);

@@ -1,5 +1,6 @@
 package dev.emortal.velocity.listener;
 
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
@@ -15,33 +16,40 @@ import org.jetbrains.annotations.NotNull;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-public class ServerChangeNotificationListener {
+public final class ServerChangeNotificationListener {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String TELEPORT_MESSAGE = "<green>Sending you to <gold><server_id><green>...</green>";
 
+    private final ProxyServer proxy;
+
     public ServerChangeNotificationListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging) {
-        messaging.addListener(MatchCreatedMessage.class, message -> {
-            Match match = message.getMatch();
-            if (!match.hasAssignment()) return;
+        this.proxy = proxy;
+        messaging.addListener(MatchCreatedMessage.class, message -> this.onMatchCreated(message.getMatch()));
+    }
 
-            for (Ticket ticket : match.getTicketsList()) {
-                if (!ticket.getAutoTeleport()) continue;
+    private void onMatchCreated(@NotNull Match match) {
+        if (!match.hasAssignment()) return;
+        Assignment assignment = match.getAssignment();
 
-                for (String playerId : ticket.getPlayerIdsList()) {
-                    proxy.getPlayer(UUID.fromString(playerId)).ifPresent(player -> {
-                        Assignment assignment = match.getAssignment();
-                        RegisteredServer server = proxy.getServer(assignment.getServerId()).orElse(null);
-                        if (server == null) {
-                            InetSocketAddress address = InetSocketAddress.createUnresolved(assignment.getServerAddress(), assignment.getServerPort());
-                            server = proxy.registerServer(new ServerInfo(assignment.getServerId(), address));
-                        }
+        for (Ticket ticket : match.getTicketsList()) {
+            if (!ticket.getAutoTeleport()) continue;
 
-                        player.sendMessage(MINI_MESSAGE.deserialize(TELEPORT_MESSAGE, Placeholder.unparsed("server_id", assignment.getServerId())));
-                        player.createConnectionRequest(server).fireAndForget();
-                    });
+            for (String playerId : ticket.getPlayerIdsList()) {
+                UUID uuid = UUID.fromString(playerId);
+
+                Player player = this.proxy.getPlayer(uuid).orElse(null);
+                if (player == null) continue;
+
+                RegisteredServer server = this.proxy.getServer(assignment.getServerId()).orElse(null);
+                if (server == null) {
+                    InetSocketAddress address = InetSocketAddress.createUnresolved(assignment.getServerAddress(), assignment.getServerPort());
+                    server = this.proxy.registerServer(new ServerInfo(assignment.getServerId(), address));
                 }
+
+                player.sendMessage(MINI_MESSAGE.deserialize(TELEPORT_MESSAGE, Placeholder.unparsed("server_id", assignment.getServerId())));
+                player.createConnectionRequest(server).fireAndForget();
             }
-        });
+        }
     }
 }

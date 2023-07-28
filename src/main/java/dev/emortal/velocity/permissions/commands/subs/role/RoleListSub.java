@@ -9,12 +9,13 @@ import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class RoleListSub {
+public final class RoleListSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_LIST_HEADER = "<light_purple>Role List (<role_count>):";
@@ -30,15 +31,15 @@ public class RoleListSub {
 
     private final PermissionCache permissionCache;
 
-    public RoleListSub(PermissionCache permissionCache) {
+    public RoleListSub(@NotNull PermissionCache permissionCache) {
         this.permissionCache = permissionCache;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
 
-        List<PermissionCache.CachedRole> roles = this.permissionCache.getRoleCache().values().stream()
-                .sorted(Comparator.comparingInt(PermissionCache.CachedRole::getPriority))
+        List<PermissionCache.CachedRole> roles = this.permissionCache.getRoles().stream()
+                .sorted(Comparator.comparingInt(PermissionCache.CachedRole::priority))
                 .toList();
 
         List<Component> lines = new ArrayList<>();
@@ -49,13 +50,13 @@ public class RoleListSub {
                     .append(role.formatDisplayName(source instanceof Player player ? player.getUsername() : "CONSOLE"))
                     .append(Component.text(": Test Chat", NamedTextColor.WHITE))
                     .build();
+
             lines.add(MINI_MESSAGE.deserialize(ROLE_LIST_LINE,
                     Placeholder.unparsed("priority", String.valueOf(role.priority())),
                     Placeholder.unparsed("role_id", role.id()),
                     Placeholder.unparsed("permission_count", String.valueOf(role.permissions().size())),
                     Placeholder.unparsed("display_name", role.displayName()),
-                    Placeholder.component("example_chat", exampleChat)
-            ));
+                    Placeholder.component("example_chat", exampleChat)));
         }
 
         source.sendMessage(Component.join(JoinConfiguration.newlines(), lines));

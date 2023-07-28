@@ -13,10 +13,11 @@ import dev.emortal.api.utils.kafka.FriendlyKafkaConsumer;
 import dev.emortal.api.utils.kafka.FriendlyKafkaProducer;
 import dev.emortal.api.utils.kafka.KafkaSettings;
 import dev.emortal.velocity.Environment;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
-public class MessagingCore {
+public final class MessagingCore {
     private static final String KAFKA_HOST = System.getenv("KAFKA_HOST");
     private static final String KAFKA_PORT = System.getenv("KAFKA_PORT");
 
@@ -32,13 +33,13 @@ public class MessagingCore {
         this.kafkaProducer = new FriendlyKafkaProducer(kafkaSettings);
     }
 
-    public <T extends AbstractMessage> void addListener(Class<T> messageType, Consumer<T> listener) {
+    public <T extends AbstractMessage> void addListener(@NotNull Class<T> messageType, @NotNull Consumer<T> listener) {
         this.kafkaConsumer.addListener(messageType, listener);
     }
 
     // Kafka producing
     @Subscribe
-    public void onPlayerLogin(PostLoginEvent event) {
+    public void onPlayerLogin(@NotNull PostLoginEvent event) {
         Player player = event.getPlayer();
 
         PlayerConnectMessage message = PlayerConnectMessage.newBuilder()
@@ -51,7 +52,7 @@ public class MessagingCore {
     }
 
     @Subscribe
-    public void onPlayerDisconnect(DisconnectEvent event) {
+    public void onPlayerDisconnect(@NotNull DisconnectEvent event) {
         Player player = event.getPlayer();
 
         PlayerDisconnectMessage message = PlayerDisconnectMessage.newBuilder()
@@ -63,7 +64,7 @@ public class MessagingCore {
     }
 
     @Subscribe
-    public void onServerSwitch(ServerConnectedEvent event) {
+    public void onServerSwitch(@NotNull ServerConnectedEvent event) {
         PlayerSwitchServerMessage message = PlayerSwitchServerMessage.newBuilder()
                 .setPlayerId(event.getPlayer().getUniqueId().toString())
                 .setServerId(event.getServer().getServerInfo().getName())

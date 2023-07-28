@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-public class RolePermissionUnsetSub {
+public final class RolePermissionUnsetSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(RolePermissionUnsetSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 

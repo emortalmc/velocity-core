@@ -1,5 +1,6 @@
 package dev.emortal.velocity.relationships.listeners;
 
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.message.relationship.FriendAddedMessage;
 import dev.emortal.api.message.relationship.FriendRemovedMessage;
@@ -15,39 +16,49 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.util.UUID;
 
-public class FriendListener {
+public final class FriendListener {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String FRIEND_REQUEST_RECEIVED_MESSAGE = "<light_purple>You have received a friend request from <color:#c98fff><sender_username></color> <click:run_command:'/friend add <sender_username>'><green>ACCEPT</click> <reset><gray>| <click:run_command:'/friend deny <sender_username>'><red>DENY</click>";
 
-    public FriendListener(ProxyServer proxy, @NotNull MessagingCore messaging, FriendCache friendCache) {
-        messaging.addListener(FriendRequestReceivedMessage.class, message -> {
-            FriendRequest request = message.getRequest();
+    private final ProxyServer proxy;
+    private final FriendCache friendCache;
 
-            proxy.getPlayer(UUID.fromString(request.getTargetId())).ifPresent(player -> {
-                player.sendMessage(MINI_MESSAGE
-                        .deserialize(FRIEND_REQUEST_RECEIVED_MESSAGE, Placeholder.parsed("sender_username", request.getSenderUsername())));
-            });
-        });
+    public FriendListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging, @NotNull FriendCache friendCache) {
+        this.proxy = proxy;
+        this.friendCache = friendCache;
 
-        messaging.addListener(FriendAddedMessage.class, message -> {
-            proxy.getPlayer(UUID.fromString(message.getRecipientId())).ifPresent(player -> {
-                player.sendMessage(MINI_MESSAGE
-                        .deserialize(FriendAddSub.FRIEND_ADDED_MESSAGE, Placeholder.parsed("username", message.getSenderUsername())));
+        messaging.addListener(FriendRequestReceivedMessage.class, message -> this.onFriendRequestReceived(message.getRequest()));
+        messaging.addListener(FriendAddedMessage.class, this::onFriendAdded);
+        messaging.addListener(FriendRemovedMessage.class, this::onFriendRemoved);
+    }
 
-                friendCache.add(
-                        UUID.fromString(message.getRecipientId()),
-                        new FriendCache.CachedFriend(UUID.fromString(message.getSenderId()), Instant.now())
-                );
-            });
-        });
+    private void onFriendRequestReceived(@NotNull FriendRequest request) {
+        Player player = this.proxy.getPlayer(UUID.fromString(request.getTargetId())).orElse(null);
+        if (player == null) return;
 
-        messaging.addListener(FriendRemovedMessage.class, message -> {
-            UUID recipientId = UUID.fromString(message.getRecipientId());
-            UUID senderId = UUID.fromString(message.getSenderId());
+        player.sendMessage(MINI_MESSAGE.deserialize(FRIEND_REQUEST_RECEIVED_MESSAGE,
+                Placeholder.parsed("sender_username", request.getSenderUsername())));
+    }
 
-            friendCache.remove(recipientId, senderId);
-            friendCache.remove(senderId, recipientId);
-        });
+    private void onFriendAdded(@NotNull FriendAddedMessage message) {
+        UUID recipientId = UUID.fromString(message.getRecipientId());
+
+        Player player = this.proxy.getPlayer(recipientId).orElse(null);
+        if (player == null) return;
+
+        player.sendMessage(MINI_MESSAGE.deserialize(FriendAddSub.FRIEND_ADDED_MESSAGE,
+                Placeholder.parsed("username", message.getSenderUsername())));
+
+        UUID senderId = UUID.fromString(message.getSenderId());
+        this.friendCache.add(recipientId, new FriendCache.CachedFriend(senderId, Instant.now()));
+    }
+
+    private void onFriendRemoved(@NotNull FriendRemovedMessage message) {
+        UUID senderId = UUID.fromString(message.getSenderId());
+        UUID recipientId = UUID.fromString(message.getRecipientId());
+
+        this.friendCache.remove(recipientId, senderId);
+        this.friendCache.remove(senderId, recipientId);
     }
 }

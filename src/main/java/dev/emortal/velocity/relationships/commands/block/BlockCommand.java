@@ -62,7 +62,7 @@ public final class BlockCommand {
                             return 1;
                         })
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
-                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, FilterMethod.NONE))
+                                .suggests(this.usernameSuggestions.command(FilterMethod.NONE))
                                 .executes(CommandUtils.executeAsync(this::block)))
         );
     }
@@ -76,7 +76,7 @@ public final class BlockCommand {
                             return 1;
                         })
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
-                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, FilterMethod.NONE))
+                                .suggests(this.usernameSuggestions.command(FilterMethod.NONE))
                                 .executes(CommandUtils.executeAsync(this::unblock)))
         );
     }
