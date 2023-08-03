@@ -1,4 +1,4 @@
-package dev.emortal.velocity.listener;
+package dev.emortal.velocity.agones;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
@@ -8,7 +8,6 @@ import dev.agones.sdk.AgonesSDKProto;
 import dev.agones.sdk.SDKGrpc;
 import dev.agones.sdk.alpha.AlphaAgonesSDKProto;
 import dev.emortal.api.agonessdk.AgonesUtils;
-import dev.emortal.velocity.grpc.stub.GrpcStubManager;
 import io.grpc.StatusRuntimeException;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -24,7 +23,7 @@ public final class AgonesListener {
     private final SDKGrpc.SDKStub standardAgonesService;
     private final dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub alphaAgonesService;
 
-    public AgonesListener(@NotNull GrpcStubManager stubManager) {
+    public AgonesListener(@NotNull AgonesGrpcStubCollection stubManager) {
         this.agonesService = stubManager.getAgonesService();
         this.standardAgonesService = stubManager.getStandardAgonesService();
         this.alphaAgonesService = stubManager.getAlphaAgonesService();

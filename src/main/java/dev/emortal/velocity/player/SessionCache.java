@@ -1,4 +1,4 @@
-package dev.emortal.velocity.cache;
+package dev.emortal.velocity.player;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;

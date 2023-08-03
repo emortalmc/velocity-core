@@ -1,4 +1,4 @@
-package dev.emortal.velocity.general.commands;
+package dev.emortal.velocity.matchmaking.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;

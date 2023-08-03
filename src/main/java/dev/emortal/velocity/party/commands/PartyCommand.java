@@ -8,7 +8,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.api.service.party.PartyService;
-import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.party.PartyCache;
 import dev.emortal.velocity.party.commands.subs.PartyDisbandSub;
 import dev.emortal.velocity.party.commands.subs.PartyInviteSub;

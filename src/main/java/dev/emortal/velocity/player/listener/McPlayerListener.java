@@ -1,7 +1,7 @@
-package dev.emortal.velocity.listener;
+package dev.emortal.velocity.player.listener;
 
 import dev.emortal.api.service.mcplayer.McPlayerService;
-import dev.emortal.velocity.cache.SessionCache;
+import dev.emortal.velocity.player.SessionCache;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

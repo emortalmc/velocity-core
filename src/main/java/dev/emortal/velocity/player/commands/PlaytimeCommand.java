@@ -1,4 +1,4 @@
-package dev.emortal.velocity.general.commands;
+package dev.emortal.velocity.player.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -8,15 +8,14 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.model.mcplayer.LoginSession;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.ProtoDurationConverter;
 import dev.emortal.api.utils.ProtoTimestampConverter;
-import dev.emortal.velocity.cache.SessionCache;
-import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.player.SessionCache;
+import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.utils.CommandUtils;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;

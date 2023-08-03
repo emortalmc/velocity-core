@@ -1,4 +1,4 @@
-package dev.emortal.velocity.general;
+package dev.emortal.velocity.player;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;

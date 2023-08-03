@@ -1,4 +1,4 @@
-package dev.emortal.velocity.listener;
+package dev.emortal.velocity.matchmaking.listener;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -15,8 +15,7 @@ import dev.emortal.api.model.matchmaker.Assignment;
 import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;
 import dev.emortal.api.service.matchmaker.MatchmakerService;
-import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.messaging.MessagingCore;
+import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.utils.Pair;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -44,7 +43,7 @@ public final class LobbySelectorListener {
             .evictionListener(this::onEvict)
             .build();
 
-    public LobbySelectorListener(@NotNull ProxyServer proxy, @NotNull MatchmakerService matchmaker, @NotNull MessagingCore messaging) {
+    public LobbySelectorListener(@NotNull ProxyServer proxy, @NotNull MatchmakerService matchmaker, @NotNull MessagingModule messaging) {
         this.proxy = proxy;
         this.matchmaker = matchmaker;
 
@@ -69,7 +68,6 @@ public final class LobbySelectorListener {
     }
 
     private void handleMatchCreated(@NotNull MatchCreatedMessage message) {
-        System.out.println("Match created: " + message.getMatch());
         Match match = message.getMatch();
 
         for (Ticket ticket : match.getTicketsList()) {

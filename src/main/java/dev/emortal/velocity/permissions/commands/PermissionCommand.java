@@ -11,7 +11,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.service.permission.PermissionService;
-import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleCreateSub;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleDescribeSub;

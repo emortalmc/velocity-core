@@ -10,7 +10,7 @@ import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameReques
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
-import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.utils.CommandUtils;
 import net.kyori.adventure.text.Component;

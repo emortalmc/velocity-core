@@ -14,7 +14,7 @@ import dev.emortal.api.model.party.Party;
 import dev.emortal.api.model.party.PartyInvite;
 import dev.emortal.api.model.party.PartyMember;
 import dev.emortal.api.service.party.PartyService;
-import dev.emortal.velocity.messaging.MessagingCore;
+import dev.emortal.velocity.messaging.MessagingModule;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -55,7 +55,7 @@ public final class PartyCache {
     private final @NotNull Map<String, CachedParty> partyMap = new ConcurrentHashMap<>();
     private final @NotNull Map<UUID, CachedParty> playerPartyMap = new ConcurrentHashMap<>();
 
-    public PartyCache(@NotNull ProxyServer proxy, @NotNull PartyService partyService, @NotNull MessagingCore messagingCore) {
+    public PartyCache(@NotNull ProxyServer proxy, @NotNull PartyService partyService, @NotNull MessagingModule messagingCore) {
         this.proxy = proxy;
         this.partyService = partyService;
 

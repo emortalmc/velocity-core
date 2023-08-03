@@ -3,7 +3,7 @@ package dev.emortal.velocity.permissions.listener;
 import dev.emortal.api.message.permission.PlayerRolesUpdateMessage;
 import dev.emortal.api.message.permission.RoleUpdateMessage;
 import dev.emortal.api.model.permission.Role;
-import dev.emortal.velocity.messaging.MessagingCore;
+import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.permissions.PermissionCache;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -16,7 +16,7 @@ public final class PermissionUpdateListener {
 
     private final PermissionCache cache;
 
-    public PermissionUpdateListener(@NotNull PermissionCache cache, @NotNull MessagingCore messagingCore) {
+    public PermissionUpdateListener(@NotNull PermissionCache cache, @NotNull MessagingModule messagingCore) {
         this.cache = cache;
 
         messagingCore.addListener(RoleUpdateMessage.class, message -> this.onRoleUpdate(message.getRole(), message.getChangeType()));

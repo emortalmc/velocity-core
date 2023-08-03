@@ -10,6 +10,7 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    mavenLocal()
 
     maven("https://repo.emortal.dev/snapshots")
     maven("https://repo.emortal.dev/releases")
@@ -29,6 +30,7 @@ dependencies {
     implementation("dev.emortal.api:common-proto-sdk:84dc0f6")
     implementation("dev.emortal.api:agones-sdk:1.0.7")
     implementation("dev.emortal.api:live-config-parser:e26df7a")
+    implementation("dev.emortal.api:module-system:local")
 
     implementation("io.kubernetes:client-java:18.0.0")
 

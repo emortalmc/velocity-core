@@ -1,4 +1,4 @@
-package dev.emortal.velocity.grpc.stub;
+package dev.emortal.velocity.agones;
 
 import dev.agones.sdk.SDKGrpc;
 import dev.emortal.velocity.Environment;
@@ -6,7 +6,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.jetbrains.annotations.Nullable;
 
-public final class GrpcStubManager {
+public final class AgonesGrpcStubCollection {
     private static final boolean AGONES_SDK_ENABLED;
     private static final String AGONES_ADDRESS = "localhost"; // SDK runs as a sidecar in production so address is always localhost
     private static final int AGONES_GRPC_PORT;
@@ -23,7 +23,7 @@ public final class GrpcStubManager {
     private final @Nullable dev.agones.sdk.beta.SDKGrpc.SDKBlockingStub betaAgonesService;
     private final @Nullable dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub alphaAgonesService;
 
-    public GrpcStubManager() {
+    public AgonesGrpcStubCollection() {
         if (!AGONES_SDK_ENABLED) {
             this.agonesService = null;
             this.standardAgonesService = null;

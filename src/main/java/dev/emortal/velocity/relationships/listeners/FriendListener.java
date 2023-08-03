@@ -6,7 +6,7 @@ import dev.emortal.api.message.relationship.FriendAddedMessage;
 import dev.emortal.api.message.relationship.FriendRemovedMessage;
 import dev.emortal.api.message.relationship.FriendRequestReceivedMessage;
 import dev.emortal.api.model.relationship.FriendRequest;
-import dev.emortal.velocity.messaging.MessagingCore;
+import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.relationships.commands.friend.FriendAddSub;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -24,7 +24,7 @@ public final class FriendListener {
     private final ProxyServer proxy;
     private final FriendCache friendCache;
 
-    public FriendListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging, @NotNull FriendCache friendCache) {
+    public FriendListener(@NotNull ProxyServer proxy, @NotNull MessagingModule messaging, @NotNull FriendCache friendCache) {
         this.proxy = proxy;
         this.friendCache = friendCache;
 

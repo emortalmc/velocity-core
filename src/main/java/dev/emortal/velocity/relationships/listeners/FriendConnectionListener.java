@@ -1,9 +1,9 @@
-package dev.emortal.velocity.listener;
+package dev.emortal.velocity.relationships.listeners;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.message.relationship.FriendConnectionMessage;
-import dev.emortal.velocity.messaging.MessagingCore;
+import dev.emortal.velocity.messaging.MessagingModule;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -20,7 +20,7 @@ public final class FriendConnectionListener {
 
     private final ProxyServer proxy;
 
-    public FriendConnectionListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging) {
+    public FriendConnectionListener(@NotNull ProxyServer proxy, @NotNull MessagingModule messaging) {
         this.proxy = proxy;
         messaging.addListener(FriendConnectionMessage.class, message ->
                 this.onFriendConnection(message.getMessageTargetIdsList(), message.getUsername(), message.getJoined()));

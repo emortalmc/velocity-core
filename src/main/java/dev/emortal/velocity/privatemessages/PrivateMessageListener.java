@@ -4,7 +4,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.message.messagehandler.PrivateMessageCreatedMessage;
 import dev.emortal.api.model.messagehandler.PrivateMessage;
-import dev.emortal.velocity.messaging.MessagingCore;
+import dev.emortal.velocity.messaging.MessagingModule;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
@@ -20,7 +20,7 @@ public final class PrivateMessageListener {
     private final ProxyServer proxy;
     private final LastMessageCache lastMessageCache;
 
-    public PrivateMessageListener(@NotNull ProxyServer proxy, @NotNull MessagingCore messaging, LastMessageCache lastMessageCache) {
+    public PrivateMessageListener(@NotNull ProxyServer proxy, @NotNull MessagingModule messaging, LastMessageCache lastMessageCache) {
         this.proxy = proxy;
         this.lastMessageCache = lastMessageCache;
 

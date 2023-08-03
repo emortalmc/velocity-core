@@ -1,18 +1,37 @@
 package dev.emortal.velocity;
 
+import dev.emortal.api.modules.Module;
+import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.env.ModuleEnvironment;
 import io.pyroscope.http.Format;
 import io.pyroscope.javaagent.EventType;
 import io.pyroscope.javaagent.PyroscopeAgent;
 import io.pyroscope.javaagent.config.Config;
 import io.pyroscope.labels.Pyroscope;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public final class PyroscopeHandler {
+@ModuleData(name = "pyroscope", required = false)
+public final class PyroscopeModule extends Module {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PyroscopeModule.class);
+
     private static final String FLEET_NAME = "velocity";
     private static final String PYROSCOPE_ADDRESS = System.getenv("PYROSCOPE_SERVER_ADDRESS");
 
-    public static void register() {
+    public PyroscopeModule(@NotNull ModuleEnvironment environment) {
+        super(environment);
+    }
+
+    @Override
+    public boolean onLoad() {
+        if (PYROSCOPE_ADDRESS == null) {
+            LOGGER.warn("Pyroscope address not set. Pyroscope profiling events will not be sent.");
+            return false;
+        }
+
         Pyroscope.setStaticLabels(Map.of(
                 "fleet", FLEET_NAME,
                 "pod", Environment.getHostname())
@@ -28,5 +47,12 @@ public final class PyroscopeHandler {
                                 .build()
                 ).build()
         );
+
+        return true;
+    }
+
+    @Override
+    public void onUnload() {
+        // do nothing
     }
 }
