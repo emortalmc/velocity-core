@@ -3,6 +3,7 @@ package dev.emortal.velocity.relationships.commands.friend;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
@@ -18,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public final class FriendRemoveSub {
+public final class FriendRemoveSub implements CommandExecutor<CommandSource> {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendRemoveSub.class);
 
@@ -35,6 +36,7 @@ public final class FriendRemoveSub {
         this.friendCache = friendCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);

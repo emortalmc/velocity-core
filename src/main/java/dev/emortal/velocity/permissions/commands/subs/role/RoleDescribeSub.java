@@ -2,15 +2,15 @@ package dev.emortal.velocity.permissions.commands.subs.role;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Optional;
 
-public final class RoleDescribeSub {
+public final class RoleDescribeSub implements CommandExecutor<CommandSource> {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";
@@ -27,6 +27,7 @@ public final class RoleDescribeSub {
         this.permissionCache = permissionCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);

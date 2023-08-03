@@ -3,13 +3,13 @@ package dev.emortal.velocity.party.commands.subs;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.model.party.PartyInvite;
 import dev.emortal.api.service.party.InvitePlayerToPartyResult;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.TempLang;
 import dev.emortal.velocity.party.commands.PartyCommand;
-import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartyInviteSub {
+public final class PartyInviteSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyInviteSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -32,35 +32,36 @@ public final class PartyInviteSub {
         this.partyService = partyService;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
+        Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("player", String.class);
-        Player executor = (Player) context.getSource();
 
         PlayerResolver.CachedMcPlayer target;
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
             LOGGER.error("An error occurred PartyInviteSub getPlayerByUsername: ", exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            player.sendMessage(PartyCommand.ERROR_MESSAGE);
             return;
         }
 
         if (target == null) {
-            TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
+            TempLang.PLAYER_NOT_FOUND.send(player, Placeholder.unparsed("search_username", targetUsername));
             return;
         }
 
         if (!target.online()) {
-            TempLang.PLAYER_NOT_ONLINE.send(executor, Placeholder.unparsed("username", target.username()));
+            TempLang.PLAYER_NOT_ONLINE.send(player, Placeholder.unparsed("username", target.username()));
             return;
         }
 
         InvitePlayerToPartyResult result;
         try {
-            result = this.partyService.invitePlayer(executor.getUniqueId(), executor.getUsername(), target.uuid(), target.username());
+            result = this.partyService.invitePlayer(player.getUniqueId(), player.getUsername(), target.uuid(), target.username());
         } catch (StatusRuntimeException exception) {
             LOGGER.error("An error occurred PartyInviteSub invitePlayerToParty: ", exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            player.sendMessage(PartyCommand.ERROR_MESSAGE);
             return;
         }
 
@@ -72,7 +73,7 @@ public final class PartyInviteSub {
                     case TARGET_ALREADY_INVITED -> MINI_MESSAGE.deserialize(ALREADY_INVITED_MESSAGE, Placeholder.unparsed("username", target.username()));
                     case TARGET_IN_THIS_PARTY -> MINI_MESSAGE.deserialize(ALREADY_IN_PARTY_MESSAGE, Placeholder.unparsed("username", target.username()));
                 };
-                executor.sendMessage(message);
+                player.sendMessage(message);
             }
         }
     }

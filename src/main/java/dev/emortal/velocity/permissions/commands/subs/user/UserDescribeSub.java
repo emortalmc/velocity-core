@@ -2,6 +2,7 @@ package dev.emortal.velocity.permissions.commands.subs.user;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.grpc.permission.PermissionProto;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
@@ -27,7 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-public final class UserDescribeSub {
+public final class UserDescribeSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserDescribeSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -48,6 +49,7 @@ public final class UserDescribeSub {
         this.permissionCache = permissionCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String targetUsername = context.getArgument("username", String.class);

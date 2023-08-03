@@ -31,6 +31,9 @@ dependencies {
     implementation("dev.emortal.api:agones-sdk:1.0.7")
     implementation("dev.emortal.api:live-config-parser:e26df7a")
     implementation("dev.emortal.api:module-system:e69aa43")
+    implementation("dev.emortal.api:command-system:1768683") {
+        exclude(group = "com.mojang", module = "brigadier") // use Velocity Brigadier provided by Velocity
+    }
 
     implementation("io.kubernetes:client-java:18.0.0")
 

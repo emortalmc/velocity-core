@@ -3,6 +3,7 @@ package dev.emortal.velocity.party.commands.subs;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.party.ModifyPartyResult;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.velocity.party.PartyCache;
@@ -14,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartyOpenSub {
+public final class PartyOpenSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyOpenSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -32,6 +33,7 @@ public final class PartyOpenSub {
         this.partyCache = partyCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         Player executor = (Player) context.getSource();
         PartyCache.CachedParty party = this.partyCache.getPlayerParty(executor.getUniqueId());
