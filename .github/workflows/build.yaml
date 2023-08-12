@@ -3,6 +3,7 @@ name: "Build and deploy"
 on:
   push:
     branches: [main]
+  pull_request: {}
 
 jobs:
   build:
@@ -15,6 +16,7 @@ jobs:
   deploy:
     needs: "build"
     runs-on: "ubuntu-latest"
+    if: "github.ref == 'refs/heads/main'"
     steps:
       - uses: "emortalmc/actions/k8s-sync@main"
         with:
