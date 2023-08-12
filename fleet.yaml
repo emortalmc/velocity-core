@@ -47,7 +47,7 @@ spec:
           
             - name: velocity
               image: ghcr.io/emortalmc/velocity-core:1b23534124c1623991aa0e5e18e833f7cd1a3101
-              command: [ "/bin/sh", "-c", "java --enable-preview -XX:+UseZGC -Xmx3G -Xms3G -jar /app/velocity.jar" ]
+              args: ["--enable-preview", "-XX:+UseZGC", "-Xmx3G", "-Xms3G", "-jar", "/app/velocity.jar"]
 
               lifecycle:
                 postStart:
