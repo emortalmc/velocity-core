@@ -39,7 +39,7 @@ public final class UsernameSuggestions {
         if (this.playerService == null) return CompletableFuture.completedFuture(builder.build());
 
         String currentInput = builder.getRemainingLowerCase();
-        if (currentInput.length() < 3) return CompletableFuture.completedFuture(builder.build());
+        if (currentInput.length() < 2) return CompletableFuture.completedFuture(builder.build());
 
         return CompletableFuture.supplyAsync(() -> this.suggest(builder, player.getUniqueId(), currentInput, filterMethod));
     }
