@@ -2,12 +2,11 @@ package dev.emortal.velocity;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
-import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.scheduler.ScheduledTask;
+import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import dev.emortal.api.modules.ModuleData;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
-import dev.emortal.velocity.utils.ReflectionUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -71,13 +70,10 @@ public final class PacketDebuggingModule extends VelocityModule {
     private void onLogin(@NotNull PostLoginEvent event) {
         if (!DEBUG_PACKETS) return;
 
-        Player player = event.getPlayer();
-        Object minecraftConnection = ReflectionUtils.get(player, player.getClass(), "connection", Object.class);
-        Channel channel = ReflectionUtils.get(minecraftConnection, minecraftConnection.getClass(), "channel", Channel.class);
+        ConnectedPlayer player = (ConnectedPlayer) event.getPlayer();
+        Channel channel = player.getConnection().getChannel();
 
-        channel.eventLoop().submit(() -> {
-            channel.pipeline().addBefore("minecraft-encoder", "packet-counter", new PacketCounter());
-        });
+        channel.pipeline().addBefore("minecraft-encoder", "packet-counter", new PacketCounter());
     }
 
     private final class PacketCounter extends ChannelDuplexHandler {
@@ -95,11 +91,11 @@ public final class PacketDebuggingModule extends VelocityModule {
             ByteBuf buf = ((ByteBuf) msg).copy();
             int packetId = readVarInt(buf);
 
-            PacketDebuggingModule.this.outgoingPacketCounter.computeIfPresent(packetId, (id, count) -> {
+            PacketDebuggingModule.this.outgoingPacketCounter.compute(packetId, (id, count) -> {
+                if (count == null) return new AtomicLong(1);
                 count.incrementAndGet();
                 return count;
             });
-            PacketDebuggingModule.this.outgoingPacketCounter.computeIfAbsent(packetId, id -> new AtomicLong(1));
 
             super.write(ctx, msg, promise);
         }
@@ -111,12 +107,11 @@ public final class PacketDebuggingModule extends VelocityModule {
 
             while (true) {
                 currentByte = buf.readByte();
-                value |= (currentByte & SEGMENT_BITS) << position;
 
+                value |= (currentByte & SEGMENT_BITS) << position;
                 if ((currentByte & CONTINUE_BIT) == 0) break;
 
                 position += 7;
-
                 if (position >= 32) throw new RuntimeException("VarInt is too big");
             }
 
