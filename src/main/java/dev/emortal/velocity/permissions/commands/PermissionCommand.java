@@ -9,9 +9,9 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto;
+import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.service.permission.PermissionService;
-import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleCreateSub;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleDescribeSub;
@@ -35,7 +35,7 @@ import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 
-public class PermissionCommand {
+public final class PermissionCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final Component BASE_HELP_MESSAGE = MINI_MESSAGE.deserialize(
@@ -101,21 +101,21 @@ public class PermissionCommand {
         proxy.getCommandManager().register(this.createBrigadierCommand());
     }
 
-    private void executeBaseHelp(CommandContext<CommandSource> context) {
+    private void executeBaseHelp(@NotNull CommandContext<CommandSource> context) {
         context.getSource().sendMessage(BASE_HELP_MESSAGE);
     }
 
-    private void executeRoleHelp(CommandContext<CommandSource> context) {
+    private void executeRoleHelp(@NotNull CommandContext<CommandSource> context) {
         context.getSource().sendMessage(ROLE_HELP_MESSAGE);
     }
 
-    private void executeUserHelp(CommandContext<CommandSource> context) {
+    private void executeUserHelp(@NotNull CommandContext<CommandSource> context) {
         context.getSource().sendMessage(USER_HELP_MESSAGE);
     }
 
     private @NotNull CompletableFuture<Suggestions> createRoleSuggestions(@NotNull CommandContext<CommandSource> context,
                                                                           @NotNull SuggestionsBuilder builder) {
-        for (String roleId : this.permissionCache.getRoleCache().keySet()) {
+        for (String roleId : this.permissionCache.getRoleIds()) {
             if (!roleId.startsWith(builder.getRemainingLowerCase())) continue;
             builder.suggest(roleId);
         }
@@ -129,75 +129,48 @@ public class PermissionCommand {
                         .executes(CommandUtils.execute(this::executeBaseHelp))
                         .requires(source -> source.hasPermission("command.permission"))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("listroles")
-                                .executes(CommandUtils.executeAsync(this.roleListSub::execute))
-                        )
+                                .executes(CommandUtils.executeAsync(this.roleListSub::execute)))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("role")
                                 .executes(CommandUtils.execute(this::executeRoleHelp))
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("roleId", word())
                                         .suggests(this::createRoleSuggestions)
                                         .executes(CommandUtils.executeAsync(this.roleDescribeSub::execute))
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("create")
-                                                .executes(CommandUtils.executeAsync(this.roleCreateSub::execute))
-                                        )
+                                                .executes(CommandUtils.executeAsync(this.roleCreateSub::execute)))
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("setusername")
                                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("usernameFormat", string())
-                                                        .executes(CommandUtils.executeAsync(this.roleSetUsernameSub::execute))
-                                                )
-                                        )
+                                                        .executes(CommandUtils.executeAsync(this.roleSetUsernameSub::execute))))
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("setpriority")
                                                 .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("priority", integer(0, Integer.MAX_VALUE))
-                                                        .executes(CommandUtils.executeAsync(this.roleSetPrioritySub::execute))
-                                                )
-                                        )
+                                                        .executes(CommandUtils.executeAsync(this.roleSetPrioritySub::execute))))
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("permission")
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("set")
                                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word())
                                                                 .then(RequiredArgumentBuilder.<CommandSource, Boolean>argument("value", BoolArgumentType.bool())
-                                                                        .executes(CommandUtils.executeAsync(this.rolePermissionAddSub::execute))
-                                                                )
-                                                        )
-                                                )
+                                                                        .executes(CommandUtils.executeAsync(this.rolePermissionAddSub::execute)))))
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("unset")
                                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word())
-                                                                .executes(CommandUtils.executeAsync(this.rolePermissionUnsetSub::execute))
-                                                        )
-                                                )
+                                                                .executes(CommandUtils.executeAsync(this.rolePermissionUnsetSub::execute))))
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("check")
                                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word())
-                                                                .executes(CommandUtils.executeAsync(this.rolePermissionCheckSub::execute))
-                                                        )
-                                                )
-                                        )
-                                )
-                        )
+                                                                .executes(CommandUtils.executeAsync(this.rolePermissionCheckSub::execute)))))))
                         .then(LiteralArgumentBuilder.<CommandSource>literal("user")
                                 .executes(CommandUtils.execute(this::executeUserHelp))
                                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", word())
                                         .executes(CommandUtils.executeAsync(this.userDescribeSub::execute))
-                                        .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod.NONE))
+                                        .suggests(this.usernameSuggestions.command(FilterMethod.NONE))
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("role")
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("add")
                                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("roleId", word())
                                                                 .suggests(this::createRoleSuggestions)
-                                                                .executes(CommandUtils.executeAsync(this.userRoleAddSub::execute))
-                                                        )
-                                                )
+                                                                .executes(CommandUtils.executeAsync(this.userRoleAddSub::execute))))
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("remove")
                                                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("roleId", word())
                                                                 .suggests(this::createRoleSuggestions)
-                                                                .executes(CommandUtils.executeAsync(this.userRoleRemoveSub::execute))
-                                                        )
-                                                )
-                                        )
+                                                                .executes(CommandUtils.executeAsync(this.userRoleRemoveSub::execute)))))
                                         .then(LiteralArgumentBuilder.<CommandSource>literal("permission")
                                                 .then(LiteralArgumentBuilder.<CommandSource>literal("check")
-                                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word())
-                                                                .executes(context -> 1)
-                                                        )
-                                                )
-                                        )
-                                )
-                        )
+                                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word()).executes(context -> 1))))))
         );
     }
 }

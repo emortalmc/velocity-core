@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RoleSetUsernameSub {
+public final class RoleSetUsernameSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleSetUsernameSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -31,7 +31,7 @@ public class RoleSetUsernameSub {
         this.permissionCache = permissionCache;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class).toLowerCase();
         String usernameFormat = context.getArgument("usernameFormat", String.class);

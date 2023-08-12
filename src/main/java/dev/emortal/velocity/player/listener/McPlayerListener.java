@@ -1,19 +1,19 @@
-package dev.emortal.velocity.listener;
+package dev.emortal.velocity.player.listener;
 
 import dev.emortal.api.service.mcplayer.McPlayerService;
-import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.cache.SessionCache;
+import dev.emortal.velocity.player.SessionCache;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class McPlayerListener {
+public final class McPlayerListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(McPlayerListener.class);
 
-    private final McPlayerService mcPlayerService;
+    private final McPlayerService playerService;
     private final SessionCache sessionCache;
 
-    public McPlayerListener(SessionCache sessionCache) {
-        this.mcPlayerService = GrpcStubCollection.getPlayerService().orElse(null);
+    public McPlayerListener(@NotNull McPlayerService playerService, @NotNull SessionCache sessionCache) {
+        this.playerService = playerService;
         this.sessionCache = sessionCache;
     }
 

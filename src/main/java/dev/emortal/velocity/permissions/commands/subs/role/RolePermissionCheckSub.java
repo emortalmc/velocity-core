@@ -6,19 +6,20 @@ import com.velocitypowered.api.permission.Tristate;
 import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jetbrains.annotations.NotNull;
 
-public class RolePermissionCheckSub {
+public final class RolePermissionCheckSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String PERMISSION_STATE = "<green>Permission <permission> state for <role_id>: <state>";
 
     private final PermissionCache permissionCache;
 
-    public RolePermissionCheckSub(PermissionCache permissionCache) {
+    public RolePermissionCheckSub(@NotNull PermissionCache permissionCache) {
         this.permissionCache = permissionCache;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
         String permission = context.getArgument("permission", String.class);

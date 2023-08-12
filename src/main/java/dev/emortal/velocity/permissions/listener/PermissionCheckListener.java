@@ -12,7 +12,7 @@ import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.StatusException;
 import org.jetbrains.annotations.NotNull;
 
-public class PermissionCheckListener {
+public final class PermissionCheckListener {
 
     private final PermissionCache permissionCache;
 

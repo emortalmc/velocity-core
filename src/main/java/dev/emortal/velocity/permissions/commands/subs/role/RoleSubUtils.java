@@ -8,7 +8,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class RoleSubUtils {
+public final class RoleSubUtils {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";

@@ -8,7 +8,6 @@ import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.TempLang;
 import dev.emortal.velocity.party.commands.PartyCommand;
-import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -17,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PartyKickSub {
+public final class PartyKickSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyKickSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -34,7 +33,7 @@ public class PartyKickSub {
         this.partyService = partyService;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         Player executor = (Player) context.getSource();
         String targetUsername = context.getArgument("player", String.class);
 
@@ -42,14 +41,13 @@ public class PartyKickSub {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            Status status = exception.getStatus();
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
-                return;
-            }
-
-            LOGGER.error("An error occurred PartyKickSub getPlayerByUsername: ", status.asException());
+            LOGGER.error("An error occurred PartyKickSub getPlayerByUsername: ", exception);
             executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            return;
+        }
+
+        if (target == null) {
+            TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
             return;
         }
 

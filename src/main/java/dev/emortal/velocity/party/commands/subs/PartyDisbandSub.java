@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PartyDisbandSub {
+public final class PartyDisbandSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyListSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -31,8 +31,7 @@ public class PartyDisbandSub {
         this.partyService = partyService;
     }
 
-    public void execute(CommandContext<CommandSource> context) {
-        // context is ignored
+    public void execute(@NotNull CommandContext<CommandSource> context) {
         Player executor = (Player) context.getSource();
 
         ModifyPartyResult result;

@@ -8,7 +8,6 @@ import dev.emortal.api.grpc.permission.PermissionProto;
 import dev.emortal.api.model.permission.PermissionNode.PermissionState;
 import dev.emortal.api.model.permission.Role;
 import dev.emortal.api.service.permission.PermissionService;
-import dev.emortal.api.utils.GrpcStubCollection;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -30,17 +29,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-public class PermissionCache {
+public final class PermissionCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionCache.class);
-
-    private final Map<String, CachedRole> roleCache = Collections.synchronizedMap(new LinkedHashMap<>());
-    private final Map<UUID, User> userCache = new ConcurrentHashMap<>();
 
     private final PermissionService permissionService;
     private final Set<PermissionBlocker> permissionBlockers;
 
-    public PermissionCache(PermissionBlocker... permissionBlockers) {
-        this.permissionService = GrpcStubCollection.getPermissionService().orElse(null);
+    private final Map<String, CachedRole> roleCache = Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Map<UUID, User> userCache = new ConcurrentHashMap<>();
+
+    public PermissionCache(@NotNull PermissionService permissionService, @NotNull PermissionBlocker... permissionBlockers) {
+        this.permissionService = permissionService;
         this.permissionBlockers = Set.of(permissionBlockers);
 
         this.loadRoles();
@@ -62,13 +61,13 @@ public class PermissionCache {
         }
 
         for (Role role : roles) {
-            var cachedRole = CachedRole.fromRole(role);
+            CachedRole cachedRole = CachedRole.fromRole(role);
             this.roleCache.put(role.getId(), cachedRole);
         }
     }
 
     @Blocking
-    public void loadUser(UUID id) throws StatusException {
+    public void loadUser(@NotNull UUID id) throws StatusException {
         PermissionProto.PlayerRolesResponse response;
         try {
             response = this.permissionService.getPlayerRoles(id);
@@ -82,7 +81,7 @@ public class PermissionCache {
         this.userCache.put(id, user);
     }
 
-    public Tristate getPermission(UUID id, String permission) {
+    public @NotNull Tristate getPermission(@NotNull UUID id, @NotNull String permission) {
         // check permission blockers
         for (PermissionBlocker permissionBlocker : this.permissionBlockers) {
             if (permissionBlocker.isBlocked(id, permission)) return Tristate.FALSE;
@@ -90,41 +89,38 @@ public class PermissionCache {
         // continue for checks if not blocked
 
         User user = this.userCache.get(id);
-        if (user == null) {
-            return Tristate.UNDEFINED;
-        }
+        if (user == null) return Tristate.UNDEFINED;
 
         int currentPriority = 0;
         Tristate currentState = Tristate.UNDEFINED;
 
-        for (String roleId : user.getRoleIds()) {
+        for (String roleId : user.roleIds()) {
             CachedRole role = this.roleCache.get(roleId);
-            if (role == null || currentPriority > role.getPriority()) continue;
+            if (role == null || currentPriority > role.priority()) continue;
 
-            for (CachedRole.PermissionNode node : role.getPermissions()) {
-                if (node.permission().equals(permission)) {
-                    currentPriority = role.getPriority();
-                    currentState = node.state();
-                }
+            for (CachedRole.PermissionNode(String nodePermission, Tristate state) : role.permissions()) {
+                if (!nodePermission.equals(permission)) continue;
+                currentPriority = role.priority();
+                currentState = state;
             }
         }
 
         return currentState;
     }
 
-    public Map<String, CachedRole> getRoleCache() {
-        return roleCache;
+    public @NotNull Collection<String> getRoleIds() {
+        return this.roleCache.keySet();
     }
 
-    public Map<UUID, User> getUserCache() {
-        return userCache;
+    public @NotNull Collection<CachedRole> getRoles() {
+        return this.roleCache.values();
     }
 
-    public @Nullable CachedRole getRole(String id) {
+    public @Nullable CachedRole getRole(@NotNull String id) {
         return this.roleCache.get(id);
     }
 
-    public @Nullable User getUser(UUID id) {
+    public @Nullable User getUser(@NotNull UUID id) {
         return this.userCache.get(id);
     }
 
@@ -133,67 +129,41 @@ public class PermissionCache {
         this.roleCache.put(roleResponse.getId(), role);
     }
 
-    public boolean removeRole(String id) {
+    public boolean removeRole(@NotNull String id) {
         return this.roleCache.remove(id) != null;
     }
 
-    public String determineActiveName(Collection<String> roleIds) {
+    public @Nullable String determineActiveName(@NotNull Collection<String> roleIds) {
         int currentPriority = 0;
         String currentActiveName = null;
 
         for (CachedRole role : this.roleCache.values()) {
-            if (role.getDisplayName() != null && roleIds.contains(role.id())) {
-                if (role.getPriority() > currentPriority) {
-                    currentPriority = role.getPriority();
-                    currentActiveName = role.getDisplayName();
-                }
-            }
+            if (role.displayName() == null || !roleIds.contains(role.id())) continue;
+            if (role.priority() <= currentPriority) continue;
+
+            currentPriority = role.priority();
+            currentActiveName = role.displayName();
         }
+
         return currentActiveName;
     }
 
     @Subscribe
-    public void onDisconnect(DisconnectEvent event) {
+    public void onDisconnect(@NotNull DisconnectEvent event) {
         this.userCache.remove(event.getPlayer().getUniqueId());
     }
 
-    public static final class User {
-        private final UUID id;
-        private final Set<String> roleIds;
-
-        private String displayName;
-
-        public User(UUID id, Set<String> roleIds, String displayName) {
-            this.id = id;
-            this.roleIds = roleIds;
-            this.displayName = displayName;
-        }
-
-        public UUID getId() {
-            return this.id;
-        }
-
-        public Set<String> getRoleIds() {
-            return this.roleIds;
-        }
-
-        public String getDisplayName() {
-            return this.displayName;
-        }
-
-        public void setDisplayName(String displayName) {
-            this.displayName = displayName;
-        }
+    public record User(@NotNull UUID id, @NotNull Set<String> roleIds, @Nullable String displayName) {
     }
 
-    public record CachedRole(@NotNull String id, int priority, @NotNull String displayName,
+    public record CachedRole(@NotNull String id, int priority, @Nullable String displayName,
                              @NotNull Set<PermissionNode> permissions) implements Comparable<CachedRole> {
 
         static @NotNull CachedRole fromRole(@NotNull Role role) {
             return new CachedRole(
                     role.getId(),
                     role.getPriority(),
-                    role.getDisplayName(),
+                    role.hasDisplayName() ? role.getDisplayName() : null,
                     role.getPermissionsList().stream()
                             .filter(node -> node.getState() == PermissionState.ALLOW)
                             .map(CachedRole::convertPermissionNode)
@@ -211,32 +181,15 @@ public class PermissionCache {
             return Integer.compare(this.priority, o.priority);
         }
 
-        public String getId() {
-            return this.id;
-        }
-
-        public Set<PermissionNode> getPermissions() {
-            return this.permissions;
-        }
-
-        public Tristate getPermissionState(String node) {
-            for (PermissionNode permissionNode : this.permissions) {
-                if (permissionNode.permission().equals(node)) {
-                    return permissionNode.state();
-                }
+        public @NotNull Tristate getPermissionState(@NotNull String node) {
+            for (PermissionNode(String permission, Tristate state) : this.permissions) {
+                if (permission.equals(node)) return state;
             }
             return Tristate.UNDEFINED;
         }
 
-        public int getPriority() {
-            return this.priority;
-        }
-
-        public String getDisplayName() {
-            return this.displayName;
-        }
-
         public @NotNull Component formatDisplayName(@NotNull String username) {
+            if (this.displayName == null) return Component.text(username);
             return MiniMessage.miniMessage().deserialize(this.displayName, Placeholder.unparsed("username", username));
         }
 

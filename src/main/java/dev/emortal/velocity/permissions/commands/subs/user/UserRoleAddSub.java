@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class UserRoleAddSub {
+public final class UserRoleAddSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRoleAddSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -74,7 +74,7 @@ public class UserRoleAddSub {
         var message = switch (result) {
             case SUCCESS -> {
                 PermissionCache.User user = this.permissionCache.getUser(targetId);
-                if (user != null) user.getRoleIds().add(role.getId());
+                if (user != null) user.roleIds().add(role.id());
 
                 yield MINI_MESSAGE.deserialize(ROLE_ADDED, roleIdPlaceholder, Placeholder.unparsed("username", correctUsername));
             }

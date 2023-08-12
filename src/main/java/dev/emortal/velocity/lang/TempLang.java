@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public enum TempLang {
+
     PLAYER_NOT_FOUND("Could not find player <search_username>"),
     PLAYER_NOT_ONLINE("<username> is not online");
 
@@ -21,29 +22,26 @@ public enum TempLang {
 
     TempLang(@NotNull String unparsed) {
         this.unparsed = unparsed;
-
         this.tags = Pattern.compile("<(.*?)>").matcher(unparsed)
                 .results()
                 .map(result -> result.group(1))
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    public @NotNull Component deserialize(TagResolver... tagResolvers) {
+    public @NotNull Component deserialize(@NotNull TagResolver... tagResolvers) {
         TagResolver resolver = TagResolver.resolver(tagResolvers);
         for (String tag : this.tags) {
-            if (!resolver.has(tag)) {
-                throw new IllegalArgumentException("Tag %s is not resolved".formatted(tag));
-            }
+            if (!resolver.has(tag)) throw new IllegalArgumentException("Tag " + tag + " is not resolved");
         }
 
         return MINI_MESSAGE.deserialize(this.unparsed, tagResolvers);
     }
 
-    public void send(@NotNull Audience target, TagResolver... tagResolvers) {
+    public void send(@NotNull Audience target, @NotNull TagResolver... tagResolvers) {
         target.sendMessage(this.deserialize(tagResolvers));
     }
 
-    public @NotNull Set<String> getTags() {
+    public @NotNull Set<String> tags() {
         return this.tags;
     }
 }

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class FriendDenySubs {
+public final class FriendDenySubs {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendAddSub.class);
 

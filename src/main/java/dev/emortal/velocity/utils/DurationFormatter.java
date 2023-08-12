@@ -1,12 +1,14 @@
 package dev.emortal.velocity.utils;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.StringJoiner;
 
-public class DurationFormatter {
+public final class DurationFormatter {
 
-    public static String formatBigToSmall(Duration duration) {
+    public static @NotNull String formatBigToSmall(@NotNull Duration duration) {
         StringJoiner joiner = new StringJoiner(", ");
         int unitCount = 0;
 
@@ -45,29 +47,24 @@ public class DurationFormatter {
         if (seconds > 0) {
             joiner.add(seconds + " second" + (seconds == 1 ? "" : "s"));
         }
+
         return joiner.toString();
     }
 
-    public static String formatShort(Duration duration) {
+    public static @NotNull String formatShort(@NotNull Duration duration) {
         int days = (int) duration.toDays();
 
-        if (days > 365)
-            return "%sy ago".formatted(days / 365);
-        if (days > 30)
-            return "%smo ago".formatted(days / 30);
-        if (days > 0)
-            return "%sd ago".formatted(days);
-        if (duration.toHours() > 0)
-            return "%sh ago".formatted(duration.toHours());
-        if (duration.toMinutes() > 0)
-            return "%smin ago".formatted(duration.toMinutes());
-        if (duration.getSeconds() > 0)
-            return "%ss ago".formatted(duration.getSeconds());
+        if (days > 365) return "%sy ago".formatted(days / 365);
+        if (days > 30) return "%smo ago".formatted(days / 30);
+        if (days > 0) return "%sd ago".formatted(days);
+        if (duration.toHours() > 0) return "%sh ago".formatted(duration.toHours());
+        if (duration.toMinutes() > 0) return "%smin ago".formatted(duration.toMinutes());
+        if (duration.getSeconds() > 0) return "%ss ago".formatted(duration.getSeconds());
 
         return "now";
     }
 
-    public static String formatShortFromInstant(Instant instant) {
+    public static @NotNull String formatShortFromInstant(@NotNull Instant instant) {
         Duration duration = Duration.between(instant, Instant.now());
         return formatShort(duration);
     }

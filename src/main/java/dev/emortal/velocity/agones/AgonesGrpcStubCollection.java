@@ -1,4 +1,4 @@
-package dev.emortal.velocity.grpc.stub;
+package dev.emortal.velocity.agones;
 
 import dev.agones.sdk.SDKGrpc;
 import dev.emortal.velocity.Environment;
@@ -6,7 +6,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.jetbrains.annotations.Nullable;
 
-public class GrpcStubManager {
+public final class AgonesGrpcStubCollection {
     private static final boolean AGONES_SDK_ENABLED;
     private static final String AGONES_ADDRESS = "localhost"; // SDK runs as a sidecar in production so address is always localhost
     private static final int AGONES_GRPC_PORT;
@@ -18,12 +18,12 @@ public class GrpcStubManager {
         AGONES_GRPC_PORT = AGONES_SDK_ENABLED ? Integer.parseInt(agonesPortString) : Integer.MIN_VALUE;
     }
 
-    private final @Nullable SDKGrpc.SDKFutureStub agonesService;
+    private final @Nullable SDKGrpc.SDKBlockingStub agonesService;
     private final @Nullable SDKGrpc.SDKStub standardAgonesService;
-    private final @Nullable dev.agones.sdk.beta.SDKGrpc.SDKFutureStub betaAgonesService;
-    private final @Nullable dev.agones.sdk.alpha.SDKGrpc.SDKFutureStub alphaAgonesService;
+    private final @Nullable dev.agones.sdk.beta.SDKGrpc.SDKBlockingStub betaAgonesService;
+    private final @Nullable dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub alphaAgonesService;
 
-    public GrpcStubManager() {
+    public AgonesGrpcStubCollection() {
         if (!AGONES_SDK_ENABLED) {
             this.agonesService = null;
             this.standardAgonesService = null;
@@ -36,13 +36,13 @@ public class GrpcStubManager {
                 .usePlaintext()
                 .build();
 
-        this.agonesService = SDKGrpc.newFutureStub(agonesChannel);
+        this.agonesService = SDKGrpc.newBlockingStub(agonesChannel);
         this.standardAgonesService = SDKGrpc.newStub(agonesChannel);
-        this.betaAgonesService = dev.agones.sdk.beta.SDKGrpc.newFutureStub(agonesChannel);
-        this.alphaAgonesService = dev.agones.sdk.alpha.SDKGrpc.newFutureStub(agonesChannel);
+        this.betaAgonesService = dev.agones.sdk.beta.SDKGrpc.newBlockingStub(agonesChannel);
+        this.alphaAgonesService = dev.agones.sdk.alpha.SDKGrpc.newBlockingStub(agonesChannel);
     }
 
-    public @Nullable SDKGrpc.SDKFutureStub getAgonesService() {
+    public @Nullable SDKGrpc.SDKBlockingStub getAgonesService() {
         return agonesService;
     }
 
@@ -50,11 +50,11 @@ public class GrpcStubManager {
         return standardAgonesService;
     }
 
-    public @Nullable dev.agones.sdk.beta.SDKGrpc.SDKFutureStub getBetaAgonesService() {
+    public @Nullable dev.agones.sdk.beta.SDKGrpc.SDKBlockingStub getBetaAgonesService() {
         return betaAgonesService;
     }
 
-    public @Nullable dev.agones.sdk.alpha.SDKGrpc.SDKFutureStub getAlphaAgonesService() {
+    public @Nullable dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub getAlphaAgonesService() {
         return alphaAgonesService;
     }
 }

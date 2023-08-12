@@ -15,38 +15,37 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class FriendCache {
+public final class FriendCache {
 
-    private final Map<UUID, List<CachedFriend>> friendMap = new ConcurrentHashMap<>();
     private final RelationshipService relationshipService;
+    private final Map<UUID, List<CachedFriend>> friendMap = new ConcurrentHashMap<>();
 
     public FriendCache(@NotNull RelationshipService relationshipService) {
         this.relationshipService = relationshipService;
     }
 
-    public List<CachedFriend> get(UUID playerId) {
+    public @NotNull List<CachedFriend> get(@NotNull UUID playerId) {
         return this.friendMap.get(playerId);
     }
 
-    public void set(UUID playerId, List<CachedFriend> friends) {
+    public void set(@NotNull UUID playerId, @NotNull List<CachedFriend> friends) {
         this.friendMap.put(playerId, friends);
     }
 
-    public void add(UUID playerId, CachedFriend friendId) {
-        List<CachedFriend> friends = this.friendMap.get(playerId);
-        friends.add(friendId);
+    public void add(@NotNull UUID playerId, @NotNull CachedFriend friend) {
+        this.friendMap.get(playerId).add(friend);
     }
 
-    public void remove(UUID playerId, UUID friendId) {
+    public void remove(@NotNull UUID playerId, @NotNull UUID friendId) {
         this.friendMap.get(playerId).removeIf(cachedFriend -> cachedFriend.playerId().equals(friendId));
     }
 
-    public void removeAll(UUID playerId) {
+    public void removeAll(@NotNull UUID playerId) {
         this.friendMap.remove(playerId);
     }
 
     @Subscribe
-    public void onPlayerLogin(PostLoginEvent event) {
+    public void onPlayerLogin(@NotNull PostLoginEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
 
         List<Friend> friends;
@@ -58,18 +57,18 @@ public class FriendCache {
         }
 
         List<CachedFriend> cachedFriends = new ArrayList<>();
-        for (Friend friend : friends) {
-            cachedFriends.add(new CachedFriend(friend.id(), friend.friendsSince()));
+        for (Friend(UUID id, Instant friendsSince) : friends) {
+            cachedFriends.add(new CachedFriend(id, friendsSince));
         }
 
         this.set(playerId, cachedFriends);
     }
 
     @Subscribe
-    public void onPlayerDisconnect(DisconnectEvent event) {
+    public void onPlayerDisconnect(@NotNull DisconnectEvent event) {
         this.removeAll(event.getPlayer().getUniqueId());
     }
 
-    public record CachedFriend(UUID playerId, Instant friendsSince) {
+    public record CachedFriend(@NotNull UUID playerId, @NotNull Instant friendsSince) {
     }
 }

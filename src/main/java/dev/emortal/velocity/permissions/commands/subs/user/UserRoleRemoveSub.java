@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class UserRoleRemoveSub {
+public final class UserRoleRemoveSub {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRoleRemoveSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 

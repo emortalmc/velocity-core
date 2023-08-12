@@ -1,6 +1,8 @@
 package dev.emortal.velocity;
 
-public class Environment {
+import org.jetbrains.annotations.NotNull;
+
+public final class Environment {
     private static final boolean DEVELOPMENT = System.getenv("KUBERNETES_SERVICE_HOST") == null;
     private static final String HOSTNAME = System.getenv("HOSTNAME");
 
@@ -8,7 +10,7 @@ public class Environment {
         return !DEVELOPMENT;
     }
 
-    public static String getHostname() {
+    public static @NotNull String getHostname() {
         return HOSTNAME;
     }
 }

@@ -1,5 +1,6 @@
 package dev.emortal.velocity.party;
 
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.message.party.PartyCreatedMessage;
 import dev.emortal.api.message.party.PartyDeletedMessage;
@@ -13,12 +14,13 @@ import dev.emortal.api.model.party.Party;
 import dev.emortal.api.model.party.PartyInvite;
 import dev.emortal.api.model.party.PartyMember;
 import dev.emortal.api.service.party.PartyService;
-import dev.emortal.velocity.messaging.MessagingCore;
+import dev.emortal.velocity.messaging.MessagingModule;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,13 +49,13 @@ public final class PartyCache {
     private static final String NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS = "<sender_username> has invited <username> to the party";
     private static final String NOTIFICATION_PLAYER_INVITE_CREATED = "<click:run_command:'/party join <username>'><color:#3db83d>You have been invited to join <green><username>'s</green> party. <b><gradient:light_purple:gold>Click to accept</gradient></b></click>";
 
-    private final @NotNull Map<UUID, CachedParty> playerPartyMap = new ConcurrentHashMap<>();
-    private final @NotNull Map<String, CachedParty> partyMap = new ConcurrentHashMap<>();
-
     private final @NotNull PartyService partyService;
     private final @NotNull ProxyServer proxy;
 
-    public PartyCache(@NotNull ProxyServer proxy, @NotNull PartyService partyService, @NotNull MessagingCore messagingCore) {
+    private final @NotNull Map<String, CachedParty> partyMap = new ConcurrentHashMap<>();
+    private final @NotNull Map<UUID, CachedParty> playerPartyMap = new ConcurrentHashMap<>();
+
+    public PartyCache(@NotNull ProxyServer proxy, @NotNull PartyService partyService, @NotNull MessagingModule messagingCore) {
         this.proxy = proxy;
         this.partyService = partyService;
 
@@ -67,23 +69,24 @@ public final class PartyCache {
         messagingCore.addListener(PartyInviteCreatedMessage.class, this::handleInviteCreated);
     }
 
-    public CachedParty getPlayerParty(@NotNull UUID playerId) {
-        return this.playerPartyMap.get(playerId);
+    public @Nullable CachedParty getParty(@NotNull String partyId) {
+        return this.partyMap.get(partyId);
     }
 
-    public CachedParty getParty(@NotNull String partyId) {
-        return this.partyMap.get(partyId);
+    public @Nullable CachedParty getPlayerParty(@NotNull UUID playerId) {
+        return this.playerPartyMap.get(playerId);
     }
 
     private void handleCreateParty(@NotNull PartyCreatedMessage message) {
         Party party = message.getParty();
         UUID partyLeaderId = UUID.fromString(party.getLeaderId());
 
-        this.proxy.getPlayer(partyLeaderId).ifPresent(player -> {
-            CachedParty cachedParty = CachedParty.fromProto(party);
-            this.playerPartyMap.put(player.getUniqueId(), cachedParty);
-            this.partyMap.put(party.getId(), cachedParty);
-        });
+        Player player = this.proxy.getPlayer(partyLeaderId).orElse(null);
+        if (player == null) return;
+
+        CachedParty cachedParty = CachedParty.fromProto(party);
+        this.playerPartyMap.put(player.getUniqueId(), cachedParty);
+        this.partyMap.put(party.getId(), cachedParty);
     }
 
     private void handlePartyEmptied(@NotNull PartyEmptiedMessage message) {
@@ -95,10 +98,11 @@ public final class PartyCache {
         for (PartyMember member : party.getMembersList()) {
             // Leave the leader in the party.
             if (member.getId().equals(party.getLeaderId())) continue;
+
             UUID memberId = UUID.fromString(member.getId());
-            CachedParty playerRemoved = this.playerPartyMap.remove(memberId);
             cachedParty.getMembers().remove(memberId);
 
+            CachedParty playerRemoved = this.playerPartyMap.remove(memberId);
             if (playerRemoved != null) {
                 this.proxy.getPlayer(memberId).ifPresent(player -> player.sendMessage(NOTIFICATION_PARTY_DISBANDED));
             }
@@ -121,9 +125,7 @@ public final class PartyCache {
         Party party = message.getParty();
 
         CachedParty removed = this.partyMap.remove(party.getId());
-        if (removed == null) {
-            return;
-        }
+        if (removed == null) return;
 
         int remainingMembers = party.getMembersCount();
         if (remainingMembers <= 1) return; // Don't send any notifications if the party was just themselves.
@@ -137,9 +139,7 @@ public final class PartyCache {
             }
 
             // Just a fast finish optimisation
-            if (--remainingMembers == 0) {
-                break;
-            }
+            if (--remainingMembers == 0) break;
         }
     }
 
@@ -147,20 +147,21 @@ public final class PartyCache {
         String partyId = message.getPartyId();
         UUID playerId = UUID.fromString(message.getMember().getId());
 
-        this.proxy.getPlayer(playerId).ifPresent(player -> {
-            CachedParty party = this.cachePartyIfNotPresent(partyId);
-            if (party == null) {
-                return;
-            }
+        Player player = this.proxy.getPlayer(playerId).orElse(null);
+        if (player == null) return;
 
-            for (UUID memberId : party.getMembers().keySet()) {
-                this.proxy.getPlayer(memberId).ifPresent(memberPlayer -> memberPlayer
-                        .sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_PLAYER_JOINED, Placeholder.unparsed("username", player.getUsername()))));
-            }
+        CachedParty party = this.cachePartyIfNotPresent(partyId);
+        if (party == null) return;
 
-            this.playerPartyMap.put(playerId, this.partyMap.get(partyId));
-            party.getMembers().put(playerId, CachedPartyMember.fromProto(message.getMember()));
-        });
+        for (UUID memberId : party.getMembers().keySet()) {
+            Player member = this.proxy.getPlayer(memberId).orElse(null);
+            if (member == null) continue;
+
+            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_PLAYER_JOINED, Placeholder.unparsed("username", player.getUsername())));
+        }
+
+        this.playerPartyMap.put(playerId, this.partyMap.get(partyId));
+        party.getMembers().put(playerId, CachedPartyMember.fromProto(message.getMember()));
     }
 
     private void handleLeaveParty(@NotNull PartyPlayerLeftMessage message) {
@@ -175,23 +176,27 @@ public final class PartyCache {
 
             // Handle party notifications
             for (UUID memberId : party.getMembers().keySet()) {
-                this.proxy.getPlayer(memberId).ifPresent(memberPlayer -> {
-                    if (isKick) {
-                        memberPlayer.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_KICKED, Placeholder.unparsed("username", message.getMember().getUsername()), Placeholder.unparsed("kicker", message.getKickedBy().getUsername())));
-                    } else {
-                        memberPlayer.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_PLAYER_LEFT, Placeholder.unparsed("username", message.getMember().getUsername())));
-                    }
-                });
+                Player member = this.proxy.getPlayer(memberId).orElse(null);
+                if (member == null) continue;
+
+                var usernamePlaceholder = Placeholder.unparsed("username", message.getMember().getUsername());
+                if (isKick) {
+                    var kickerPlaceholder = Placeholder.unparsed("kicker", message.getKickedBy().getUsername());
+                    member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_KICKED, usernamePlaceholder, kickerPlaceholder));
+                } else {
+                    member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_PLAYER_LEFT, usernamePlaceholder));
+                }
             }
         }
 
         // Handle target notification
-        this.proxy.getPlayer(playerId).ifPresent(targetPlayer -> {
-            if (isKick) {
-                targetPlayer.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PLAYER_KICKED, Placeholder.unparsed("kicker", message.getKickedBy().getUsername())));
-            }
-            // don't need to send a message if they're not kicked as they chose to leave
-        });
+        Player target = this.proxy.getPlayer(playerId).orElse(null);
+        if (target == null) return;
+
+        if (isKick) {
+            target.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PLAYER_KICKED, Placeholder.unparsed("kicker", message.getKickedBy().getUsername())));
+        }
+        // don't need to send a message if they're not kicked as they chose to leave
     }
 
     private void handleLeaderChange(@NotNull PartyLeaderChangedMessage message) {
@@ -199,12 +204,14 @@ public final class PartyCache {
         UUID newLeaderId = UUID.fromString(message.getNewLeader().getId());
 
         CachedParty party = this.partyMap.get(partyId);
-        if (party == null) {
-            return;
-        }
+        if (party == null) return;
+
         for (UUID memberId : party.getMembers().keySet()) {
-            this.proxy.getPlayer(memberId).ifPresent(player -> player
-                    .sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_LEADER_CHANGED, Placeholder.unparsed("username", message.getNewLeader().getUsername()))));
+            Player member = this.proxy.getPlayer(memberId).orElse(null);
+            if (member == null) continue;
+
+            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_LEADER_CHANGED,
+                    Placeholder.unparsed("username", message.getNewLeader().getUsername())));
         }
 
         party.setLeaderId(newLeaderId);
@@ -227,23 +234,27 @@ public final class PartyCache {
             for (UUID memberId : party.getMembers().keySet()) {
                 if (memberId.equals(senderId)) continue; // Don't send a notification to the sender
 
-                this.proxy.getPlayer(memberId).ifPresent(player -> player
-                        .sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS,
+                Player member = this.proxy.getPlayer(memberId).orElse(null);
+                if (member == null) continue;
+
+                member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS,
                                 Placeholder.parsed("username", invite.getTargetUsername()),
-                                Placeholder.parsed("sender_username", invite.getSenderUsername()))));
+                                Placeholder.parsed("sender_username", invite.getSenderUsername())));
             }
 
-            this.proxy.getPlayer(senderId).ifPresent(player -> {
-                player.sendMessage(MINI_MESSAGE.deserialize(
-                        NOTIFICATION_PARTY_INVITE_CREATED_INVITER,
-                        Placeholder.parsed("username", targetUsername)
-                ));
-            });
+            Player sender = this.proxy.getPlayer(senderId).orElse(null);
+            if (sender == null) return;
+
+            sender.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED_INVITER,
+                    Placeholder.parsed("username", targetUsername)));
         }
 
         // Notify the invited player
-        this.proxy.getPlayer(UUID.fromString(invite.getTargetId())).ifPresent(player -> player
-                .sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PLAYER_INVITE_CREATED, Placeholder.parsed("username", invite.getSenderUsername()))));
+        Player player = this.proxy.getPlayer(UUID.fromString(invite.getTargetId())).orElse(null);
+        if (player == null) return;
+
+        player.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PLAYER_INVITE_CREATED,
+                Placeholder.parsed("username", invite.getSenderUsername())));
     }
 
     /**
@@ -252,11 +263,9 @@ public final class PartyCache {
      *
      * @param partyId The id of the party
      */
-    private CachedParty cachePartyIfNotPresent(@NotNull String partyId) {
+    private @Nullable CachedParty cachePartyIfNotPresent(@NotNull String partyId) {
         CachedParty cachedParty = this.partyMap.get(partyId);
-        if (cachedParty != null) {
-            return cachedParty;
-        }
+        if (cachedParty != null) return cachedParty;
 
         Party party;
         try {
@@ -272,7 +281,18 @@ public final class PartyCache {
         return cachedParty;
     }
 
-    public static class CachedParty {
+    public static final class CachedParty {
+
+        public static @NotNull CachedParty fromProto(@NotNull Party party) {
+            Map<UUID, CachedPartyMember> members = new ConcurrentHashMap<>();
+            for (PartyMember member : party.getMembersList()) {
+                UUID memberId = UUID.fromString(member.getId());
+                members.put(memberId, CachedPartyMember.fromProto(member));
+            }
+
+            return new CachedParty(party.getId(), UUID.fromString(party.getLeaderId()), members, party.getOpen());
+        }
+
         private final @NotNull String id;
         private final @NotNull Map<UUID, CachedPartyMember> members;
         private @NotNull UUID leaderId;
@@ -283,16 +303,6 @@ public final class PartyCache {
             this.members = members;
             this.leaderId = leaderId;
             this.open = open;
-        }
-
-        public static CachedParty fromProto(@NotNull Party party) {
-            Map<UUID, CachedPartyMember> members = new ConcurrentHashMap<>();
-            for (PartyMember member : party.getMembersList()) {
-                UUID memberId = UUID.fromString(member.getId());
-                members.put(memberId, CachedPartyMember.fromProto(member));
-            }
-
-            return new CachedParty(party.getId(), UUID.fromString(party.getLeaderId()), members, party.getOpen());
         }
 
         public @NotNull String getId() {
@@ -311,12 +321,12 @@ public final class PartyCache {
             this.leaderId = leaderId;
         }
 
-        public void setOpen(boolean open) {
-            this.open = open;
-        }
-
         public boolean isOpen() {
             return this.open;
+        }
+
+        public void setOpen(boolean open) {
+            this.open = open;
         }
 
         @Override
@@ -330,9 +340,9 @@ public final class PartyCache {
         }
     }
 
-    public record CachedPartyMember(UUID id, String username) {
+    public record CachedPartyMember(@NotNull UUID id, @NotNull String username) {
 
-        public static @NotNull CachedPartyMember fromProto(PartyMember member) {
+        public static @NotNull CachedPartyMember fromProto(@NotNull PartyMember member) {
             return new CachedPartyMember(UUID.fromString(member.getId()), member.getUsername());
         }
     }

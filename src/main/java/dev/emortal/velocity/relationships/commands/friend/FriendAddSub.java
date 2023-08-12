@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.UUID;
 
-public class FriendAddSub {
+public final class FriendAddSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendAddSub.class);
 

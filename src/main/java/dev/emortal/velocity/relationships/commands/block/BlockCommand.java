@@ -14,7 +14,7 @@ import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.DeleteBlockResult;
 import dev.emortal.api.service.relationship.RelationshipService;
-import dev.emortal.velocity.general.UsernameSuggestions;
+import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.utils.CommandUtils;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -62,7 +62,7 @@ public final class BlockCommand {
                             return 1;
                         })
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
-                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, FilterMethod.NONE))
+                                .suggests(this.usernameSuggestions.command(FilterMethod.NONE))
                                 .executes(CommandUtils.executeAsync(this::block)))
         );
     }
@@ -76,7 +76,7 @@ public final class BlockCommand {
                             return 1;
                         })
                         .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.string())
-                                .suggests((context, builder) -> this.usernameSuggestions.command(context, builder, FilterMethod.NONE))
+                                .suggests(this.usernameSuggestions.command(FilterMethod.NONE))
                                 .executes(CommandUtils.executeAsync(this::unblock)))
         );
     }

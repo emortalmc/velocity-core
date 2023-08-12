@@ -1,5 +1,6 @@
 package dev.emortal.velocity.utils;
 
-public record Pair<L, R>(L left, R right) {
+import org.jetbrains.annotations.NotNull;
 
+public record Pair<L, R>(@NotNull L left, @NotNull R right) {
 }

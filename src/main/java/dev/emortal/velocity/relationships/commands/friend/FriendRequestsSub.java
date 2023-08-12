@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class FriendRequestsSub {
+public final class FriendRequestsSub {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendRequestsSub.class);
 

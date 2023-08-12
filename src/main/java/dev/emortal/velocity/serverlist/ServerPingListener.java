@@ -7,10 +7,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-public class ServerPingListener {
+public final class ServerPingListener {
     private static final Component MOTD = Component.text()
             .append(Component.text("▓▒░              ", NamedTextColor.LIGHT_PURPLE))
             .append(Component.text("⚡   ", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
@@ -36,13 +37,12 @@ public class ServerPingListener {
     };
 
     @Subscribe
-    public void onServerPing(ProxyPingEvent event) {
+    public void onServerPing(@NotNull ProxyPingEvent event) {
         String randomMessage = MOTDS[ThreadLocalRandom.current().nextInt(MOTDS.length)];
         ServerPing ping = event.getPing().asBuilder()
                 .description(MOTD.append(Component.text("\n" + randomMessage, NamedTextColor.YELLOW)))
                 .build();
 
         event.setPing(ping);
-
     }
 }

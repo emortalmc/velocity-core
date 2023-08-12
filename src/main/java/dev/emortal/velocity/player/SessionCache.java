@@ -1,4 +1,4 @@
-package dev.emortal.velocity.cache;
+package dev.emortal.velocity.player;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
@@ -15,27 +15,28 @@ public final class SessionCache {
 
     private final Map<UUID, CachedSession> sessionIds = new ConcurrentHashMap<>();
 
-    public void put(@NotNull UUID playerId, @NotNull CachedSession sessionId) {
-        this.sessionIds.put(playerId, sessionId);
-    }
-
     public @Nullable CachedSession get(@NotNull UUID playerId) {
         return this.sessionIds.get(playerId);
     }
 
-    public @Nullable CachedSession remove(@NotNull UUID playerId) {
-        return this.sessionIds.remove(playerId);
+    private void put(@NotNull UUID playerId, @NotNull CachedSession sessionId) {
+        this.sessionIds.put(playerId, sessionId);
     }
 
-    public record CachedSession(@NotNull Instant loginTime) {}
+    private void remove(@NotNull UUID playerId) {
+        this.sessionIds.remove(playerId);
+    }
 
     @Subscribe
-    public void onPlayerConnect(@NotNull PostLoginEvent event) {
+    private void onPlayerConnect(@NotNull PostLoginEvent event) {
         this.put(event.getPlayer().getUniqueId(), new CachedSession(Instant.now()));
     }
 
     @Subscribe
-    public void onPlayerDisconnect(@NotNull DisconnectEvent event) {
+    private void onPlayerDisconnect(@NotNull DisconnectEvent event) {
         this.remove(event.getPlayer().getUniqueId());
+    }
+
+    public record CachedSession(@NotNull Instant loginTime) {
     }
 }
