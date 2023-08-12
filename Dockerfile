@@ -28,4 +28,5 @@ COPY build/libs/*-all.jar velocity-core.jar
 # Go back to the base directory for our server
 WORKDIR /app
 
-CMD ["java", "--enable-preview", "-jar", "/app/velocity.jar"]
+ENTRYPOINT ["java"]
+CMD ["--enable-preview", "-jar", "/app/velocity.jar"]
