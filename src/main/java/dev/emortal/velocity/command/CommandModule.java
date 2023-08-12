@@ -28,7 +28,7 @@ public final class CommandModule extends VelocityModule {
     public void registerCommand(@NotNull EmortalCommand command) {
         CommandMeta meta = super.getProxy().getCommandManager().metaBuilder(command.getName())
                 .aliases(command.getAliases())
-                .plugin(this)
+                .plugin(super.getEnvironment().plugin())
                 .build();
         super.getProxy().getCommandManager().register(meta, new BrigadierCommand(command.build()));
     }
