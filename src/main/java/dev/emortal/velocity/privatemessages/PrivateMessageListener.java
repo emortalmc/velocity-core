@@ -28,14 +28,21 @@ public final class PrivateMessageListener {
     }
 
     private void onPrivateMessageCreated(@NotNull PrivateMessage message) {
-        Player player = this.proxy.getPlayer(UUID.fromString(message.getRecipientId())).orElse(null);
-        if (player == null) return;
+        UUID senderId = UUID.fromString(message.getSenderId());
+        if (this.proxy.getPlayer(senderId).isPresent()) {
+            // only update the last message cache for the sender if they are on this proxy
+            this.lastMessageCache.setLastMessage(senderId, message.getRecipientUsername());
+        }
 
-        player.sendMessage(MINI_MESSAGE.deserialize(PRIVATE_MESSAGE_RECEIVED_FORMAT,
+        UUID recipientId = UUID.fromString(message.getRecipientId());
+        Player recipient = this.proxy.getPlayer(recipientId).orElse(null);
+        if (recipient == null) return;
+
+        recipient.sendMessage(MINI_MESSAGE.deserialize(PRIVATE_MESSAGE_RECEIVED_FORMAT,
                 Placeholder.parsed("username", message.getSenderUsername()),
                 Placeholder.unparsed("message", message.getMessage())));
 
-        this.lastMessageCache.setLastMessage(player.getUniqueId(), message.getSenderUsername());
-        this.lastMessageCache.setLastMessage(UUID.fromString(message.getSenderId()), player.getUsername());
+        // only update the message cache for the recipient if they are on this proxy
+        this.lastMessageCache.setLastMessage(recipientId, message.getSenderUsername());
     }
 }

@@ -76,10 +76,11 @@ public final class MessageCommand {
             return;
         }
 
-        var privateMessage = PrivateMessage.newBuilder()
+        PrivateMessage privateMessage = PrivateMessage.newBuilder()
                 .setSenderId(player.getUniqueId().toString())
                 .setSenderUsername(player.getUsername())
                 .setRecipientId(targetId.toString())
+                .setRecipientUsername(correctedUsername)
                 .setMessage(message)
                 .build();
 
