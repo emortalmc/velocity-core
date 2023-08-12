@@ -14,7 +14,7 @@ repositories {
     maven("https://repo.emortal.dev/snapshots")
     maven("https://repo.emortal.dev/releases")
 
-    maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.papermc.io/repository/maven-snapshots/")
     maven("https://packages.confluent.io/maven/")
 }
 
@@ -22,9 +22,9 @@ dependencies {
     // Metrics
     implementation("io.pyroscope:agent:0.11.5")
 
-    compileOnly("com.velocitypowered:velocity-api:3.1.1")
+    compileOnly("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     compileOnly("com.velocitypowered:velocity-proxy:3.2.0-SNAPSHOT")
-    annotationProcessor("com.velocitypowered:velocity-api:3.1.1")
+    annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
     implementation("dev.emortal.api:common-proto-sdk:687f8bc")
