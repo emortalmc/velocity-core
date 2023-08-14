@@ -29,11 +29,12 @@ public final class PermissionCheckListener {
 
         try {
             this.permissionCache.loadUser(player.getUniqueId());
-            continuation.resume();
         } catch (StatusException exception) {
             continuation.resumeWithException(exception);
         }
+
         event.setProvider(new PlayerPermissionProvider(this.permissionCache));
+        continuation.resume();
     }
 
     private record PlayerPermissionProvider(@NotNull PermissionCache permissionCache) implements PermissionProvider {
