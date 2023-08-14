@@ -3,6 +3,7 @@ package dev.emortal.velocity.relationships.commands.friend;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.relationship.AddFriendResult;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
@@ -21,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.UUID;
 
-public final class FriendAddSub {
+public final class FriendAddSub implements CommandExecutor<CommandSource> {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendAddSub.class);
 
@@ -40,6 +41,7 @@ public final class FriendAddSub {
         this.friendCache = friendCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);

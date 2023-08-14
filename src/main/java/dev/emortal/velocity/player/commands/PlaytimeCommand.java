@@ -1,22 +1,19 @@
 package dev.emortal.velocity.player.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.model.mcplayer.LoginSession;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.ProtoDurationConverter;
 import dev.emortal.api.utils.ProtoTimestampConverter;
+import dev.emortal.velocity.command.CommandConditions;
+import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.player.SessionCache;
 import dev.emortal.velocity.player.UsernameSuggestions;
-import dev.emortal.velocity.utils.CommandUtils;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -30,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 
-public final class PlaytimeCommand {
+public final class PlaytimeCommand extends EmortalCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(PlaytimeCommand.class);
 
@@ -41,16 +38,22 @@ public final class PlaytimeCommand {
     private final UsernameSuggestions usernameSuggestions;
     private final SessionCache sessionCache;
 
-    public PlaytimeCommand(@NotNull ProxyServer proxy, @NotNull McPlayerService playerService, @NotNull SessionCache sessionCache,
+    public PlaytimeCommand(@NotNull McPlayerService playerService, @NotNull SessionCache sessionCache,
                            @NotNull UsernameSuggestions usernameSuggestions) {
+        super("playtime");
+
         this.playerService = playerService;
         this.sessionCache = sessionCache;
         this.usernameSuggestions = usernameSuggestions;
 
-        proxy.getCommandManager().register(this.createBrigadierCommand());
+        super.setCondition(CommandConditions.playerOnly());
+        super.setDefaultExecutor(this::executeForSelf);
+
+        var usernameArgument = argument("username", StringArgumentType.word(), this.usernameSuggestions.command(FilterMethod.NONE));
+        super.addSyntax(this::executeForOther, usernameArgument);
     }
 
-    private void executePlayTimeSelf(@NotNull CommandContext<CommandSource> context) {
+    private void executeForSelf(@NotNull CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
 
         McPlayer mcPlayer;
@@ -77,13 +80,13 @@ public final class PlaytimeCommand {
         player.sendMessage(message);
     }
 
-    private void executePlayTimeTarget(@NotNull CommandContext<CommandSource> context) {
+    private void executeForOther(@NotNull CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
         String targetName = StringArgumentType.getString(context, "username");
 
         McPlayer targetPlayer;
         try {
-            targetPlayer = this.playerService.getPlayerByUsername(targetName);
+            targetPlayer = PlaytimeCommand.this.playerService.getPlayerByUsername(targetName);
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to get playtime for player {}", targetName, exception);
             player.sendMessage(Component.text("Failed to get playtime.", NamedTextColor.RED));
@@ -108,16 +111,5 @@ public final class PlaytimeCommand {
                 Placeholder.unparsed("playtime", playtime), Placeholder.unparsed("name", correctedUsername));
 
         player.sendMessage(message);
-    }
-
-    private @NotNull BrigadierCommand createBrigadierCommand() {
-        return new BrigadierCommand(
-                LiteralArgumentBuilder.<CommandSource>literal("playtime")
-                        .executes(CommandUtils.executeAsync(this::executePlayTimeSelf))
-                        .requires(CommandUtils.isPlayer())
-                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", StringArgumentType.word())
-                                .suggests(this.usernameSuggestions.command(FilterMethod.NONE))
-                                .executes(CommandUtils.executeAsync(this::executePlayTimeTarget)))
-        );
     }
 }

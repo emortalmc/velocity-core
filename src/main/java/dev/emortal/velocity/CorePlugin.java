@@ -10,6 +10,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.modules.ModuleManager;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.agones.AgonesModule;
+import dev.emortal.velocity.command.CommandModule;
 import dev.emortal.velocity.listener.LunarKicker;
 import dev.emortal.velocity.liveconfig.KubernetesModule;
 import dev.emortal.velocity.liveconfig.LiveConfigModule;
@@ -49,6 +50,7 @@ public final class CorePlugin {
 
         this.moduleManager = ModuleManagerBuilder.create()
                 .module(AgonesModule.class, AgonesModule::new)
+                .module(CommandModule.class, CommandModule::new)
                 .module(KubernetesModule.class, KubernetesModule::new)
                 .module(LiveConfigModule.class, LiveConfigModule::new)
                 .module(MatchmakerModule.class, MatchmakerModule::new)

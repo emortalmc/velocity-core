@@ -1,16 +1,14 @@
 package dev.emortal.velocity.permissions.commands;
 
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import com.velocitypowered.api.command.BrigadierCommand;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.proxy.ProxyServer;
+import dev.emortal.api.command.element.ArgumentElement;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.service.permission.PermissionService;
+import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleCreateSub;
@@ -24,18 +22,11 @@ import dev.emortal.velocity.permissions.commands.subs.role.RoleSetUsernameSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserDescribeSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserRoleAddSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserRoleRemoveSub;
-import dev.emortal.velocity.utils.CommandUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.CompletableFuture;
-
-import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
-import static com.mojang.brigadier.arguments.StringArgumentType.string;
-import static com.mojang.brigadier.arguments.StringArgumentType.word;
-
-public final class PermissionCommand {
+public final class PermissionCommand extends EmortalCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final Component BASE_HELP_MESSAGE = MINI_MESSAGE.deserialize(
@@ -64,113 +55,76 @@ public final class PermissionCommand {
             <click:suggest_command:'/perm user '>/perm user <name> permission check <perm></click>
             ------------------------------------""");
 
-    private final PermissionCache permissionCache;
-    private final UsernameSuggestions usernameSuggestions;
-
-    private final RoleListSub roleListSub;
-    private final RoleCreateSub roleCreateSub;
-    private final RoleDescribeSub roleDescribeSub;
-    private final RoleSetUsernameSub roleSetUsernameSub;
-    private final RoleSetPrioritySub roleSetPrioritySub;
-    private final RolePermissionAddSub rolePermissionAddSub;
-    private final RolePermissionUnsetSub rolePermissionUnsetSub;
-    private final RolePermissionCheckSub rolePermissionCheckSub;
-
-    private final UserRoleAddSub userRoleAddSub;
-    private final UserRoleRemoveSub userRoleRemoveSub;
-    private final UserDescribeSub userDescribeSub;
-
-    public PermissionCommand(@NotNull ProxyServer proxy, @NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
+    public PermissionCommand(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
                              @NotNull UsernameSuggestions usernameSuggestions) {
-        this.permissionCache = permissionCache;
-        this.usernameSuggestions = usernameSuggestions;
+        super("perm");
 
-        this.roleListSub = new RoleListSub(permissionCache);
-        this.roleCreateSub = new RoleCreateSub(permissionService, permissionCache);
-        this.roleDescribeSub = new RoleDescribeSub(permissionCache);
-        this.roleSetUsernameSub = new RoleSetUsernameSub(permissionService, permissionCache);
-        this.roleSetPrioritySub = new RoleSetPrioritySub(permissionService, permissionCache);
-        this.rolePermissionAddSub = new RolePermissionAddSub(permissionService, permissionCache);
-        this.rolePermissionUnsetSub = new RolePermissionUnsetSub(permissionService, permissionCache);
-        this.rolePermissionCheckSub = new RolePermissionCheckSub(permissionCache);
+        super.setCondition(source -> source.hasPermission("command.permission"));
+        super.setDefaultExecutor(context -> context.getSource().sendMessage(BASE_HELP_MESSAGE));
 
-        this.userRoleAddSub = new UserRoleAddSub(permissionService, permissionCache);
-        this.userRoleRemoveSub = new UserRoleRemoveSub(permissionService, permissionCache);
-        this.userDescribeSub = new UserDescribeSub(permissionService, permissionCache);
+        // /perm listroles
+        super.addSyntax(new RoleListSub(permissionCache), literal("listroles"));
 
-        proxy.getCommandManager().register(this.createBrigadierCommand());
+        var roleIdArgument = argument("roleId", StringArgumentType.word(), this.createRoleSuggestions(permissionCache));
+
+        // /perm role
+        super.addSubCommand(new RoleParentSub(permissionService, permissionCache, roleIdArgument));
+
+        // /perm user
+        super.addSubCommand(new UserParentSub(permissionService, permissionCache, usernameSuggestions, roleIdArgument));
     }
 
-    private void executeBaseHelp(@NotNull CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(BASE_HELP_MESSAGE);
+    private @NotNull SuggestionProvider<CommandSource> createRoleSuggestions(@NotNull PermissionCache permissionCache) {
+        return (context, builder) -> {
+            for (String roleId : permissionCache.getRoleIds()) {
+                if (!roleId.startsWith(builder.getRemainingLowerCase())) continue;
+                builder.suggest(roleId);
+            }
+
+            return builder.buildFuture();
+        };
     }
 
-    private void executeRoleHelp(@NotNull CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(ROLE_HELP_MESSAGE);
-    }
+    private static final class RoleParentSub extends EmortalCommand {
 
-    private void executeUserHelp(@NotNull CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(USER_HELP_MESSAGE);
-    }
+        RoleParentSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
+                      @NotNull ArgumentElement<CommandSource, String> roleIdArgument) {
+            super("role");
+            super.setDefaultExecutor(context -> context.getSource().sendMessage(ROLE_HELP_MESSAGE));
 
-    private @NotNull CompletableFuture<Suggestions> createRoleSuggestions(@NotNull CommandContext<CommandSource> context,
-                                                                          @NotNull SuggestionsBuilder builder) {
-        for (String roleId : this.permissionCache.getRoleIds()) {
-            if (!roleId.startsWith(builder.getRemainingLowerCase())) continue;
-            builder.suggest(roleId);
+            super.addSyntax(new RoleDescribeSub(permissionCache), roleIdArgument);
+            super.addSyntax(new RoleCreateSub(permissionService, permissionCache), roleIdArgument, literal("create"));
+
+            var usernameArgument = argument("usernameFormat", StringArgumentType.string(), null);
+            super.addSyntax(new RoleSetUsernameSub(permissionService, permissionCache), roleIdArgument, literal("setusername"), usernameArgument);
+
+            var priorityArgument = argument("priority", IntegerArgumentType.integer(0, Integer.MAX_VALUE), null);
+            super.addSyntax(new RoleSetPrioritySub(permissionService, permissionCache), roleIdArgument, literal("setpriority"), priorityArgument);
+
+            var permission = literal("permission");
+            var permissionArgument = argument("permission", StringArgumentType.word(), null);
+            var permissionSetValue = argument("value", BoolArgumentType.bool(), null);
+            super.addSyntax(new RolePermissionAddSub(permissionService, permissionCache), roleIdArgument, permission, literal("set"), permissionArgument, permissionSetValue);
+            super.addSyntax(new RolePermissionUnsetSub(permissionService, permissionCache), roleIdArgument, permission, literal("unset"), permissionArgument);
+            super.addSyntax(new RolePermissionCheckSub(permissionCache), roleIdArgument, permission, literal("check"), permissionArgument);
         }
-
-        return builder.buildFuture();
     }
 
-    private @NotNull BrigadierCommand createBrigadierCommand() {
-        return new BrigadierCommand(
-                LiteralArgumentBuilder.<CommandSource>literal("perm")
-                        .executes(CommandUtils.execute(this::executeBaseHelp))
-                        .requires(source -> source.hasPermission("command.permission"))
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("listroles")
-                                .executes(CommandUtils.executeAsync(this.roleListSub::execute)))
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("role")
-                                .executes(CommandUtils.execute(this::executeRoleHelp))
-                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("roleId", word())
-                                        .suggests(this::createRoleSuggestions)
-                                        .executes(CommandUtils.executeAsync(this.roleDescribeSub::execute))
-                                        .then(LiteralArgumentBuilder.<CommandSource>literal("create")
-                                                .executes(CommandUtils.executeAsync(this.roleCreateSub::execute)))
-                                        .then(LiteralArgumentBuilder.<CommandSource>literal("setusername")
-                                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("usernameFormat", string())
-                                                        .executes(CommandUtils.executeAsync(this.roleSetUsernameSub::execute))))
-                                        .then(LiteralArgumentBuilder.<CommandSource>literal("setpriority")
-                                                .then(RequiredArgumentBuilder.<CommandSource, Integer>argument("priority", integer(0, Integer.MAX_VALUE))
-                                                        .executes(CommandUtils.executeAsync(this.roleSetPrioritySub::execute))))
-                                        .then(LiteralArgumentBuilder.<CommandSource>literal("permission")
-                                                .then(LiteralArgumentBuilder.<CommandSource>literal("set")
-                                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word())
-                                                                .then(RequiredArgumentBuilder.<CommandSource, Boolean>argument("value", BoolArgumentType.bool())
-                                                                        .executes(CommandUtils.executeAsync(this.rolePermissionAddSub::execute)))))
-                                                .then(LiteralArgumentBuilder.<CommandSource>literal("unset")
-                                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word())
-                                                                .executes(CommandUtils.executeAsync(this.rolePermissionUnsetSub::execute))))
-                                                .then(LiteralArgumentBuilder.<CommandSource>literal("check")
-                                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word())
-                                                                .executes(CommandUtils.executeAsync(this.rolePermissionCheckSub::execute)))))))
-                        .then(LiteralArgumentBuilder.<CommandSource>literal("user")
-                                .executes(CommandUtils.execute(this::executeUserHelp))
-                                .then(RequiredArgumentBuilder.<CommandSource, String>argument("username", word())
-                                        .executes(CommandUtils.executeAsync(this.userDescribeSub::execute))
-                                        .suggests(this.usernameSuggestions.command(FilterMethod.NONE))
-                                        .then(LiteralArgumentBuilder.<CommandSource>literal("role")
-                                                .then(LiteralArgumentBuilder.<CommandSource>literal("add")
-                                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("roleId", word())
-                                                                .suggests(this::createRoleSuggestions)
-                                                                .executes(CommandUtils.executeAsync(this.userRoleAddSub::execute))))
-                                                .then(LiteralArgumentBuilder.<CommandSource>literal("remove")
-                                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("roleId", word())
-                                                                .suggests(this::createRoleSuggestions)
-                                                                .executes(CommandUtils.executeAsync(this.userRoleRemoveSub::execute)))))
-                                        .then(LiteralArgumentBuilder.<CommandSource>literal("permission")
-                                                .then(LiteralArgumentBuilder.<CommandSource>literal("check")
-                                                        .then(RequiredArgumentBuilder.<CommandSource, String>argument("permission", word()).executes(context -> 1))))))
-        );
+    private static final class UserParentSub extends EmortalCommand {
+
+        UserParentSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
+                      @NotNull UsernameSuggestions usernameSuggestions, @NotNull ArgumentElement<CommandSource, String> roleIdArgument) {
+            super("user");
+            super.setDefaultExecutor(context -> context.getSource().sendMessage(USER_HELP_MESSAGE));
+
+            var usernameArgument = argument("username", StringArgumentType.word(), usernameSuggestions.command(FilterMethod.NONE));
+            super.addSyntax(new UserDescribeSub(permissionService, permissionCache), usernameArgument);
+
+            super.addSyntax(new UserRoleAddSub(permissionService, permissionCache), usernameArgument, literal("role"), literal("add"), roleIdArgument);
+            super.addSyntax(new UserRoleRemoveSub(permissionService, permissionCache), usernameArgument, literal("role"), literal("remove"), roleIdArgument);
+
+            var permissionArgument = argument("permission", StringArgumentType.word(), null);
+            super.addSyntax(context -> {}, literal("permission"), literal("check"), permissionArgument);
+        }
     }
 }

@@ -3,6 +3,7 @@ package dev.emortal.velocity.permissions.commands.subs.role;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
@@ -15,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public final class RoleListSub {
+public final class RoleListSub implements CommandExecutor<CommandSource> {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String ROLE_LIST_HEADER = "<light_purple>Role List (<role_count>):";
@@ -35,6 +36,7 @@ public final class RoleListSub {
         this.permissionCache = permissionCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
 

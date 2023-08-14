@@ -5,16 +5,15 @@ import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
-import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
+import dev.emortal.api.service.relationship.DeleteBlockResult;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.player.UsernameSuggestions;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -22,18 +21,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public final class BlockCommand extends EmortalCommand {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BlockCommand.class);
+public final class UnblockCommand extends EmortalCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final Logger LOGGER = LoggerFactory.getLogger(UnblockCommand.class);
 
-    private static final Component USAGE = MINI_MESSAGE.deserialize("<red>Usage: /block <username>");
+    private static final Component USAGE = MINI_MESSAGE.deserialize("<red>Usage: /unblock <username>");
 
-    private final RelationshipService relationshipService;
     private final McPlayerService mcPlayerService;
+    private final RelationshipService relationshipService;
 
-    public BlockCommand(@NotNull McPlayerService mcPlayerService, @NotNull RelationshipService relationshipService,
-                        @NotNull UsernameSuggestions usernameSuggestions) {
-        super("block");
+    public UnblockCommand(@NotNull McPlayerService mcPlayerService, @NotNull RelationshipService relationshipService,
+                          @NotNull UsernameSuggestions usernameSuggestions) {
+        super("unblock");
         this.mcPlayerService = mcPlayerService;
         this.relationshipService = relationshipService;
 
@@ -52,8 +51,8 @@ public final class BlockCommand extends EmortalCommand {
         try {
             target = this.mcPlayerService.getPlayerByUsername(targetUsername);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while trying to block the player", exception);
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred while trying to block the player"));
+            LOGGER.error("An error occurred while trying to unblock the player", exception);
+            sender.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred while trying to unblock the player"));
             return;
         }
 
@@ -64,24 +63,22 @@ public final class BlockCommand extends EmortalCommand {
 
         UUID targetId = UUID.fromString(target.getId());
         if (targetId.equals(sender.getUniqueId())) {
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>You can't block yourself"));
+            sender.sendMessage(MINI_MESSAGE.deserialize("<red>You can't unblock yourself"));
             return;
         }
 
-        RelationshipProto.CreateBlockResponse.CreateBlockResult result;
+        DeleteBlockResult result;
         try {
-            result = this.relationshipService.block(sender.getUniqueId(), targetId);
+            result = this.relationshipService.unblock(sender.getUniqueId(), targetId);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while trying to block the player", exception);
-            sender.sendMessage(Component.text("An error occurred while trying to block " + targetUsername));
+            LOGGER.error("An error occurred while trying to unblock the player", exception);
+            sender.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred while trying to unblock the player"));
             return;
         }
 
         var message = switch (result) {
-            case SUCCESS -> Component.text("You have blocked " + targetUsername, NamedTextColor.GREEN);
-            case ALREADY_BLOCKED -> Component.text("You have already blocked " + targetUsername, NamedTextColor.RED);
-            case FAILED_FRIENDS -> Component.text("You must unfriend " + targetUsername + " before blocking them", NamedTextColor.RED);
-            case UNRECOGNIZED -> Component.text("An error occurred while trying to block " + targetUsername);
+            case SUCCESS -> Component.text(target.getCurrentUsername() + " has been unblocked");
+            case NOT_BLOCKED -> MINI_MESSAGE.deserialize("<red>You have not blocked the player");
         };
         sender.sendMessage(message);
     }

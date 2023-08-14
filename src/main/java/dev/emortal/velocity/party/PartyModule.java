@@ -3,16 +3,16 @@ package dev.emortal.velocity.party;
 import dev.emortal.api.modules.ModuleData;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.utils.GrpcStubCollection;
+import dev.emortal.velocity.command.CommandModule;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
 import dev.emortal.velocity.party.commands.PartyCommand;
-import dev.emortal.velocity.player.PlayerServiceModule;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "party", required = false, softDependencies = {MessagingModule.class, PlayerServiceModule.class})
+@ModuleData(name = "party", required = false, softDependencies = {MessagingModule.class, CommandModule.class})
 public final class PartyModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyModule.class);
 
@@ -36,8 +36,8 @@ public final class PartyModule extends VelocityModule {
 
         PartyCache cache = new PartyCache(super.getProxy(), service, messaging);
 
-        PlayerServiceModule playerServiceModule = this.getModule(PlayerServiceModule.class);
-        new PartyCommand(super.getProxy(), service, playerServiceModule.getUsernameSuggestions(), cache);
+        CommandModule commandModule = this.getModule(CommandModule.class);
+        commandModule.registerCommand(new PartyCommand(service, commandModule.getUsernameSuggestions(), cache));
 
         return true;
     }

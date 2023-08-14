@@ -3,6 +3,7 @@ package dev.emortal.velocity.party.commands.subs;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.velocity.party.PartyCache;
 import dev.emortal.velocity.party.commands.PartyCommand;
 import net.kyori.adventure.text.Component;
@@ -17,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public final class PartyListSub {
+public final class PartyListSub implements CommandExecutor<CommandSource> {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final String MESSAGE_CONTENT = """
@@ -33,6 +34,7 @@ public final class PartyListSub {
         this.partyCache = partyCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         Player executor = (Player) context.getSource();
 

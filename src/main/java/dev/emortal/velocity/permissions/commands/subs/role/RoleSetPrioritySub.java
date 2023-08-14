@@ -2,6 +2,7 @@ package dev.emortal.velocity.permissions.commands.subs.role;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.model.permission.Role;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.service.permission.RoleUpdate;
@@ -14,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class RoleSetPrioritySub {
+public final class RoleSetPrioritySub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleSetPrioritySub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -29,6 +30,7 @@ public final class RoleSetPrioritySub {
         this.permissionCache = permissionCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);

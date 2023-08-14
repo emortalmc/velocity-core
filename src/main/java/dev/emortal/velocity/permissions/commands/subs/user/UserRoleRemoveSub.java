@@ -2,6 +2,7 @@ package dev.emortal.velocity.permissions.commands.subs.user;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.service.permission.RemoveRoleFromPlayerResult;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
@@ -18,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public final class UserRoleRemoveSub {
+public final class UserRoleRemoveSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRoleRemoveSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -37,6 +38,7 @@ public final class UserRoleRemoveSub {
         this.permissionCache = permissionCache;
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
         String targetUsername = context.getArgument("username", String.class);
@@ -79,5 +81,4 @@ public final class UserRoleRemoveSub {
         };
         source.sendMessage(message);
     }
-
 }

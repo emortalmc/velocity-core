@@ -3,6 +3,7 @@ package dev.emortal.velocity.relationships.commands.friend;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.model.mcplayer.McPlayer;
@@ -31,7 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class FriendListSub {
+public final class FriendListSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendListSub.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -53,6 +54,7 @@ public final class FriendListSub {
         if (gameModeCollection == null) LOGGER.warn("GameModeCollection is null. Friend statuses will not be displayed.");
     }
 
+    @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
         Player player = (Player) context.getSource();
 
