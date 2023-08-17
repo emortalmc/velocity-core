@@ -57,6 +57,8 @@ public final class LobbySelectorListener {
 
     private void sendToLobbyServer(@NotNull PlayerChooseInitialServerEvent event, @NotNull Continuation continuation) {
         Player player = event.getPlayer();
+        LOGGER.debug("Queueing initial lobby for {}", player.getUsername());
+
         try {
             this.matchmaker.queueInitialLobby(player.getUniqueId());
         } catch (StatusRuntimeException exception) {
@@ -78,6 +80,7 @@ public final class LobbySelectorListener {
 
             Pair<PlayerChooseInitialServerEvent, Continuation> pair = this.pendingPlayers.getIfPresent(playerId);
             if (pair == null) continue; // Likely submitted by a different service.
+            LOGGER.debug("Found initial lobby match for {}: {}", pair.left().getPlayer().getUsername(), match);
 
             this.pendingPlayers.invalidate(playerId);
             this.connectPlayerToAssignment(pair.left(), match.getAssignment());
@@ -86,6 +89,7 @@ public final class LobbySelectorListener {
     }
 
     private void connectPlayerToAssignment(@NotNull PlayerChooseInitialServerEvent event, @NotNull Assignment assignment) {
+        LOGGER.debug("Connecting {} to {}", event.getPlayer().getUsername(), assignment);
         RegisteredServer registeredServer = this.proxy.getServer(assignment.getServerId()).orElseGet(() -> {
             InetSocketAddress address = new InetSocketAddress(assignment.getServerAddress(), assignment.getServerPort());
             return this.proxy.registerServer(new ServerInfo(assignment.getServerId(), address));
@@ -96,6 +100,7 @@ public final class LobbySelectorListener {
     private void onEvict(@Nullable UUID playerId, @Nullable Pair<PlayerChooseInitialServerEvent, Continuation> pair, @NotNull RemovalCause cause) {
         if (cause != RemovalCause.EXPIRED) return;
         if (playerId == null || pair == null) return;
+        LOGGER.debug("Failed to find initial lobby match in time for {}", pair.left().getPlayer().getUsername());
 
         pair.left().getPlayer().disconnect(ERROR_MESSAGE);
         pair.right().resume();

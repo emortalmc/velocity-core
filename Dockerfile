@@ -29,4 +29,4 @@ COPY build/libs/*-all.jar velocity-core.jar
 WORKDIR /app
 
 ENTRYPOINT ["java"]
-CMD ["--enable-preview", "-jar", "/app/velocity.jar"]
+CMD ["-Dlog4j2.debug", "--enable-preview", "-jar", "/app/velocity.jar"]
