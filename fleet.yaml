@@ -37,7 +37,7 @@ spec:
           automountServiceAccountToken: true
           
           nodeSelector:
-            kubernetes.io/hostname: emc-01 # Only deploy 1 velocity on the main node
+            node-role.kubernetes.io/control-plane: "true" # Only deploy on the control plane node
 
           volumes:
             - name: gamemodes
