@@ -16,7 +16,6 @@ import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;
 import dev.emortal.api.service.matchmaker.MatchmakerService;
 import dev.emortal.velocity.messaging.MessagingModule;
-import dev.emortal.velocity.utils.Pair;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -38,7 +37,7 @@ public final class LobbySelectorListener {
     private final MatchmakerService matchmaker;
 
     // NOTE: This is not cleaned up if there's a failed request, we may have problems :skull:
-    private final Cache<UUID, Pair<PlayerChooseInitialServerEvent, Continuation>> pendingPlayers = Caffeine.newBuilder()
+    private final Cache<UUID, EventCallbackContext> pendingPlayers = Caffeine.newBuilder()
             .expireAfterWrite(10, TimeUnit.SECONDS)
             .evictionListener(this::onEvict)
             .build();
@@ -66,7 +65,7 @@ public final class LobbySelectorListener {
             LOGGER.error("Failed to connect player to lobby", exception);
         }
 
-        this.pendingPlayers.put(player.getUniqueId(), new Pair<>(event, continuation));
+        this.pendingPlayers.put(player.getUniqueId(), new EventCallbackContext(event, continuation));
     }
 
     private void handleMatchCreated(@NotNull MatchCreatedMessage message) {
@@ -78,31 +77,49 @@ public final class LobbySelectorListener {
 
             UUID playerId = UUID.fromString(ticket.getPlayerIds(0));
 
-            Pair<PlayerChooseInitialServerEvent, Continuation> pair = this.pendingPlayers.getIfPresent(playerId);
-            if (pair == null) continue; // Likely submitted by a different service.
-            LOGGER.debug("Found initial lobby match for {}: {}", pair.left().getPlayer().getUsername(), match);
+            EventCallbackContext context = this.pendingPlayers.getIfPresent(playerId);
+            if (context == null) continue; // Likely submitted by a different service.
 
+            LOGGER.debug("Found initial lobby match for {}: {}", context.playerName(), match);
             this.pendingPlayers.invalidate(playerId);
-            this.connectPlayerToAssignment(pair.left(), match.getAssignment());
-            pair.right().resume();
+            this.connectPlayerToAssignment(context, match.getAssignment());
         }
     }
 
-    private void connectPlayerToAssignment(@NotNull PlayerChooseInitialServerEvent event, @NotNull Assignment assignment) {
-        LOGGER.debug("Connecting {} to {}", event.getPlayer().getUsername(), assignment);
-        RegisteredServer registeredServer = this.proxy.getServer(assignment.getServerId()).orElseGet(() -> {
-            InetSocketAddress address = new InetSocketAddress(assignment.getServerAddress(), assignment.getServerPort());
-            return this.proxy.registerServer(new ServerInfo(assignment.getServerId(), address));
-        });
-        event.setInitialServer(registeredServer);
+    private void connectPlayerToAssignment(@NotNull EventCallbackContext context, @NotNull Assignment assignment) {
+        LOGGER.debug("Connecting {} to {}", context.playerName(), assignment);
+        RegisteredServer server = this.proxy.getServer(assignment.getServerId()).orElseGet(() -> this.createServerFromAssignment(assignment));
+        context.setInitialServer(server);
     }
 
-    private void onEvict(@Nullable UUID playerId, @Nullable Pair<PlayerChooseInitialServerEvent, Continuation> pair, @NotNull RemovalCause cause) {
-        if (cause != RemovalCause.EXPIRED) return;
-        if (playerId == null || pair == null) return;
-        LOGGER.debug("Failed to find initial lobby match in time for {}", pair.left().getPlayer().getUsername());
+    private @NotNull RegisteredServer createServerFromAssignment(@NotNull Assignment assignment) {
+        InetSocketAddress address = new InetSocketAddress(assignment.getServerAddress(), assignment.getServerPort());
+        ServerInfo info = new ServerInfo(assignment.getServerId(), address);
+        return this.proxy.registerServer(info);
+    }
 
-        pair.left().getPlayer().disconnect(ERROR_MESSAGE);
-        pair.right().resume();
+    private void onEvict(@Nullable UUID playerId, @Nullable EventCallbackContext context, @NotNull RemovalCause cause) {
+        if (cause != RemovalCause.EXPIRED) return;
+        if (playerId == null || context == null) return;
+
+        LOGGER.debug("Failed to find initial lobby match in time for {}", context.playerName());
+        context.disconnect();
+    }
+
+    private record EventCallbackContext(@NotNull PlayerChooseInitialServerEvent event, @NotNull Continuation continuation) {
+
+        @NotNull String playerName() {
+            return this.event.getPlayer().getUsername();
+        }
+
+        void setInitialServer(@NotNull RegisteredServer server) {
+            this.event.setInitialServer(server);
+            this.continuation.resume();
+        }
+
+        void disconnect() {
+            this.event.getPlayer().disconnect(ERROR_MESSAGE);
+            this.continuation.resume();
+        }
     }
 }
