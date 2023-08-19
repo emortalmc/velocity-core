@@ -5,6 +5,7 @@ import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameReques
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.party.commands.subs.PartyCloseSub;
 import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.party.PartyCache;
 import dev.emortal.velocity.party.commands.subs.PartyDisbandSub;
@@ -54,7 +55,8 @@ public final class PartyCommand extends EmortalCommand {
         super.addSyntax(new PartyKickSub(partyService), literal("kick"), playerArgument);
         super.addSyntax(new PartyLeaderSub(partyService), literal("leader"), playerArgument);
         super.addSyntax(new PartyDisbandSub(partyService), literal("disband"));
-        super.addSyntax(new PartyOpenSub(partyService, partyCache), literal("open"));
+        super.addSyntax(new PartyOpenSub(partyService), literal("open"));
+        super.addSyntax(new PartyCloseSub(partyService), literal("close"));
         super.addSyntax(new PartyListSub(partyCache), literal("list"));
         super.addSyntax(new PartySettingsSub(), literal("settings"));
     }

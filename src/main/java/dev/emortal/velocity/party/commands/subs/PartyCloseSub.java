@@ -14,15 +14,15 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartyOpenSub implements CommandExecutor<CommandSource> {
+public final class PartyCloseSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyOpenSub.class);
 
-    private static final Component PARTY_OPENED_MESSAGE = Component.text("The party is now open", NamedTextColor.GREEN);
+    private static final Component PARTY_CLOSED_MESSAGE = Component.text("The party is now closed", NamedTextColor.GREEN);
     private static final Component NOT_LEADER_MESSAGE = Component.text("You are not the leader of the party", NamedTextColor.RED);
 
     private final @NotNull PartyService partyService;
 
-    public PartyOpenSub(@NotNull PartyService partyService) {
+    public PartyCloseSub(@NotNull PartyService partyService) {
         this.partyService = partyService;
     }
 
@@ -32,15 +32,15 @@ public final class PartyOpenSub implements CommandExecutor<CommandSource> {
 
         ModifyPartyResult result;
         try {
-            result = this.partyService.setPartyOpen(executor.getUniqueId(), true);
+            result = this.partyService.setPartyOpen(executor.getUniqueId(), false);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to open party", exception);
+            LOGGER.error("Failed to close party", exception);
             executor.sendMessage(PartyCommand.ERROR_MESSAGE);
             return;
         }
 
         var message = switch (result) {
-            case SUCCESS -> PARTY_OPENED_MESSAGE;
+            case SUCCESS -> PARTY_CLOSED_MESSAGE;
             case NOT_LEADER -> NOT_LEADER_MESSAGE;
         };
         executor.sendMessage(message);
