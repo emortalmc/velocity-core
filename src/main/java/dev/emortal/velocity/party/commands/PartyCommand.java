@@ -8,7 +8,6 @@ import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.party.commands.subs.PartyCloseSub;
 import dev.emortal.velocity.player.UsernameSuggestions;
-import dev.emortal.velocity.party.PartyCache;
 import dev.emortal.velocity.party.commands.subs.PartyDisbandSub;
 import dev.emortal.velocity.party.commands.subs.PartyInviteSub;
 import dev.emortal.velocity.party.commands.subs.PartyJoinSub;
@@ -22,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 public final class PartyCommand extends EmortalCommand {
 
-    public PartyCommand(@NotNull PartyService partyService, @NotNull UsernameSuggestions usernameSuggestions, @NotNull PartyCache partyCache) {
+    public PartyCommand(@NotNull PartyService partyService, @NotNull UsernameSuggestions usernameSuggestions) {
         super("party");
 
         super.setCondition(CommandConditions.playerOnly());

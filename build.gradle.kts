@@ -2,6 +2,7 @@ plugins {
     java
     id("com.github.johnrengelman.shadow") version "8.1.1"
 
+    jacoco
     id("io.freefair.lombok") version "8.1.0"
 }
 
@@ -43,6 +44,10 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
+    testImplementation("org.mockito:mockito-core:5.4.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.4.0")
+    testImplementation("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
+    testRuntimeOnly("org.slf4j:slf4j-nop:2.0.7")
 }
 
 java {
@@ -63,5 +68,8 @@ tasks {
     }
     test {
         useJUnitPlatform()
+    }
+    jacocoTestReport {
+        dependsOn(test)
     }
 }

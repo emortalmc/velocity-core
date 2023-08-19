@@ -24,13 +24,11 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 @ModuleData(name = "messaging", required = false)
-public final class MessagingModule extends VelocityModule {
+public final class MessagingModule extends VelocityModule implements MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingModule.class);
 
     private static final String KAFKA_HOST = System.getenv("KAFKA_HOST");
     private static final String KAFKA_PORT = System.getenv("KAFKA_PORT");
-
-    private static final String KAFKA_CONNECTIONS_TOPIC = "mc-connections";
 
     private @Nullable FriendlyKafkaConsumer kafkaConsumer;
     private @Nullable FriendlyKafkaProducer kafkaProducer;
@@ -39,6 +37,7 @@ public final class MessagingModule extends VelocityModule {
         super(environment);
     }
 
+    @Override
     public <T extends AbstractMessage> void addListener(@NotNull Class<T> messageType, @NotNull Consumer<T> listener) {
         if (this.kafkaConsumer != null) this.kafkaConsumer.addListener(messageType, listener);
     }
@@ -55,7 +54,7 @@ public final class MessagingModule extends VelocityModule {
         this.kafkaConsumer = new FriendlyKafkaConsumer(kafkaSettings);
         this.kafkaProducer = new FriendlyKafkaProducer(kafkaSettings);
 
-        super.registerEventListener(this);
+        super.registerEventListener(new PlayerUpdateListener(this.kafkaProducer));
 
         return true;
     }
@@ -64,47 +63,5 @@ public final class MessagingModule extends VelocityModule {
     public void onUnload() {
         if (this.kafkaProducer != null) this.kafkaProducer.shutdown();
         if (this.kafkaConsumer != null) this.kafkaConsumer.close();
-    }
-
-    // Kafka producing
-    @Subscribe
-    private void onPlayerLogin(@NotNull PostLoginEvent event) {
-        if (this.kafkaProducer == null) return;
-
-        Player player = event.getPlayer();
-
-        PlayerConnectMessage message = PlayerConnectMessage.newBuilder()
-                .setPlayerId(player.getUniqueId().toString())
-                .setPlayerUsername(player.getUsername())
-                .setServerId(Environment.getHostname())
-                .build();
-
-        this.kafkaProducer.produceAndForget(KAFKA_CONNECTIONS_TOPIC, message);
-    }
-
-    @Subscribe
-    private void onPlayerDisconnect(@NotNull DisconnectEvent event) {
-        if (this.kafkaProducer == null) return;
-
-        Player player = event.getPlayer();
-
-        PlayerDisconnectMessage message = PlayerDisconnectMessage.newBuilder()
-                .setPlayerId(player.getUniqueId().toString())
-                .setPlayerUsername(player.getUsername())
-                .build();
-
-        this.kafkaProducer.produceAndForget(KAFKA_CONNECTIONS_TOPIC, message);
-    }
-
-    @Subscribe
-    private void onServerSwitch(@NotNull ServerConnectedEvent event) {
-        if (this.kafkaProducer == null) return;
-
-        PlayerSwitchServerMessage message = PlayerSwitchServerMessage.newBuilder()
-                .setPlayerId(event.getPlayer().getUniqueId().toString())
-                .setServerId(event.getServer().getServerInfo().getName())
-                .build();
-
-        this.kafkaProducer.produceAndForget(KAFKA_CONNECTIONS_TOPIC, message);
     }
 }

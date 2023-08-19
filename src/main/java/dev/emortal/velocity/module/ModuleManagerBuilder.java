@@ -6,6 +6,8 @@ import dev.emortal.api.modules.Module;
 import dev.emortal.api.modules.ModuleManager;
 import dev.emortal.api.modules.env.ModuleEnvironment;
 import dev.emortal.velocity.CorePlugin;
+import dev.emortal.velocity.player.provider.PlayerProvider;
+import dev.emortal.velocity.player.provider.VelocityPlayerProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -36,7 +38,8 @@ public final class ModuleManagerBuilder {
     }
 
     public @NotNull ModuleManager build(@NotNull CorePlugin plugin, @NotNull ProxyServer proxy) {
-        ModuleEnvironment.Provider provider = (data, moduleProvider) -> new VelocityModuleEnvironment(data, moduleProvider, plugin, proxy);
+        PlayerProvider playerProvider = new VelocityPlayerProvider(proxy);
+        ModuleEnvironment.Provider provider = (data, moduleProvider) -> new VelocityModuleEnvironment(data, moduleProvider, plugin, proxy, playerProvider);
         return new ModuleManager(this.modules, provider);
     }
 }

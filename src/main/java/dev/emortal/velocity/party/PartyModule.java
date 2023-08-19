@@ -8,6 +8,7 @@ import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
 import dev.emortal.velocity.party.commands.PartyCommand;
+import dev.emortal.velocity.party.notifier.ChatPartyUpdateNotifier;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +35,11 @@ public final class PartyModule extends VelocityModule {
             return false;
         }
 
-        PartyCache cache = new PartyCache(super.getProxy(), service, messaging);
+        PartyCache cache = new PartyCache(service);
+        new PartyUpdateListener(cache, super.getPlayerProvider(), new ChatPartyUpdateNotifier(super.getPlayerProvider()), messaging);
 
         CommandModule commandModule = this.getModule(CommandModule.class);
-        commandModule.registerCommand(new PartyCommand(service, commandModule.getUsernameSuggestions(), cache));
+        commandModule.registerCommand(new PartyCommand(service, commandModule.getUsernameSuggestions()));
 
         return true;
     }
