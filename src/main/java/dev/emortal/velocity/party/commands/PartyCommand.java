@@ -57,7 +57,7 @@ public final class PartyCommand extends EmortalCommand {
         super.addSyntax(new PartyDisbandSub(partyService), literal("disband"));
         super.addSyntax(new PartyOpenSub(partyService), literal("open"));
         super.addSyntax(new PartyCloseSub(partyService), literal("close"));
-        super.addSyntax(new PartyListSub(partyCache), literal("list"));
+        super.addSyntax(new PartyListSub(partyService), literal("list"));
         super.addSyntax(new PartySettingsSub(), literal("settings"));
     }
 }
