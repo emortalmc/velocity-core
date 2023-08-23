@@ -2,7 +2,7 @@ package dev.emortal.velocity.party.notifier;
 
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.velocity.party.cache.LocalParty;
-import dev.emortal.velocity.player.provider.PlayerProvider;
+import dev.emortal.velocity.adapter.player.PlayerProvider;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;

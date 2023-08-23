@@ -1,16 +1,16 @@
-package dev.emortal.velocity.tablist;
+package dev.emortal.velocity.misc;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.service.playertracker.PlayerTrackerService;
-import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.CorePlugin;
+import dev.emortal.velocity.adapter.player.PlayerProvider;
+import dev.emortal.velocity.adapter.scheduler.EmortalScheduler;
 import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,20 +19,17 @@ import java.util.concurrent.TimeUnit;
 public final class TabList {
     private static final Logger LOGGER = LoggerFactory.getLogger(TabList.class);
 
-    private final ProxyServer proxy;
+    private final PlayerProvider playerProvider;
 
-    private Component currentFooter = Component.empty();
+    private @NotNull Component currentFooter = Component.empty();
 
-    public TabList(@NotNull CorePlugin plugin, @NotNull ProxyServer proxy) {
-        this.proxy = proxy;
+    public TabList(@NotNull EmortalScheduler scheduler, @NotNull PlayerProvider playerProvider, @Nullable PlayerTrackerService playerTracker) {
+        this.playerProvider = playerProvider;
 
-        PlayerTrackerService playerTracker = GrpcStubCollection.getPlayerTrackerService().orElse(null);
         if (playerTracker == null) {
             this.currentFooter = this.createFooter(0);
         } else {
-            this.proxy.getScheduler().buildTask(plugin, () -> this.updateFooter(playerTracker))
-                    .repeat(5, TimeUnit.SECONDS)
-                    .schedule();
+            scheduler.repeat(() -> this.updateFooter(playerTracker), 5, TimeUnit.SECONDS);
         }
     }
 
@@ -55,7 +52,7 @@ public final class TabList {
     }
 
     private void updateOnlinePlayers() {
-        for (Player player : this.proxy.getAllPlayers()) {
+        for (Player player : this.playerProvider.allPlayers()) {
             player.sendPlayerListFooter(this.currentFooter);
         }
     }

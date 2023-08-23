@@ -7,14 +7,13 @@ import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
-import com.velocitypowered.api.proxy.server.ServerInfo;
 import dev.emortal.api.kurushimi.messages.MatchCreatedMessage;
 import dev.emortal.api.model.matchmaker.Assignment;
 import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;
 import dev.emortal.api.service.matchmaker.MatchmakerService;
+import dev.emortal.velocity.adapter.server.ServerProvider;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
 import io.grpc.StatusRuntimeException;
@@ -23,14 +22,13 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public final class LobbySelectorListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(LobbySelectorListener.class);
 
-    private final ProxyServer proxy;
+    private final ServerProvider serverProvider;
     private final MatchmakerService matchmaker;
 
     // NOTE: This is not cleaned up if there's a failed request, we may have problems :skull:
@@ -39,8 +37,8 @@ public final class LobbySelectorListener {
             .evictionListener(this::onEvict)
             .build();
 
-    public LobbySelectorListener(@NotNull ProxyServer proxy, @NotNull MatchmakerService matchmaker, @NotNull MessagingModule messaging) {
-        this.proxy = proxy;
+    public LobbySelectorListener(@NotNull ServerProvider serverProvider, @NotNull MatchmakerService matchmaker, @NotNull MessagingModule messaging) {
+        this.serverProvider = serverProvider;
         this.matchmaker = matchmaker;
 
         messaging.addListener(MatchCreatedMessage.class, this::handleMatchCreated);
@@ -85,14 +83,13 @@ public final class LobbySelectorListener {
 
     private void connectPlayerToAssignment(@NotNull EventCallbackContext context, @NotNull Assignment assignment) {
         LOGGER.debug("Connecting '{}' to {}", context.playerName(), assignment);
-        RegisteredServer server = this.proxy.getServer(assignment.getServerId()).orElseGet(() -> this.createServerFromAssignment(assignment));
-        context.setInitialServer(server);
-    }
 
-    private @NotNull RegisteredServer createServerFromAssignment(@NotNull Assignment assignment) {
-        InetSocketAddress address = new InetSocketAddress(assignment.getServerAddress(), assignment.getServerPort());
-        ServerInfo info = new ServerInfo(assignment.getServerId(), address);
-        return this.proxy.registerServer(info);
+        RegisteredServer server = this.serverProvider.getServer(assignment.getServerId());
+        if (server == null) {
+            server = this.serverProvider.createServer(assignment.getServerId(), assignment.getServerAddress(), assignment.getServerPort());
+        }
+
+        context.setInitialServer(server);
     }
 
     private void onEvict(@Nullable UUID playerId, @Nullable EventCallbackContext context, @NotNull RemovalCause cause) {

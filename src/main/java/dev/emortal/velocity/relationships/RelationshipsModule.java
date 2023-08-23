@@ -6,13 +6,11 @@ import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.command.CommandModule;
 import dev.emortal.velocity.liveconfig.LiveConfigModule;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
-import dev.emortal.velocity.player.PlayerServiceModule;
-import dev.emortal.velocity.player.UsernameSuggestions;
+import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import dev.emortal.velocity.relationships.commands.block.BlockCommand;
 import dev.emortal.velocity.relationships.commands.block.ListBlocksCommand;
 import dev.emortal.velocity.relationships.commands.block.UnblockCommand;
@@ -23,10 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(
-        name = "relationships",
-        dependencies = {@Dependency(name = "player-service"), @Dependency(name = "messaging"), @Dependency(name = "live-config"), @Dependency(name = "command")}
-)
+@ModuleData(name = "relationships", dependencies = {@Dependency(name = "messaging"), @Dependency(name = "live-config")})
 public final class RelationshipsModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipsModule.class);
 
@@ -36,7 +31,7 @@ public final class RelationshipsModule extends VelocityModule {
 
     @Override
     public boolean onLoad() {
-        McPlayerService playerService = this.getModule(PlayerServiceModule.class).getPlayerService();
+        McPlayerService playerService = GrpcStubCollection.getPlayerService().orElse(null);
         MessagingModule messaging = this.getModule(MessagingModule.class);
 
         RelationshipService service = GrpcStubCollection.getRelationshipService().orElse(null);
@@ -47,8 +42,8 @@ public final class RelationshipsModule extends VelocityModule {
 
         FriendCache cache = new FriendCache(service);
 
-        new FriendListener(super.getProxy(), messaging, cache);
-        new FriendConnectionListener(super.getProxy(), messaging);
+        new FriendListener(super.adapters().playerProvider(), messaging, cache);
+        new FriendConnectionListener(super.adapters().playerProvider(), messaging);
         super.registerEventListener(cache);
 
         LiveConfigModule liveConfig = this.getModule(LiveConfigModule.class);
@@ -59,12 +54,11 @@ public final class RelationshipsModule extends VelocityModule {
             return true;
         }
 
-        CommandModule commandModule = this.getModule(CommandModule.class);
-        UsernameSuggestions usernameSuggestions = commandModule.getUsernameSuggestions();
-        commandModule.registerCommand(new FriendCommand(playerService, service, usernameSuggestions, cache, gameModes));
-        commandModule.registerCommand(new BlockCommand(playerService, service, usernameSuggestions));
-        commandModule.registerCommand(new UnblockCommand(playerService, service, usernameSuggestions));
-        commandModule.registerCommand(new ListBlocksCommand(playerService, service));
+        UsernameSuggesterProvider usernameSuggesters = super.adapters().commandManager().usernameSuggesters();
+        super.registerCommand(new FriendCommand(playerService, service, usernameSuggesters, cache, gameModes));
+        super.registerCommand(new BlockCommand(playerService, service, usernameSuggesters));
+        super.registerCommand(new UnblockCommand(playerService, service, usernameSuggesters));
+        super.registerCommand(new ListBlocksCommand(playerService, service));
 
         return true;
     }

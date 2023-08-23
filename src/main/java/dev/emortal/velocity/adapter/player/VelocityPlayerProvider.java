@@ -1,10 +1,11 @@
-package dev.emortal.velocity.player.provider;
+package dev.emortal.velocity.adapter.player;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.UUID;
 
 public final class VelocityPlayerProvider implements PlayerProvider {
@@ -23,5 +24,10 @@ public final class VelocityPlayerProvider implements PlayerProvider {
     @Override
     public @Nullable Player getPlayer(@NotNull String username) {
         return this.proxy.getPlayer(username).orElse(null);
+    }
+
+    @Override
+    public @NotNull Collection<Player> allPlayers() {
+        return this.proxy.getAllPlayers();
     }
 }

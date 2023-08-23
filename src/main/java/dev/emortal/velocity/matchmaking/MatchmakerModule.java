@@ -4,7 +4,6 @@ import dev.emortal.api.modules.annotation.Dependency;
 import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.matchmaker.MatchmakerService;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.command.CommandModule;
 import dev.emortal.velocity.matchmaking.commands.LobbyCommand;
 import dev.emortal.velocity.matchmaking.listener.LobbySelectorListener;
 import dev.emortal.velocity.matchmaking.listener.ServerChangeNotificationListener;
@@ -15,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "matchmaker", dependencies = {@Dependency(name = "messaging"), @Dependency(name = "command")})
+@ModuleData(name = "matchmaker", dependencies = {@Dependency(name = "messaging")})
 public final class MatchmakerModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(MatchmakerModule.class);
 
@@ -31,15 +30,11 @@ public final class MatchmakerModule extends VelocityModule {
             return false;
         }
 
+        super.registerCommand(new LobbyCommand(service));
+
         MessagingModule messaging = this.getModule(MessagingModule.class);
-        CommandModule commandModule = this.getModule(CommandModule.class);
-        commandModule.registerCommand(new LobbyCommand(service));
-
-        // while this doesn't explicitly require the matchmaking, none of the messages it listens for will be sent without
-        // the matchmaker working properly, so it's not worth registering it if the matchmaker isn't available
-        new ServerChangeNotificationListener(super.getProxy(), messaging);
-
-        super.registerEventListener(new LobbySelectorListener(super.getProxy(), service, messaging));
+        new ServerChangeNotificationListener(super.adapters().playerProvider(), super.adapters().serverProvider(), messaging);
+        super.registerEventListener(new LobbySelectorListener(super.adapters().serverProvider(), service, messaging));
 
         return true;
     }

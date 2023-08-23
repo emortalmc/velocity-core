@@ -37,9 +37,7 @@ public final class PacketDebuggingModule extends VelocityModule {
     public boolean onLoad() {
         if (!DEBUG_PACKETS) return false;
 
-        this.task = super.getProxy().getScheduler().buildTask(super.getEnvironment().plugin(), this::registerDebugStatistics)
-                .repeat(10, TimeUnit.SECONDS)
-                .schedule();
+        this.task = super.adapters().scheduler().repeat(this::registerDebugStatistics, 10, TimeUnit.SECONDS);
         super.registerEventListener(this);
 
         return true;

@@ -4,25 +4,24 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
-import dev.emortal.velocity.player.UsernameSuggestions;
+import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import org.jetbrains.annotations.NotNull;
 
 public final class MessageCommand extends EmortalCommand {
 
     private final MessageSender messageSender;
 
-    public MessageCommand(@NotNull MessageSender messageSender, @NotNull UsernameSuggestions usernameSuggestions) {
+    public MessageCommand(@NotNull MessageSender messageSender, @NotNull UsernameSuggesterProvider usernameSuggesters) {
         super("message", "msg");
         this.messageSender = messageSender;
 
         super.setCondition(CommandConditions.playerOnly());
         super.setDefaultExecutor(this::sendUsage);
 
-        var receiverArgument = argument("receiver", StringArgumentType.word(), usernameSuggestions.command(FilterMethod.ONLINE));
+        var receiverArgument = argument("receiver", StringArgumentType.word(), usernameSuggesters.online());
         super.addSyntax(this::sendUsage, receiverArgument);
 
         var messageArgument = argument("message", StringArgumentType.greedyString(), null);
