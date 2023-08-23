@@ -3,7 +3,8 @@ package dev.emortal.velocity.liveconfig;
 import dev.emortal.api.liveconfigparser.configs.LiveConfigCollection;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.modules.Module;
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.Dependency;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.modules.env.ModuleEnvironment;
 import io.kubernetes.client.openapi.ApiClient;
 import org.jetbrains.annotations.NotNull;
@@ -13,24 +14,24 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-@ModuleData(name = "liveconfig", required = false, softDependencies = {KubernetesModule.class})
+@ModuleData(name = "liveconfig", dependencies = {@Dependency(name = "kubernetes", required = false)})
 public final class LiveConfigModule extends Module {
     private static final Logger LOGGER = LoggerFactory.getLogger(LiveConfigModule.class);
 
-    private @Nullable LiveConfigCollection configCollection;
+    @SuppressWarnings("NotNullFieldNotInitialized") // Where this would be null, the module will not be loaded
+    private @NotNull LiveConfigCollection configCollection;
 
     public LiveConfigModule(@NotNull ModuleEnvironment environment) {
         super(environment);
     }
 
     public @Nullable GameModeCollection getGameModes() {
-        if (this.configCollection == null) return null;
         return this.configCollection.gameModes();
     }
 
     @Override
     public boolean onLoad() {
-        KubernetesModule kubernetesModule = this.getModule(KubernetesModule.class);
+        KubernetesModule kubernetesModule = this.getOptionalModule(KubernetesModule.class);
         if (kubernetesModule == null) {
             LOGGER.warn("Kubernetes not available. Live config module will watch files locally.");
         }
@@ -41,15 +42,12 @@ public final class LiveConfigModule extends Module {
             return true;
         } catch (IOException exception) {
             LOGGER.error("Failed to load live configs!", exception);
-            this.configCollection = null;
             return false;
         }
     }
 
     @Override
     public void onUnload() {
-        if (this.configCollection == null) return;
-
         try {
             this.configCollection.close();
         } catch (IOException exception) {

@@ -1,19 +1,10 @@
 package dev.emortal.velocity.messaging;
 
 import com.google.protobuf.AbstractMessage;
-import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.connection.DisconnectEvent;
-import com.velocitypowered.api.event.connection.PostLoginEvent;
-import com.velocitypowered.api.event.player.ServerConnectedEvent;
-import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.message.common.PlayerConnectMessage;
-import dev.emortal.api.message.common.PlayerDisconnectMessage;
-import dev.emortal.api.message.common.PlayerSwitchServerMessage;
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.utils.kafka.FriendlyKafkaConsumer;
 import dev.emortal.api.utils.kafka.FriendlyKafkaProducer;
 import dev.emortal.api.utils.kafka.KafkaSettings;
-import dev.emortal.velocity.Environment;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
 import org.jetbrains.annotations.NotNull;
@@ -23,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-@ModuleData(name = "messaging", required = false)
+@ModuleData(name = "messaging")
 public final class MessagingModule extends VelocityModule implements MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingModule.class);
 

@@ -7,6 +7,7 @@ import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.ProxyServer;
+import dev.emortal.api.modules.LoadableModule;
 import dev.emortal.api.modules.ModuleManager;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.agones.AgonesModule;
@@ -16,7 +17,9 @@ import dev.emortal.velocity.liveconfig.KubernetesModule;
 import dev.emortal.velocity.liveconfig.LiveConfigModule;
 import dev.emortal.velocity.matchmaking.MatchmakerModule;
 import dev.emortal.velocity.messaging.MessagingModule;
-import dev.emortal.velocity.module.ModuleManagerBuilder;
+import dev.emortal.velocity.module.VelocityModule;
+import dev.emortal.velocity.module.VelocityModuleEnvironment;
+import dev.emortal.velocity.module.VelocityModuleEnvironmentProvider;
 import dev.emortal.velocity.party.PartyModule;
 import dev.emortal.velocity.permissions.PermissionModule;
 import dev.emortal.velocity.player.PlayerServiceModule;
@@ -48,21 +51,22 @@ public final class CorePlugin {
                 .map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername(), true))
                 .orElse(null));
 
-        this.moduleManager = ModuleManagerBuilder.create()
-                .module(AgonesModule.class, AgonesModule::new)
-                .module(CommandModule.class, CommandModule::new)
+        this.moduleManager = ModuleManager.builder()
+                .environmentProvider(new VelocityModuleEnvironmentProvider(this.proxy, this))
+                .module(AgonesModule.class, velocityModule(AgonesModule::new))
+                .module(CommandModule.class, velocityModule(CommandModule::new))
                 .module(KubernetesModule.class, KubernetesModule::new)
                 .module(LiveConfigModule.class, LiveConfigModule::new)
-                .module(MatchmakerModule.class, MatchmakerModule::new)
-                .module(MessagingModule.class, MessagingModule::new)
-                .module(PartyModule.class, PartyModule::new)
-                .module(PermissionModule.class, PermissionModule::new)
-                .module(PlayerServiceModule.class, PlayerServiceModule::new)
-                .module(PrivateMessageModule.class, PrivateMessageModule::new)
-                .module(RelationshipsModule.class, RelationshipsModule::new)
+                .module(MatchmakerModule.class, velocityModule(MatchmakerModule::new))
+                .module(MessagingModule.class, velocityModule(MessagingModule::new))
+                .module(PartyModule.class, velocityModule(PartyModule::new))
+                .module(PermissionModule.class, velocityModule(PermissionModule::new))
+                .module(PlayerServiceModule.class, velocityModule(PlayerServiceModule::new))
+                .module(PrivateMessageModule.class, velocityModule(PrivateMessageModule::new))
+                .module(RelationshipsModule.class, velocityModule(RelationshipsModule::new))
                 .module(PyroscopeModule.class, PyroscopeModule::new)
-                .module(PacketDebuggingModule.class, PacketDebuggingModule::new)
-                .build(this, this.proxy);
+                .module(PacketDebuggingModule.class, velocityModule(PacketDebuggingModule::new))
+                .build();
 
         this.moduleManager.onReady();
 
@@ -82,6 +86,10 @@ public final class CorePlugin {
 
         // server cleanup
         eventManager.register(this, new ServerCleanupTask(this.proxy));
+    }
+
+    private static @NotNull LoadableModule.Creator velocityModule(@NotNull VelocityModule.Creator creator) {
+        return environment -> creator.create((VelocityModuleEnvironment) environment);
     }
 
     @Subscribe

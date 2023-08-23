@@ -1,6 +1,7 @@
 package dev.emortal.velocity.permissions;
 
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.Dependency;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.command.CommandModule;
@@ -14,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "permission", required = false, softDependencies = {MessagingModule.class, CommandModule.class})
+@ModuleData(name = "permission", dependencies = {@Dependency(name = "messaging"), @Dependency(name = "command")})
 public final class PermissionModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionModule.class);
 
@@ -24,18 +25,13 @@ public final class PermissionModule extends VelocityModule {
 
     @Override
     public boolean onLoad() {
-        MessagingModule messaging = this.getModule(MessagingModule.class);
-        if (messaging == null) {
-            LOGGER.debug("Permission services cannot be loaded due to missing messaging module.");
-            return false;
-        }
-
         PermissionService service = GrpcStubCollection.getPermissionService().orElse(null);
         if (service == null) {
             LOGGER.warn("Permission service unavailable. Permissions will not work properly.");
             return false;
         }
 
+        MessagingModule messaging = this.getModule(MessagingModule.class);
         PermissionCache cache = new PermissionCache(service);
 
         super.registerEventListener(cache);

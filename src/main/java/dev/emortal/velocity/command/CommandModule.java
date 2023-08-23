@@ -2,7 +2,8 @@ package dev.emortal.velocity.command;
 
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandMeta;
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.Dependency;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
@@ -12,7 +13,7 @@ import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.player.commands.PlaytimeCommand;
 import org.jetbrains.annotations.NotNull;
 
-@ModuleData(name = "command", required = false, softDependencies = {PlayerServiceModule.class})
+@ModuleData(name = "command", dependencies = {@Dependency(name = "player-service")})
 public final class CommandModule extends VelocityModule {
 
     private @NotNull UsernameSuggestions usernameSuggestions;
@@ -36,11 +37,11 @@ public final class CommandModule extends VelocityModule {
     @Override
     public boolean onLoad() {
         PlayerServiceModule playerServiceModule = this.getModule(PlayerServiceModule.class);
-        SessionCache sessionCache = playerServiceModule != null ? playerServiceModule.getSessionCache() : null;
-        McPlayerService playerService = playerServiceModule != null ? playerServiceModule.getPlayerService() : null;
+        SessionCache sessionCache = playerServiceModule.getSessionCache();
+        McPlayerService playerService = playerServiceModule.getPlayerService();
 
         if (playerService != null) {
-            this.usernameSuggestions = new UsernameSuggestions(playerServiceModule.getPlayerService());
+            this.usernameSuggestions = new UsernameSuggestions(playerService);
             this.registerCommand(new PlaytimeCommand(playerService, sessionCache, this.usernameSuggestions));
         } else {
             this.usernameSuggestions = new UsernameSuggestions(null);

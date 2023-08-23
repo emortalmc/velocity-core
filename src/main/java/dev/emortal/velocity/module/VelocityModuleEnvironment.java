@@ -1,8 +1,8 @@
 package dev.emortal.velocity.module;
 
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.emortal.api.modules.ModuleData;
 import dev.emortal.api.modules.ModuleProvider;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.modules.env.ModuleEnvironment;
 import dev.emortal.velocity.CorePlugin;
 import dev.emortal.velocity.player.provider.PlayerProvider;
