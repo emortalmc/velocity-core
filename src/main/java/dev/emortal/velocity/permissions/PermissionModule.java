@@ -4,7 +4,6 @@ import dev.emortal.api.modules.annotation.Dependency;
 import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.command.CommandModule;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
@@ -15,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "permission", dependencies = {@Dependency(name = "messaging"), @Dependency(name = "command")})
+@ModuleData(name = "permission", dependencies = {@Dependency(name = "messaging")})
 public final class PermissionModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionModule.class);
 
@@ -38,8 +37,7 @@ public final class PermissionModule extends VelocityModule {
         super.registerEventListener(new PermissionCheckListener(cache));
         new PermissionUpdateListener(cache, messaging);
 
-        CommandModule commandModule = this.getModule(CommandModule.class);
-        commandModule.registerCommand(new PermissionCommand(service, cache, commandModule.getUsernameSuggestions()));
+        super.registerCommand(new PermissionCommand(service, cache, super.adapters().commandManager().usernameSuggesters()));
 
         return true;
     }

@@ -1,8 +1,8 @@
 package dev.emortal.velocity.module;
 
-import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.modules.Module;
-import dev.emortal.velocity.player.provider.PlayerProvider;
+import dev.emortal.velocity.adapter.AdapterContext;
+import dev.emortal.velocity.command.EmortalCommand;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class VelocityModule extends Module {
@@ -11,21 +11,20 @@ public abstract class VelocityModule extends Module {
         super(environment);
     }
 
-    protected final VelocityModuleEnvironment getEnvironment() {
+    private @NotNull VelocityModuleEnvironment getEnvironment() {
         return (VelocityModuleEnvironment) this.environment;
     }
 
-    protected final @NotNull ProxyServer getProxy() {
-        return this.getEnvironment().proxy();
+    protected final @NotNull AdapterContext adapters() {
+        return this.getEnvironment().adapters();
     }
 
-    protected final @NotNull PlayerProvider getPlayerProvider() {
-        return this.getEnvironment().playerProvider();
+    protected final void registerCommand(@NotNull EmortalCommand command) {
+        this.adapters().commandManager().registerCommand(command);
     }
 
     protected final void registerEventListener(@NotNull Object listener) {
-        VelocityModuleEnvironment env = this.getEnvironment();
-        env.proxy().getEventManager().register(env.plugin(), listener);
+        this.adapters().eventManager().register(listener);
     }
 
     @FunctionalInterface

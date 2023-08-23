@@ -4,7 +4,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.model.mcplayer.LoginSession;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
@@ -14,7 +13,7 @@ import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.SessionCache;
-import dev.emortal.velocity.player.UsernameSuggestions;
+import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -29,21 +28,19 @@ public final class PlaytimeCommand extends EmortalCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlaytimeCommand.class);
 
     private final McPlayerService playerService;
-    private final UsernameSuggestions usernameSuggestions;
     private final SessionCache sessionCache;
 
     public PlaytimeCommand(@NotNull McPlayerService playerService, @NotNull SessionCache sessionCache,
-                           @NotNull UsernameSuggestions usernameSuggestions) {
+                           @NotNull UsernameSuggesterProvider usernameSuggesters) {
         super("playtime");
 
         this.playerService = playerService;
         this.sessionCache = sessionCache;
-        this.usernameSuggestions = usernameSuggestions;
 
         super.setCondition(CommandConditions.playerOnly());
         super.setDefaultExecutor(this::executeForSelf);
 
-        var usernameArgument = argument("username", StringArgumentType.word(), this.usernameSuggestions.command(FilterMethod.NONE));
+        var usernameArgument = argument("username", StringArgumentType.word(), usernameSuggesters.all());
         super.addSyntax(this::executeForOther, usernameArgument);
     }
 

@@ -1,4 +1,4 @@
-package dev.emortal.velocity.serverlist;
+package dev.emortal.velocity.misc;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class ServerPingListener {
+final class ServerPingListener {
     private static final String[] MOTDS = new String[] {
             "coolest server to ever exist",
             "better than hypixel",

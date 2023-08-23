@@ -4,7 +4,6 @@ import dev.emortal.api.modules.annotation.Dependency;
 import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.command.CommandModule;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
@@ -14,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "party", dependencies = {@Dependency(name = "messaging"), @Dependency(name = "command")})
+@ModuleData(name = "party", dependencies = {@Dependency(name = "messaging")})
 public final class PartyModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyModule.class);
 
@@ -32,10 +31,9 @@ public final class PartyModule extends VelocityModule {
 
         MessagingModule messaging = this.getModule(MessagingModule.class);
         PartyCache cache = new PartyCache(service);
-        new PartyUpdateListener(cache, super.getPlayerProvider(), new ChatPartyUpdateNotifier(super.getPlayerProvider()), messaging);
+        new PartyUpdateListener(cache, super.adapters().playerProvider(), new ChatPartyUpdateNotifier(super.adapters().playerProvider()), messaging);
 
-        CommandModule commandModule = this.getModule(CommandModule.class);
-        commandModule.registerCommand(new PartyCommand(service, commandModule.getUsernameSuggestions()));
+        super.registerCommand(new PartyCommand(service, super.adapters().commandManager().usernameSuggesters()));
 
         return true;
     }

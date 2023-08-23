@@ -4,7 +4,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.DeleteBlockResult;
@@ -12,7 +11,7 @@ import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
-import dev.emortal.velocity.player.UsernameSuggestions;
+import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -32,7 +31,7 @@ public final class UnblockCommand extends EmortalCommand {
     private final RelationshipService relationshipService;
 
     public UnblockCommand(@NotNull McPlayerService mcPlayerService, @NotNull RelationshipService relationshipService,
-                          @NotNull UsernameSuggestions usernameSuggestions) {
+                          @NotNull UsernameSuggesterProvider usernameSuggesters) {
         super("unblock");
         this.mcPlayerService = mcPlayerService;
         this.relationshipService = relationshipService;
@@ -40,7 +39,7 @@ public final class UnblockCommand extends EmortalCommand {
         super.setCondition(CommandConditions.playerOnly());
         super.setDefaultExecutor(context -> context.getSource().sendMessage(USAGE));
 
-        var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggestions.command(FilterMethod.NONE));
+        var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggesters.all());
         super.addSyntax(this::execute, usernameArgument);
     }
 

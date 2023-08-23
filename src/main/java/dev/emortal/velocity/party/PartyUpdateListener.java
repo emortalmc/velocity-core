@@ -14,7 +14,7 @@ import dev.emortal.api.model.party.PartyInvite;
 import dev.emortal.api.model.party.PartyMember;
 import dev.emortal.velocity.messaging.MessageHandler;
 import dev.emortal.velocity.party.notifier.PartyUpdateNotifier;
-import dev.emortal.velocity.player.provider.PlayerProvider;
+import dev.emortal.velocity.adapter.player.PlayerProvider;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

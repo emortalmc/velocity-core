@@ -1,7 +1,6 @@
 package dev.emortal.velocity;
 
 import com.google.inject.Inject;
-import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
@@ -11,23 +10,18 @@ import dev.emortal.api.modules.LoadableModule;
 import dev.emortal.api.modules.ModuleManager;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.agones.AgonesModule;
-import dev.emortal.velocity.command.CommandModule;
-import dev.emortal.velocity.listener.LunarKicker;
 import dev.emortal.velocity.liveconfig.KubernetesModule;
 import dev.emortal.velocity.liveconfig.LiveConfigModule;
 import dev.emortal.velocity.matchmaking.MatchmakerModule;
 import dev.emortal.velocity.messaging.MessagingModule;
+import dev.emortal.velocity.misc.CoreListenersModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
 import dev.emortal.velocity.module.VelocityModuleEnvironmentProvider;
 import dev.emortal.velocity.party.PartyModule;
 import dev.emortal.velocity.permissions.PermissionModule;
-import dev.emortal.velocity.player.PlayerServiceModule;
 import dev.emortal.velocity.privatemessages.PrivateMessageModule;
 import dev.emortal.velocity.relationships.RelationshipsModule;
-import dev.emortal.velocity.resourcepack.ResourcePackForcer;
-import dev.emortal.velocity.serverlist.ServerPingListener;
-import dev.emortal.velocity.tablist.TabList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,14 +48,13 @@ public final class CorePlugin {
         this.moduleManager = ModuleManager.builder()
                 .environmentProvider(new VelocityModuleEnvironmentProvider(this.proxy, this))
                 .module(AgonesModule.class, velocityModule(AgonesModule::new))
-                .module(CommandModule.class, velocityModule(CommandModule::new))
+                .module(CoreListenersModule.class, velocityModule(CoreListenersModule::new))
                 .module(KubernetesModule.class, KubernetesModule::new)
                 .module(LiveConfigModule.class, LiveConfigModule::new)
                 .module(MatchmakerModule.class, velocityModule(MatchmakerModule::new))
                 .module(MessagingModule.class, velocityModule(MessagingModule::new))
                 .module(PartyModule.class, velocityModule(PartyModule::new))
                 .module(PermissionModule.class, velocityModule(PermissionModule::new))
-                .module(PlayerServiceModule.class, velocityModule(PlayerServiceModule::new))
                 .module(PrivateMessageModule.class, velocityModule(PrivateMessageModule::new))
                 .module(RelationshipsModule.class, velocityModule(RelationshipsModule::new))
                 .module(PyroscopeModule.class, PyroscopeModule::new)
@@ -69,23 +62,6 @@ public final class CorePlugin {
                 .build();
 
         this.moduleManager.onReady();
-
-        EventManager eventManager = this.proxy.getEventManager();
-
-        // server list
-        eventManager.register(this, new ServerPingListener());
-
-        // tablist
-        eventManager.register(this, new TabList(this, this.proxy));
-
-        // resource pack
-        eventManager.register(this, new ResourcePackForcer(this.proxy));
-
-        // fuck lunar
-        eventManager.register(this, new LunarKicker());
-
-        // server cleanup
-        eventManager.register(this, new ServerCleanupTask(this.proxy));
     }
 
     private static @NotNull LoadableModule.Creator velocityModule(@NotNull VelocityModule.Creator creator) {

@@ -6,11 +6,9 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.velocitypowered.api.command.CommandSource;
 import dev.emortal.api.command.element.ArgumentElement;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
-import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleCreateSub;
 import dev.emortal.velocity.permissions.commands.subs.role.RoleDescribeSub;
@@ -23,12 +21,13 @@ import dev.emortal.velocity.permissions.commands.subs.role.RoleSetUsernameSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserDescribeSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserRoleAddSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserRoleRemoveSub;
+import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import org.jetbrains.annotations.NotNull;
 
 public final class PermissionCommand extends EmortalCommand {
 
     public PermissionCommand(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
-                             @NotNull UsernameSuggestions usernameSuggestions) {
+                             @NotNull UsernameSuggesterProvider usernameSuggesters) {
         super("perm");
 
         super.setCondition(source -> source.hasPermission("command.permission"));
@@ -43,7 +42,7 @@ public final class PermissionCommand extends EmortalCommand {
         super.addSubCommand(new RoleParentSub(permissionService, permissionCache, roleIdArgument));
 
         // /perm user
-        super.addSubCommand(new UserParentSub(permissionService, permissionCache, usernameSuggestions, roleIdArgument));
+        super.addSubCommand(new UserParentSub(permissionService, permissionCache, usernameSuggesters, roleIdArgument));
     }
 
     private @NotNull SuggestionProvider<CommandSource> createRoleSuggestions(@NotNull PermissionCache permissionCache) {
@@ -85,11 +84,11 @@ public final class PermissionCommand extends EmortalCommand {
     private static final class UserParentSub extends EmortalCommand {
 
         UserParentSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
-                      @NotNull UsernameSuggestions usernameSuggestions, @NotNull ArgumentElement<CommandSource, String> roleIdArgument) {
+                      @NotNull UsernameSuggesterProvider usernameSuggesters, @NotNull ArgumentElement<CommandSource, String> roleIdArgument) {
             super("user");
             super.setDefaultExecutor(context -> ChatMessages.USER_HELP.send(context.getSource()));
 
-            var usernameArgument = argument("username", StringArgumentType.word(), usernameSuggestions.command(FilterMethod.NONE));
+            var usernameArgument = argument("username", StringArgumentType.word(), usernameSuggesters.all());
             super.addSyntax(new UserDescribeSub(permissionService, permissionCache), usernameArgument);
 
             super.addSyntax(new UserRoleAddSub(permissionService, permissionCache), usernameArgument, literal("role"), literal("add"), roleIdArgument);

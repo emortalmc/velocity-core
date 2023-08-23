@@ -4,7 +4,6 @@ import dev.emortal.api.modules.annotation.Dependency;
 import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.messagehandler.MessageService;
 import dev.emortal.api.utils.GrpcStubCollection;
-import dev.emortal.velocity.command.CommandModule;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
@@ -15,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "private-messages", dependencies = {@Dependency(name = "messaging"), @Dependency(name = "command")})
+@ModuleData(name = "private-messages", dependencies = {@Dependency(name = "messaging")})
 public final class PrivateMessageModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrivateMessageModule.class);
 
@@ -34,13 +33,12 @@ public final class PrivateMessageModule extends VelocityModule {
         MessagingModule messaging = this.getModule(MessagingModule.class);
         LastMessageCache lastMessageCache = new LastMessageCache();
 
-        super.registerEventListener(new PrivateMessageListener(super.getProxy(), messaging, lastMessageCache));
+        super.registerEventListener(new PrivateMessageListener(super.adapters().playerProvider(), messaging, lastMessageCache));
         super.registerEventListener(lastMessageCache);
 
         MessageSender messageSender = new MessageSender(service);
-        CommandModule commandModule = this.getModule(CommandModule.class);
-        commandModule.registerCommand(new MessageCommand(messageSender, commandModule.getUsernameSuggestions()));
-        commandModule.registerCommand(new ReplyCommand(messageSender, lastMessageCache));
+        super.registerCommand(new MessageCommand(messageSender, super.adapters().commandManager().usernameSuggesters()));
+        super.registerCommand(new ReplyCommand(messageSender, lastMessageCache));
 
         return true;
     }

@@ -4,14 +4,13 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
-import dev.emortal.velocity.player.UsernameSuggestions;
+import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import dev.emortal.velocity.relationships.FriendCache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 public final class FriendCommand extends EmortalCommand {
 
     public FriendCommand(@NotNull McPlayerService mcPlayerService, @NotNull RelationshipService relationshipService,
-                         @NotNull UsernameSuggestions usernameSuggestions, @NotNull FriendCache friendCache,
+                         @NotNull UsernameSuggesterProvider usernameSuggesters, @NotNull FriendCache friendCache,
                          @Nullable GameModeCollection gameModeCollection) {
         super("friend");
 
@@ -27,8 +26,8 @@ public final class FriendCommand extends EmortalCommand {
         super.setDefaultExecutor(this::sendHelp);
 
         var pageArgument = argument("page", IntegerArgumentType.integer(1), null);
-        var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggestions.command(FilterMethod.NONE));
-        var friendsArgument = argument("username", StringArgumentType.string(), usernameSuggestions.command(FilterMethod.FRIENDS));
+        var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggesters.all());
+        var friendsArgument = argument("username", StringArgumentType.string(), usernameSuggesters.friends());
 
         var listSub = new FriendListSub(mcPlayerService, friendCache, gameModeCollection);
         super.addSyntax(listSub, literal("list"));
