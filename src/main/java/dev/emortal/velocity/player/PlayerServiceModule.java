@@ -1,6 +1,6 @@
 package dev.emortal.velocity.player;
 
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.module.VelocityModule;
@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "player-service", required = true)
+@ModuleData(name = "player-service")
 public final class PlayerServiceModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerServiceModule.class);
 
@@ -39,7 +39,7 @@ public final class PlayerServiceModule extends VelocityModule {
 
         if (service == null) {
             LOGGER.warn("Player service unavailable. Global player resolution will not work.");
-            return false;
+            return true;
         }
 
         super.registerEventListener(this.sessionCache);

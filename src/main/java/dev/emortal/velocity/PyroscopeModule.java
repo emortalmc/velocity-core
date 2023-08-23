@@ -1,7 +1,7 @@
 package dev.emortal.velocity;
 
 import dev.emortal.api.modules.Module;
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.modules.env.ModuleEnvironment;
 import io.pyroscope.http.Format;
 import io.pyroscope.javaagent.EventType;
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-@ModuleData(name = "pyroscope", required = false)
+@ModuleData(name = "pyroscope")
 public final class PyroscopeModule extends Module {
     private static final Logger LOGGER = LoggerFactory.getLogger(PyroscopeModule.class);
 

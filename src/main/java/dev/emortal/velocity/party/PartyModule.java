@@ -1,6 +1,7 @@
 package dev.emortal.velocity.party;
 
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.Dependency;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.command.CommandModule;
@@ -13,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "party", required = false, softDependencies = {MessagingModule.class, CommandModule.class})
+@ModuleData(name = "party", dependencies = {@Dependency(name = "messaging"), @Dependency(name = "command")})
 public final class PartyModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyModule.class);
 
@@ -23,18 +24,13 @@ public final class PartyModule extends VelocityModule {
 
     @Override
     public boolean onLoad() {
-        MessagingModule messaging = this.getModule(MessagingModule.class);
-        if (messaging == null) {
-            LOGGER.debug("Party services cannot be loaded due to missing messaging module.");
-            return false;
-        }
-
         PartyService service = GrpcStubCollection.getPartyService().orElse(null);
         if (service == null) {
             LOGGER.warn("Party service unavailable. Parties will not work.");
             return false;
         }
 
+        MessagingModule messaging = this.getModule(MessagingModule.class);
         PartyCache cache = new PartyCache(service);
         new PartyUpdateListener(cache, super.getPlayerProvider(), new ChatPartyUpdateNotifier(super.getPlayerProvider()), messaging);
 

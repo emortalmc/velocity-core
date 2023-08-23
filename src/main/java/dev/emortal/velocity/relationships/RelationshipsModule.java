@@ -1,7 +1,8 @@
 package dev.emortal.velocity.relationships;
 
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.Dependency;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.api.utils.GrpcStubCollection;
@@ -24,8 +25,7 @@ import org.slf4j.LoggerFactory;
 
 @ModuleData(
         name = "relationships",
-        required = false,
-        softDependencies = {PlayerServiceModule.class, MessagingModule.class, LiveConfigModule.class, CommandModule.class}
+        dependencies = {@Dependency(name = "player-service"), @Dependency(name = "messaging"), @Dependency(name = "live-config"), @Dependency(name = "command")}
 )
 public final class RelationshipsModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipsModule.class);
@@ -36,18 +36,8 @@ public final class RelationshipsModule extends VelocityModule {
 
     @Override
     public boolean onLoad() {
-        PlayerServiceModule playerServiceModule = this.getModule(PlayerServiceModule.class);
-        if (playerServiceModule == null || playerServiceModule.getPlayerService() == null) {
-            LOGGER.warn("Relationship services will not work due to missing player services.");
-            return false;
-        }
-        McPlayerService playerService = playerServiceModule.getPlayerService();
-
+        McPlayerService playerService = this.getModule(PlayerServiceModule.class).getPlayerService();
         MessagingModule messaging = this.getModule(MessagingModule.class);
-        if (messaging == null) {
-            LOGGER.debug("Relationship services cannot be loaded due to missing messaging module.");
-            return false;
-        }
 
         RelationshipService service = GrpcStubCollection.getRelationshipService().orElse(null);
         if (service == null) {
@@ -62,7 +52,12 @@ public final class RelationshipsModule extends VelocityModule {
         super.registerEventListener(cache);
 
         LiveConfigModule liveConfig = this.getModule(LiveConfigModule.class);
-        GameModeCollection gameModes = liveConfig != null ? liveConfig.getGameModes() : null;
+        GameModeCollection gameModes = liveConfig.getGameModes();
+
+        if (playerService == null) {
+            LOGGER.warn("Relationship commands will not be registered due to missing player service.");
+            return true;
+        }
 
         CommandModule commandModule = this.getModule(CommandModule.class);
         UsernameSuggestions usernameSuggestions = commandModule.getUsernameSuggestions();

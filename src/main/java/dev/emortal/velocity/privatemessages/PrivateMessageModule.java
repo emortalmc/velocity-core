@@ -1,6 +1,7 @@
 package dev.emortal.velocity.privatemessages;
 
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.Dependency;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.messagehandler.MessageService;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.command.CommandModule;
@@ -14,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ModuleData(name = "private-messages", required = false, softDependencies = {MessagingModule.class, CommandModule.class})
+@ModuleData(name = "private-messages", dependencies = {@Dependency(name = "messaging"), @Dependency(name = "command")})
 public final class PrivateMessageModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrivateMessageModule.class);
 
@@ -24,18 +25,13 @@ public final class PrivateMessageModule extends VelocityModule {
 
     @Override
     public boolean onLoad() {
-        MessagingModule messaging = this.getModule(MessagingModule.class);
-        if (messaging == null) {
-            LOGGER.warn("Private messaging will not work due to missing messaging module.");
-            return false;
-        }
-
         MessageService service = GrpcStubCollection.getMessageHandlerService().orElse(null);
         if (service == null) {
             LOGGER.warn("Message service unavailable. Private messaging will not work.");
             return false;
         }
 
+        MessagingModule messaging = this.getModule(MessagingModule.class);
         LastMessageCache lastMessageCache = new LastMessageCache();
 
         super.registerEventListener(new PrivateMessageListener(super.getProxy(), messaging, lastMessageCache));

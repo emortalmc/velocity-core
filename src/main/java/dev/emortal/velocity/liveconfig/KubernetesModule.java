@@ -1,7 +1,7 @@
 package dev.emortal.velocity.liveconfig;
 
 import dev.emortal.api.modules.Module;
-import dev.emortal.api.modules.ModuleData;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.modules.env.ModuleEnvironment;
 import dev.emortal.velocity.Environment;
 import io.kubernetes.client.openapi.ApiClient;
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-@ModuleData(name = "kubernetes", required = false)
+@ModuleData(name = "kubernetes")
 public final class KubernetesModule extends Module {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesModule.class);
 
