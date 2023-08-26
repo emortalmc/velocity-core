@@ -1,9 +1,9 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.command.CommandExecutor;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.Component;
@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public final class RoleListSub implements CommandExecutor<CommandSource> {
+public final class RoleListSub implements EmortalCommandExecutor {
 
     private final PermissionCache permissionCache;
 
@@ -24,9 +24,7 @@ public final class RoleListSub implements CommandExecutor<CommandSource> {
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        CommandSource source = context.getSource();
-
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
         List<PermissionCache.CachedRole> roles = this.permissionCache.getRoles().stream()
                 .sorted(Comparator.comparingInt(PermissionCache.CachedRole::priority))
                 .toList();

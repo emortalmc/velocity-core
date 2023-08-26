@@ -1,12 +1,13 @@
 package dev.emortal.velocity.relationships.commands.friend;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.api.service.relationship.RequestedFriend;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
@@ -23,59 +24,73 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public final class FriendRequestsSub {
+final class FriendRequestsSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendRequestsSub.class);
 
     private static final Component INCOMING_MESSAGE_FOOTER = Component.text("-----------------------------------", NamedTextColor.LIGHT_PURPLE);
     private static final Component OUTGOING_MESSAGE_FOOTER = Component.text("--------------------------------", NamedTextColor.LIGHT_PURPLE);
 
+    private static final Context INCOMING = new Context(
+            ChatMessages.ERROR_NO_INCOMING_FRIEND_REQUESTS,
+            ChatMessages.INCOMING_FRIEND_REQUESTS_HEADER,
+            ChatMessages.INCOMING_FRIEND_REQUEST_LINE,
+            INCOMING_MESSAGE_FOOTER
+    );
+    private static final Context OUTGOING = new Context(
+            ChatMessages.ERROR_NO_OUTGOING_FRIEND_REQUESTS,
+            ChatMessages.OUTGOING_FRIEND_REQUESTS_HEADER,
+            ChatMessages.OUTGOING_FRIEND_REQUEST_LINE,
+            OUTGOING_MESSAGE_FOOTER
+    );
+
+    static @NotNull FriendRequestsSub incoming(@NotNull RelationshipService relationshipService, @NotNull McPlayerService playerService) {
+        return new FriendRequestsSub(relationshipService, playerService, true, INCOMING);
+    }
+
+    static @NotNull FriendRequestsSub outgoing(@NotNull RelationshipService relationshipService, @NotNull McPlayerService playerService) {
+        return new FriendRequestsSub(relationshipService, playerService, false, OUTGOING);
+    }
+
     private final RelationshipService relationshipService;
-    private final McPlayerService mcPlayerService;
+    private final McPlayerService playerService;
+    private final boolean incoming;
+    private final Context context;
 
-    public FriendRequestsSub(@NotNull RelationshipService relationshipService, @NotNull McPlayerService mcPlayerService) {
+    private FriendRequestsSub(@NotNull RelationshipService relationshipService, @NotNull McPlayerService playerService, boolean incoming,
+                              @NotNull Context context) {
         this.relationshipService = relationshipService;
-        this.mcPlayerService = mcPlayerService;
+        this.playerService = playerService;
+        this.incoming = incoming;
+        this.context = context;
     }
 
-    public void executeIncoming(@NotNull CommandContext<CommandSource> context) {
-        this.execute(context, true);
-    }
-
-    public void executeOutgoing(@NotNull CommandContext<CommandSource> context) {
-        this.execute(context, false);
-    }
-
-    private void execute(@NotNull CommandContext<CommandSource> context, boolean incoming) {
-        Player player = (Player) context.getSource();
-        int page = context.getArguments().containsKey("page") ? context.getArgument("page", Integer.class) : 1;
+    @Override
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player player = (Player) source;
+        int page = arguments.hasArgument("page") ? arguments.getArgument("page", Integer.class) : 1;
 
         List<RequestedFriend> friendRequests;
         try {
-            friendRequests = incoming ? this.relationshipService.listPendingIncomingFriendRequests(player.getUniqueId()) :
-                    this.relationshipService.listPendingOutgoingFriendRequests(player.getUniqueId());
+            friendRequests = this.relationshipService.listPendingFriendRequests(player.getUniqueId(), this.incoming);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to get pending friend requests: ", exception);
-            player.sendMessage(Component.text("Failed to get pending friend requests"));
+            LOGGER.error("Failed to get pending friend requests for '{}'", player.getUsername(), exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         if (friendRequests.isEmpty()) {
-            if (incoming) {
-                ChatMessages.ERROR_NO_INCOMING_FRIEND_REQUESTS.send(player);
-            } else {
-                ChatMessages.ERROR_NO_OUTGOING_FRIEND_REQUESTS.send(player);
-            }
+            this.context.noMessages().send(player);
             return;
         }
 
         List<UUID> friendIds = new ArrayList<>();
         for (RequestedFriend friendRequest : friendRequests) {
-            friendIds.add(incoming ? friendRequest.requesterId() : friendRequest.targetId());
+            friendIds.add(this.incoming ? friendRequest.requesterId() : friendRequest.targetId());
         }
 
         List<McPlayer> players;
         try {
-            players = this.mcPlayerService.getPlayersById(friendIds);
+            players = this.playerService.getPlayersById(friendIds);
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to resolve friends from IDs '{}'", friendIds, exception);
             ChatMessages.GENERIC_ERROR.send(player);
@@ -90,21 +105,22 @@ public final class FriendRequestsSub {
         int totalPages = (int) Math.ceil(friendRequests.size() / 10.0);
         int limitedPage = Math.min(totalPages, page);
 
-        ChatMessages header = incoming ? ChatMessages.INCOMING_FRIEND_REQUESTS_HEADER : ChatMessages.OUTGOING_FRIEND_REQUESTS_HEADER;
         TextComponent.Builder message = Component.text()
-                .append(header.parse(Component.text(limitedPage), Component.text(totalPages)))
+                .append(this.context.title().parse(Component.text(limitedPage), Component.text(totalPages)))
                 .appendNewline();
 
         for (int i = (page - 1) * 10; i < page * 10 && i < friendRequests.size(); i++) {
             RequestedFriend requestedFriend = friendRequests.get(i);
-            String username = usernameMap.get(incoming ? requestedFriend.requesterId() : requestedFriend.targetId());
+            String username = usernameMap.get(this.incoming ? requestedFriend.requesterId() : requestedFriend.targetId());
 
-            ChatMessages line = incoming ? ChatMessages.INCOMING_FRIEND_REQUEST_LINE : ChatMessages.OUTGOING_FRIEND_REQUEST_LINE;
             String duration = DurationFormatter.formatShortFromInstant(requestedFriend.requestTime());
-            message.append(line.parse(Component.text(duration), Component.text(username))).appendNewline();
+            message.append(this.context.line().parse(Component.text(duration), Component.text(username))).appendNewline();
         }
 
-        message.append(incoming ? INCOMING_MESSAGE_FOOTER : OUTGOING_MESSAGE_FOOTER);
+        message.append(this.context.footer());
         player.sendMessage(message.build());
+    }
+
+    private record Context(@NotNull ChatMessages noMessages, @NotNull ChatMessages title, @NotNull ChatMessages line, @NotNull Component footer) {
     }
 }

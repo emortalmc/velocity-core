@@ -1,18 +1,18 @@
 package dev.emortal.velocity.party.commands.subs;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.party.ModifyPartyResult;
 import dev.emortal.api.service.party.PartyService;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartyCloseSub implements CommandExecutor<CommandSource> {
+public final class PartyCloseSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyOpenSub.class);
 
     private final @NotNull PartyService partyService;
@@ -22,8 +22,8 @@ public final class PartyCloseSub implements CommandExecutor<CommandSource> {
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        Player executor = (Player) context.getSource();
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player executor = (Player) source;
 
         ModifyPartyResult result;
         try {

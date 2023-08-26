@@ -1,12 +1,12 @@
 package dev.emortal.velocity.party.commands.subs;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.model.party.Party;
 import dev.emortal.api.model.party.PartyMember;
 import dev.emortal.api.service.party.PartyService;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class PartyListSub implements CommandExecutor<CommandSource> {
+public final class PartyListSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyListSub.class);
 
     private static final TextColor LEADER_COLOR = TextColor.color(255, 225, 115);
@@ -32,8 +32,8 @@ public final class PartyListSub implements CommandExecutor<CommandSource> {
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        Player executor = (Player) context.getSource();
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player executor = (Player) source;
 
         Party party;
         try {

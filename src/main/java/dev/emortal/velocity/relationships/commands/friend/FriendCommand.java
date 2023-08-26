@@ -34,22 +34,22 @@ public final class FriendCommand extends EmortalCommand {
         super.addSyntax(listSub, literal("list"));
         super.addSyntax(listSub, literal("list"), pageArgument);
 
-        var requestsSub = new FriendRequestsSub(relationshipService, playerService);
-        super.addSyntax(requestsSub::executeIncoming, literal("requests"), literal("incoming"));
-        super.addSyntax(requestsSub::executeIncoming, literal("requests"), literal("incoming"), pageArgument);
-        super.addSyntax(requestsSub::executeOutgoing, literal("requests"), literal("outgoing"));
-        super.addSyntax(requestsSub::executeOutgoing, literal("requests"), literal("outgoing"), pageArgument);
+        FriendRequestsSub incomingRequestsSub = FriendRequestsSub.incoming(relationshipService, playerService);
+        super.addSyntax(incomingRequestsSub, literal("requests"), literal("incoming"));
+        super.addSyntax(incomingRequestsSub, literal("requests"), literal("incoming"), pageArgument);
 
-        var purgeSub = new FriendRequestPurgeSub(relationshipService);
-        super.addSyntax(purgeSub::executeIncoming, literal("purge"), literal("requests"), literal("incoming"));
-        super.addSyntax(purgeSub::executeOutgoing, literal("purge"), literal("requests"), literal("outgoing"));
+        FriendRequestsSub outgoingRequestsSub = FriendRequestsSub.outgoing(relationshipService, playerService);
+        super.addSyntax(outgoingRequestsSub, literal("requests"), literal("outgoing"));
+        super.addSyntax(outgoingRequestsSub, literal("requests"), literal("outgoing"), pageArgument);
+
+        super.addSyntax(FriendRequestPurgeSub.incoming(relationshipService), literal("purge"), literal("requests"), literal("incoming"));
+        super.addSyntax(FriendRequestPurgeSub.outgoing(relationshipService), literal("purge"), literal("requests"), literal("outgoing"));
 
         super.addSyntax(new FriendAddSub(relationshipService, friendCache, playerResolver), literal("add"), usernameArgument);
         super.addSyntax(new FriendRemoveSub(relationshipService, friendCache, playerResolver), literal("remove"), friendsArgument);
 
-        var denySubs = new FriendDenySubs(relationshipService, playerResolver);
-        super.addSyntax(denySubs::executeDeny, literal("deny"), usernameArgument);
-        super.addSyntax(denySubs::executeRevoke, literal("revoke"), usernameArgument);
+        super.addSyntax(FriendDenySub.deny(relationshipService, playerResolver), literal("deny"), usernameArgument);
+        super.addSyntax(FriendDenySub.revoke(relationshipService, playerResolver), literal("revoke"), usernameArgument);
     }
 
     private void sendHelp(@NotNull CommandContext<CommandSource> context) {

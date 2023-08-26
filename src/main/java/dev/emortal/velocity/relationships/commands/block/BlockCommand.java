@@ -1,13 +1,14 @@
 package dev.emortal.velocity.relationships.commands.block;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.service.relationship.RelationshipService;
+import dev.emortal.velocity.command.ArgumentProvider;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.resolver.CachedMcPlayer;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
@@ -20,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class BlockCommand extends EmortalCommand {
+public final class BlockCommand extends EmortalCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockCommand.class);
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -39,12 +40,13 @@ public final class BlockCommand extends EmortalCommand {
         super.setDefaultExecutor(context -> context.getSource().sendMessage(USAGE));
 
         var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggesters.all());
-        super.addSyntax(this::execute, usernameArgument);
+        super.addSyntax(this, usernameArgument);
     }
 
-    private void execute(@NotNull CommandContext<CommandSource> context) {
-        Player sender = (Player) context.getSource();
-        String targetUsername = StringArgumentType.getString(context, "username");
+    @Override
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player sender = (Player) source;
+        String targetUsername = arguments.getArgument("username", String.class);
 
         CachedMcPlayer target;
         try {

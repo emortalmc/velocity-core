@@ -1,11 +1,11 @@
 package dev.emortal.velocity.party.commands.subs;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.service.party.SetPartyLeaderResult;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.resolver.CachedMcPlayer;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartyLeaderSub implements CommandExecutor<CommandSource> {
+public final class PartyLeaderSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyLeaderSub.class);
 
     private final @NotNull PartyService partyService;
@@ -28,9 +28,9 @@ public final class PartyLeaderSub implements CommandExecutor<CommandSource> {
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        String targetUsername = context.getArgument("player", String.class);
-        Player executor = (Player) context.getSource();
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player executor = (Player) source;
+        String targetUsername = arguments.getArgument("player", String.class);
 
         CachedMcPlayer target;
         try {

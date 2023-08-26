@@ -1,10 +1,10 @@
 package dev.emortal.velocity.permissions.commands.subs.user;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.grpc.permission.PermissionProto;
 import dev.emortal.api.service.permission.PermissionService;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.player.resolver.CachedMcPlayer;
@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-public final class UserDescribeSub implements CommandExecutor<CommandSource> {
+public final class UserDescribeSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserDescribeSub.class);
 
     private final PermissionService permissionService;
@@ -43,9 +43,8 @@ public final class UserDescribeSub implements CommandExecutor<CommandSource> {
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        CommandSource source = context.getSource();
-        String targetUsername = context.getArgument("username", String.class);
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        String targetUsername = arguments.getArgument("username", String.class);
 
         CachedMcPlayer target;
         try {

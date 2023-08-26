@@ -1,11 +1,11 @@
 package dev.emortal.velocity.relationships.commands.friend;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.relationship.AddFriendResult;
 import dev.emortal.api.service.relationship.RelationshipService;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.resolver.CachedMcPlayer;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
@@ -20,23 +20,23 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.UUID;
 
-public final class FriendAddSub implements CommandExecutor<CommandSource> {
+final class FriendAddSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendAddSub.class);
 
     private final RelationshipService relationshipService;
     private final FriendCache friendCache;
     private final PlayerResolver playerResolver;
 
-    public FriendAddSub(@NotNull RelationshipService relationshipService, @NotNull FriendCache friendCache, @NotNull PlayerResolver playerResolver) {
+    FriendAddSub(@NotNull RelationshipService relationshipService, @NotNull FriendCache friendCache, @NotNull PlayerResolver playerResolver) {
         this.relationshipService = relationshipService;
         this.friendCache = friendCache;
         this.playerResolver = playerResolver;
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        Player player = (Player) context.getSource();
-        String targetUsername = context.getArgument("username", String.class);
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player player = (Player) source;
+        String targetUsername = arguments.getArgument("username", String.class);
 
         if (player.getUsername().equalsIgnoreCase(targetUsername)) {
             ChatMessages.ERROR_CANNOT_FRIEND_SELF.send(player);
