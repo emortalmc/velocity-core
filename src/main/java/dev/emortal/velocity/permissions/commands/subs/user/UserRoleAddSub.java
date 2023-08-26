@@ -5,9 +5,10 @@ import com.velocitypowered.api.command.CommandSource;
 import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.permission.AddRoleToPlayerResult;
 import dev.emortal.api.service.permission.PermissionService;
-import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
+import dev.emortal.velocity.player.resolver.CachedMcPlayer;
+import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -22,10 +23,13 @@ public final class UserRoleAddSub implements CommandExecutor<CommandSource> {
 
     private final PermissionService permissionService;
     private final PermissionCache permissionCache;
+    private final PlayerResolver playerResolver;
 
-    public UserRoleAddSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache) {
+    public UserRoleAddSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
+                          @NotNull PlayerResolver playerResolver) {
         this.permissionService = permissionService;
         this.permissionCache = permissionCache;
+        this.playerResolver = playerResolver;
     }
 
     @Override
@@ -40,9 +44,9 @@ public final class UserRoleAddSub implements CommandExecutor<CommandSource> {
             return;
         }
 
-        PlayerResolver.CachedMcPlayer target;
+        CachedMcPlayer target;
         try {
-            target = PlayerResolver.getPlayerData(targetUsername);
+            target = this.playerResolver.getPlayer(targetUsername);
         } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
             ChatMessages.GENERIC_ERROR.send(source);

@@ -55,10 +55,10 @@ public final class RelationshipsModule extends VelocityModule {
         }
 
         UsernameSuggesterProvider usernameSuggesters = super.adapters().commandManager().usernameSuggesters();
-        super.registerCommand(new FriendCommand(playerService, service, usernameSuggesters, cache, gameModes));
-        super.registerCommand(new BlockCommand(playerService, service, usernameSuggesters));
-        super.registerCommand(new UnblockCommand(playerService, service, usernameSuggesters));
-        super.registerCommand(new ListBlocksCommand(playerService, service));
+        super.registerCommand(new FriendCommand(service, playerService, super.playerResolver(), usernameSuggesters, cache, gameModes));
+        super.registerCommand(new BlockCommand(service, super.playerResolver(), usernameSuggesters));
+        super.registerCommand(new UnblockCommand(service, super.playerResolver(), usernameSuggesters));
+        super.registerCommand(new ListBlocksCommand(service, playerService));
 
         return true;
     }

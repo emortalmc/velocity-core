@@ -5,8 +5,9 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.service.relationship.RelationshipService;
-import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.ChatMessages;
+import dev.emortal.velocity.player.resolver.CachedMcPlayer;
+import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -20,9 +21,11 @@ public final class FriendDenySubs {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendAddSub.class);
 
     private final RelationshipService relationshipService;
+    private final PlayerResolver playerResolver;
 
-    public FriendDenySubs(@NotNull RelationshipService relationshipService) {
+    public FriendDenySubs(@NotNull RelationshipService relationshipService, @NotNull PlayerResolver playerResolver) {
         this.relationshipService = relationshipService;
+        this.playerResolver = playerResolver;
     }
 
     public void executeRevoke(@NotNull CommandContext<CommandSource> context) {
@@ -37,9 +40,9 @@ public final class FriendDenySubs {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);
 
-        PlayerResolver.CachedMcPlayer target;
+        CachedMcPlayer target;
         try {
-            target = PlayerResolver.getPlayerData(targetUsername);
+            target = this.playerResolver.getPlayer(targetUsername);
         } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
             ChatMessages.GENERIC_ERROR.send(player);

@@ -4,14 +4,15 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.model.mcplayer.McPlayer;
-import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.DeleteBlockResult;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
+import dev.emortal.velocity.player.resolver.CachedMcPlayer;
+import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
+import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -19,21 +20,19 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
-
 public final class UnblockCommand extends EmortalCommand {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(UnblockCommand.class);
 
     private static final Component USAGE = MINI_MESSAGE.deserialize("<red>Usage: /unblock <username>");
 
-    private final McPlayerService mcPlayerService;
     private final RelationshipService relationshipService;
+    private final PlayerResolver playerResolver;
 
-    public UnblockCommand(@NotNull McPlayerService mcPlayerService, @NotNull RelationshipService relationshipService,
+    public UnblockCommand(@NotNull RelationshipService relationshipService, @NotNull PlayerResolver playerResolver,
                           @NotNull UsernameSuggesterProvider usernameSuggesters) {
         super("unblock");
-        this.mcPlayerService = mcPlayerService;
+        this.playerResolver = playerResolver;
         this.relationshipService = relationshipService;
 
         super.setCondition(CommandConditions.playerOnly());
@@ -47,10 +46,10 @@ public final class UnblockCommand extends EmortalCommand {
         Player sender = (Player) context.getSource();
         String targetUsername = StringArgumentType.getString(context, "username");
 
-        McPlayer target;
+        CachedMcPlayer target;
         try {
-            target = this.mcPlayerService.getPlayerByUsername(targetUsername);
-        } catch (StatusRuntimeException exception) {
+            target = this.playerResolver.getPlayer(targetUsername);
+        } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
             ChatMessages.GENERIC_ERROR.send(sender);
             return;
@@ -61,15 +60,14 @@ public final class UnblockCommand extends EmortalCommand {
             return;
         }
 
-        UUID targetId = UUID.fromString(target.getId());
-        if (targetId.equals(sender.getUniqueId())) {
+        if (target.uuid().equals(sender.getUniqueId())) {
             ChatMessages.ERROR_CANNOT_UNBLOCK_SELF.send(sender);
             return;
         }
 
         DeleteBlockResult result;
         try {
-            result = this.relationshipService.unblock(sender.getUniqueId(), targetId);
+            result = this.relationshipService.unblock(sender.getUniqueId(), target.uuid());
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to unblock '{}' for '{}'", targetUsername, sender.getUsername(), exception);
             ChatMessages.GENERIC_ERROR.send(sender);

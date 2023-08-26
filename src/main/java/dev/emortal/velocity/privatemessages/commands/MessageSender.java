@@ -4,8 +4,9 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.model.messagehandler.PrivateMessage;
 import dev.emortal.api.service.messagehandler.MessageService;
 import dev.emortal.api.service.messagehandler.SendPrivateMessageResult;
-import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.ChatMessages;
+import dev.emortal.velocity.player.resolver.CachedMcPlayer;
+import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -19,15 +20,17 @@ public final class MessageSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageSender.class);
 
     private final MessageService messageService;
+    private final PlayerResolver playerResolver;
 
-    public MessageSender(@NotNull MessageService messageService) {
+    public MessageSender(@NotNull MessageService messageService, @NotNull PlayerResolver playerResolver) {
         this.messageService = messageService;
+        this.playerResolver = playerResolver;
     }
 
     void sendMessage(@NotNull Player player, @NotNull String targetUsername, @NotNull String message) {
-        PlayerResolver.CachedMcPlayer target;
+        CachedMcPlayer target;
         try {
-            target = PlayerResolver.getPlayerData(targetUsername);
+            target = this.playerResolver.getPlayer(targetUsername);
         } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
             ChatMessages.GENERIC_ERROR.send(player);

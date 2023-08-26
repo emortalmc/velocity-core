@@ -15,17 +15,21 @@ import dev.emortal.velocity.adapter.player.VelocityPlayerProvider;
 import dev.emortal.velocity.adapter.resourcepack.VelocityResourcePackProvider;
 import dev.emortal.velocity.adapter.scheduler.VelocityEmortalScheduler;
 import dev.emortal.velocity.adapter.server.VelocityServerProvider;
+import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.player.suggestions.BasicUsernameSuggesterProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public final class VelocityModuleEnvironmentProvider implements ModuleEnvironmentProvider {
 
-    private final McPlayerService playerService;
-    private final AdapterContext adapterContext;
+    private final @NotNull AdapterContext adapterContext;
+    private final @Nullable McPlayerService playerService;
+    private final @NotNull PlayerResolver playerResolver;
 
     public VelocityModuleEnvironmentProvider(@NotNull ProxyServer proxy, @NotNull CorePlugin plugin) {
-        this.playerService = GrpcStubCollection.getPlayerService().orElse(null);
         this.adapterContext = this.createAdapterContext(proxy, plugin);
+        this.playerService = GrpcStubCollection.getPlayerService().orElse(null);
+        this.playerResolver = new PlayerResolver(this.playerService, this.adapterContext.playerProvider());
     }
 
     private @NotNull AdapterContext createAdapterContext(@NotNull ProxyServer proxy, @NotNull CorePlugin plugin) {
@@ -41,6 +45,6 @@ public final class VelocityModuleEnvironmentProvider implements ModuleEnvironmen
 
     @Override
     public @NotNull ModuleEnvironment create(@NotNull ModuleData data, @NotNull ModuleProvider provider) {
-        return new VelocityModuleEnvironment(data, provider, this.adapterContext, this.playerService);
+        return new VelocityModuleEnvironment(data, provider, this.adapterContext, this.playerService, this.playerResolver);
     }
 }

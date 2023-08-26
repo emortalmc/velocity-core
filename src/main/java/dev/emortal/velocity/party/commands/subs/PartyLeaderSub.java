@@ -6,8 +6,9 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.service.party.SetPartyLeaderResult;
-import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.lang.ChatMessages;
+import dev.emortal.velocity.player.resolver.CachedMcPlayer;
+import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -19,9 +20,11 @@ public final class PartyLeaderSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyLeaderSub.class);
 
     private final @NotNull PartyService partyService;
+    private final @NotNull PlayerResolver playerResolver;
 
-    public PartyLeaderSub(@NotNull PartyService partyService) {
+    public PartyLeaderSub(@NotNull PartyService partyService, @NotNull PlayerResolver playerResolver) {
         this.partyService = partyService;
+        this.playerResolver = playerResolver;
     }
 
     @Override
@@ -29,9 +32,9 @@ public final class PartyLeaderSub implements CommandExecutor<CommandSource> {
         String targetUsername = context.getArgument("player", String.class);
         Player executor = (Player) context.getSource();
 
-        PlayerResolver.CachedMcPlayer target;
+        CachedMcPlayer target;
         try {
-            target = PlayerResolver.getPlayerData(targetUsername);
+            target = this.playerResolver.getPlayer(targetUsername);
         } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
             ChatMessages.GENERIC_ERROR.send(executor);

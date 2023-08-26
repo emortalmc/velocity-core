@@ -8,7 +8,6 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.modules.LoadableModule;
 import dev.emortal.api.modules.ModuleManager;
-import dev.emortal.api.utils.resolvers.PlayerResolver;
 import dev.emortal.velocity.agones.AgonesModule;
 import dev.emortal.velocity.liveconfig.KubernetesModule;
 import dev.emortal.velocity.liveconfig.LiveConfigModule;
@@ -20,6 +19,7 @@ import dev.emortal.velocity.module.VelocityModuleEnvironment;
 import dev.emortal.velocity.module.VelocityModuleEnvironmentProvider;
 import dev.emortal.velocity.party.PartyModule;
 import dev.emortal.velocity.permissions.PermissionModule;
+import dev.emortal.velocity.player.PlayerModule;
 import dev.emortal.velocity.privatemessages.PrivateMessageModule;
 import dev.emortal.velocity.relationships.RelationshipsModule;
 import org.jetbrains.annotations.NotNull;
@@ -41,10 +41,6 @@ public final class CorePlugin {
 
     @Subscribe
     public void onProxyInitialize(@NotNull ProxyInitializeEvent event) {
-        PlayerResolver.setPlatformUsernameResolver(username -> this.proxy.getPlayer(username)
-                .map(player -> new PlayerResolver.CachedMcPlayer(player.getUniqueId(), player.getUsername(), true))
-                .orElse(null));
-
         this.moduleManager = ModuleManager.builder()
                 .environmentProvider(new VelocityModuleEnvironmentProvider(this.proxy, this))
                 .module(AgonesModule.class, velocityModule(AgonesModule::new))
@@ -55,6 +51,7 @@ public final class CorePlugin {
                 .module(MessagingModule.class, velocityModule(MessagingModule::new))
                 .module(PartyModule.class, velocityModule(PartyModule::new))
                 .module(PermissionModule.class, velocityModule(PermissionModule::new))
+                .module(PlayerModule.class, velocityModule(PlayerModule::new))
                 .module(PrivateMessageModule.class, velocityModule(PrivateMessageModule::new))
                 .module(RelationshipsModule.class, velocityModule(RelationshipsModule::new))
                 .module(PyroscopeModule.class, PyroscopeModule::new)

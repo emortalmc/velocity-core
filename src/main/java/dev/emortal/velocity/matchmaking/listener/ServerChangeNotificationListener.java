@@ -2,7 +2,7 @@ package dev.emortal.velocity.matchmaking.listener;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
-import dev.emortal.api.kurushimi.messages.MatchCreatedMessage;
+import dev.emortal.api.message.matchmaker.MatchCreatedMessage;
 import dev.emortal.api.model.matchmaker.Assignment;
 import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;

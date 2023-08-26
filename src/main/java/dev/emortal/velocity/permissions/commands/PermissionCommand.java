@@ -21,13 +21,14 @@ import dev.emortal.velocity.permissions.commands.subs.role.RoleSetUsernameSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserDescribeSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserRoleAddSub;
 import dev.emortal.velocity.permissions.commands.subs.user.UserRoleRemoveSub;
+import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import org.jetbrains.annotations.NotNull;
 
 public final class PermissionCommand extends EmortalCommand {
 
     public PermissionCommand(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
-                             @NotNull UsernameSuggesterProvider usernameSuggesters) {
+                             @NotNull PlayerResolver playerResolver, @NotNull UsernameSuggesterProvider usernameSuggesters) {
         super("perm");
 
         super.setCondition(source -> source.hasPermission("command.permission"));
@@ -42,7 +43,7 @@ public final class PermissionCommand extends EmortalCommand {
         super.addSubCommand(new RoleParentSub(permissionService, permissionCache, roleIdArgument));
 
         // /perm user
-        super.addSubCommand(new UserParentSub(permissionService, permissionCache, usernameSuggesters, roleIdArgument));
+        super.addSubCommand(new UserParentSub(permissionService, permissionCache, playerResolver, usernameSuggesters, roleIdArgument));
     }
 
     private @NotNull SuggestionProvider<CommandSource> createRoleSuggestions(@NotNull PermissionCache permissionCache) {
@@ -75,8 +76,10 @@ public final class PermissionCommand extends EmortalCommand {
             var permission = literal("permission");
             var permissionArgument = argument("permission", StringArgumentType.word(), null);
             var permissionSetValue = argument("value", BoolArgumentType.bool(), null);
-            super.addSyntax(new RolePermissionAddSub(permissionService, permissionCache), roleIdArgument, permission, literal("set"), permissionArgument, permissionSetValue);
-            super.addSyntax(new RolePermissionUnsetSub(permissionService, permissionCache), roleIdArgument, permission, literal("unset"), permissionArgument);
+            super.addSyntax(new RolePermissionAddSub(permissionService, permissionCache), roleIdArgument,
+                    permission, literal("set"), permissionArgument, permissionSetValue);
+            super.addSyntax(new RolePermissionUnsetSub(permissionService, permissionCache), roleIdArgument,
+                    permission, literal("unset"), permissionArgument);
             super.addSyntax(new RolePermissionCheckSub(permissionCache), roleIdArgument, permission, literal("check"), permissionArgument);
         }
     }
@@ -84,15 +87,18 @@ public final class PermissionCommand extends EmortalCommand {
     private static final class UserParentSub extends EmortalCommand {
 
         UserParentSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
-                      @NotNull UsernameSuggesterProvider usernameSuggesters, @NotNull ArgumentElement<CommandSource, String> roleIdArgument) {
+                      @NotNull PlayerResolver playerResolver, @NotNull UsernameSuggesterProvider usernameSuggesters,
+                      @NotNull ArgumentElement<CommandSource, String> roleIdArgument) {
             super("user");
             super.setDefaultExecutor(context -> ChatMessages.USER_HELP.send(context.getSource()));
 
             var usernameArgument = argument("username", StringArgumentType.word(), usernameSuggesters.all());
-            super.addSyntax(new UserDescribeSub(permissionService, permissionCache), usernameArgument);
+            super.addSyntax(new UserDescribeSub(permissionService, permissionCache, playerResolver), usernameArgument);
 
-            super.addSyntax(new UserRoleAddSub(permissionService, permissionCache), usernameArgument, literal("role"), literal("add"), roleIdArgument);
-            super.addSyntax(new UserRoleRemoveSub(permissionService, permissionCache), usernameArgument, literal("role"), literal("remove"), roleIdArgument);
+            super.addSyntax(new UserRoleAddSub(permissionService, permissionCache, playerResolver), usernameArgument,
+                    literal("role"), literal("add"), roleIdArgument);
+            super.addSyntax(new UserRoleRemoveSub(permissionService, permissionCache, playerResolver), usernameArgument,
+                    literal("role"), literal("remove"), roleIdArgument);
 
             var permissionArgument = argument("permission", StringArgumentType.word(), null);
             super.addSyntax(context -> {}, literal("permission"), literal("check"), permissionArgument);
