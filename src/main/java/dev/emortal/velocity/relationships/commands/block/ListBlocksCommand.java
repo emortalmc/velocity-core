@@ -21,13 +21,13 @@ import java.util.UUID;
 public final class ListBlocksCommand extends EmortalCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListBlocksCommand.class);
 
-    private final McPlayerService mcPlayerService;
     private final RelationshipService relationshipService;
+    private final McPlayerService playerService;
 
-    public ListBlocksCommand(@NotNull McPlayerService mcPlayerService, @NotNull RelationshipService relationshipService) {
+    public ListBlocksCommand(@NotNull RelationshipService relationshipService, @NotNull McPlayerService playerService) {
         super("listblocks");
-        this.mcPlayerService = mcPlayerService;
         this.relationshipService = relationshipService;
+        this.playerService = playerService;
 
         super.setCondition(CommandConditions.playerOnly());
         super.setDefaultExecutor(this::execute);
@@ -52,7 +52,7 @@ public final class ListBlocksCommand extends EmortalCommand {
 
         List<McPlayer> blockedPlayers;
         try {
-            blockedPlayers = this.mcPlayerService.getPlayersById(blockedIds);
+            blockedPlayers = this.playerService.getPlayersById(blockedIds);
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to resolve blocked players from IDs '{}'", blockedIds, exception);
             ChatMessages.GENERIC_ERROR.send(sender);

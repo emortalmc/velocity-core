@@ -28,7 +28,7 @@ dependencies {
     annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
-    implementation("dev.emortal.api:common-proto-sdk:06e136f")
+    implementation("dev.emortal.api:common-proto-sdk:4f00807")
     implementation("dev.emortal.api:agones-sdk:1.0.7")
     implementation("dev.emortal.api:live-config-parser:e26df7a")
     implementation("dev.emortal.api:module-system:2da99e4")

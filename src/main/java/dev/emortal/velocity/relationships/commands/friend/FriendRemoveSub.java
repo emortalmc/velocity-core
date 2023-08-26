@@ -5,11 +5,12 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
-import dev.emortal.api.model.mcplayer.McPlayer;
-import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.lang.ChatMessages;
+import dev.emortal.velocity.player.resolver.CachedMcPlayer;
+import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.relationships.FriendCache;
+import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
@@ -24,11 +25,13 @@ public final class FriendRemoveSub implements CommandExecutor<CommandSource> {
     private final McPlayerService mcPlayerService;
     private final RelationshipService relationshipService;
     private final FriendCache friendCache;
+    private final PlayerResolver playerResolver;
 
-    public FriendRemoveSub(@NotNull McPlayerService mcPlayerService, @NotNull RelationshipService relationshipService, @NotNull FriendCache friendCache) {
-        this.mcPlayerService = mcPlayerService;
+    public FriendRemoveSub(@NotNull RelationshipService relationshipService, @NotNull FriendCache friendCache,
+                           @NotNull PlayerResolver playerResolver) {
         this.relationshipService = relationshipService;
         this.friendCache = friendCache;
+        this.playerResolver = playerResolver;
     }
 
     @Override
@@ -36,10 +39,10 @@ public final class FriendRemoveSub implements CommandExecutor<CommandSource> {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);
 
-        McPlayer target;
+        CachedMcPlayer target;
         try {
-            target = this.mcPlayerService.getPlayerByUsername(targetUsername);
-        } catch (StatusRuntimeException exception) {
+            target = this.playerResolver.getPlayer(targetUsername);
+        } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
             ChatMessages.GENERIC_ERROR.send(player);
             return;
@@ -50,8 +53,8 @@ public final class FriendRemoveSub implements CommandExecutor<CommandSource> {
             return;
         }
 
-        UUID targetId = UUID.fromString(target.getId());
-        String correctedUsername = target.getCurrentUsername(); // this will have correct capitalisation
+        UUID targetId = target.uuid();
+        String correctedUsername = target.username(); // this will have correct capitalisation
 
         RelationshipProto.RemoveFriendResponse.RemoveFriendResult result;
         try {

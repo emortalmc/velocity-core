@@ -35,12 +35,12 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
 
     private static final Component MESSAGE_FOOTER = Component.text("----------------------------", NamedTextColor.LIGHT_PURPLE);
 
-    private final @NotNull McPlayerService mcPlayerService;
+    private final @NotNull McPlayerService playerService;
     private final @NotNull FriendCache friendCache;
     private final @Nullable GameModeCollection gameModeCollection;
 
-    public FriendListSub(@NotNull McPlayerService mcPlayerService, @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
-        this.mcPlayerService = mcPlayerService;
+    public FriendListSub(@NotNull McPlayerService playerService, @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
+        this.playerService = playerService;
         this.friendCache = friendCache;
         this.gameModeCollection = gameModeCollection;
 
@@ -106,7 +106,7 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
 
         List<McPlayer> players;
         try {
-            players = this.mcPlayerService.getPlayersById(playerIds);
+            players = this.playerService.getPlayersById(playerIds);
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to resolve friends from IDs '{}'", playerIds, exception);
             return new ArrayList<>(statuses.values());

@@ -33,7 +33,7 @@ public final class PartyModule extends VelocityModule {
         PartyCache cache = new PartyCache(service);
         new PartyUpdateListener(cache, super.adapters().playerProvider(), new ChatPartyUpdateNotifier(super.adapters().playerProvider()), messaging);
 
-        super.registerCommand(new PartyCommand(service, super.adapters().commandManager().usernameSuggesters()));
+        super.registerCommand(new PartyCommand(service, super.playerResolver(), super.adapters().commandManager().usernameSuggesters()));
 
         return true;
     }

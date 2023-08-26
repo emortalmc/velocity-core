@@ -36,7 +36,7 @@ public final class PrivateMessageModule extends VelocityModule {
         super.registerEventListener(new PrivateMessageListener(super.adapters().playerProvider(), messaging, lastMessageCache));
         super.registerEventListener(lastMessageCache);
 
-        MessageSender messageSender = new MessageSender(service);
+        MessageSender messageSender = new MessageSender(service, super.playerResolver());
         super.registerCommand(new MessageCommand(messageSender, super.adapters().commandManager().usernameSuggesters()));
         super.registerCommand(new ReplyCommand(messageSender, lastMessageCache));
 
