@@ -1,12 +1,12 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.model.permission.Role;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.service.permission.RoleUpdate;
 import dev.emortal.api.service.permission.UpdateRoleResult;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.StatusRuntimeException;
@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class RoleSetUsernameSub implements CommandExecutor<CommandSource> {
+public final class RoleSetUsernameSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleSetUsernameSub.class);
 
     private final PermissionService permissionService;
@@ -27,10 +27,9 @@ public final class RoleSetUsernameSub implements CommandExecutor<CommandSource> 
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        CommandSource source = context.getSource();
-        String roleId = context.getArgument("roleId", String.class).toLowerCase();
-        String usernameFormat = context.getArgument("usernameFormat", String.class);
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        String roleId = arguments.getArgument("roleId", String.class).toLowerCase();
+        String usernameFormat = arguments.getArgument("usernameFormat", String.class);
 
         PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
         if (role == null) {

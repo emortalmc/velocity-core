@@ -1,10 +1,10 @@
 package dev.emortal.velocity.permissions.commands.subs.user;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.service.permission.RemoveRoleFromPlayerResult;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import dev.emortal.velocity.player.resolver.CachedMcPlayer;
@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public final class UserRoleRemoveSub implements CommandExecutor<CommandSource> {
+public final class UserRoleRemoveSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRoleRemoveSub.class);
 
     private final PermissionService permissionService;
@@ -33,10 +33,9 @@ public final class UserRoleRemoveSub implements CommandExecutor<CommandSource> {
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        CommandSource source = context.getSource();
-        String targetUsername = context.getArgument("username", String.class);
-        String roleId = context.getArgument("roleId", String.class);
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        String targetUsername = arguments.getArgument("username", String.class);
+        String roleId = arguments.getArgument("roleId", String.class);
 
         PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
         if (role == null) {

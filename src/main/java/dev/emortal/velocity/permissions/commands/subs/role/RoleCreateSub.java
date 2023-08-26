@@ -1,21 +1,20 @@
 package dev.emortal.velocity.permissions.commands.subs.role;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.model.permission.Role;
 import dev.emortal.api.service.permission.CreateRoleResult;
 import dev.emortal.api.service.permission.PermissionService;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class RoleCreateSub implements CommandExecutor<CommandSource> {
+public final class RoleCreateSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleCreateSub.class);
 
     private final PermissionService permissionService;
@@ -27,9 +26,8 @@ public final class RoleCreateSub implements CommandExecutor<CommandSource> {
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        CommandSource source = context.getSource();
-        String roleId = context.getArgument("roleId", String.class).toLowerCase();
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        String roleId = arguments.getArgument("roleId", String.class).toLowerCase();
 
         CreateRoleResult result;
         try {

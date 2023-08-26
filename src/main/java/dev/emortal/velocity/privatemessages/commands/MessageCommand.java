@@ -4,13 +4,15 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.velocity.command.ArgumentProvider;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import org.jetbrains.annotations.NotNull;
 
-public final class MessageCommand extends EmortalCommand {
+public final class MessageCommand extends EmortalCommand implements EmortalCommandExecutor {
 
     private final MessageSender messageSender;
 
@@ -25,17 +27,18 @@ public final class MessageCommand extends EmortalCommand {
         super.addSyntax(this::sendUsage, receiverArgument);
 
         var messageArgument = argument("message", StringArgumentType.greedyString(), null);
-        super.addSyntax(this::execute, receiverArgument, messageArgument);
+        super.addSyntax(this, receiverArgument, messageArgument);
     }
 
     private void sendUsage(@NotNull CommandContext<CommandSource> context) {
         ChatMessages.MESSAGE_USAGE.send(context.getSource());
     }
 
-    private void execute(@NotNull CommandContext<CommandSource> context) {
-        Player player = (Player) context.getSource();
-        String targetUsername = context.getArgument("receiver", String.class);
-        String message = context.getArgument("message", String.class);
+    @Override
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player player = (Player) source;
+        String targetUsername = arguments.getArgument("receiver", String.class);
+        String message = arguments.getArgument("message", String.class);
 
         if (player.getUsername().equalsIgnoreCase(targetUsername)) {
             ChatMessages.ERROR_CANNOT_MESSAGE_SELF.send(player);

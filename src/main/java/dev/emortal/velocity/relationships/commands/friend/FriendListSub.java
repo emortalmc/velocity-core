@@ -1,14 +1,14 @@
 package dev.emortal.velocity.relationships.commands.friend;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.ProtoTimestampConverter;
+import dev.emortal.velocity.command.ArgumentProvider;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.utils.DurationFormatter;
@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class FriendListSub implements CommandExecutor<CommandSource> {
+final class FriendListSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendListSub.class);
 
     private static final Component MESSAGE_FOOTER = Component.text("----------------------------", NamedTextColor.LIGHT_PURPLE);
@@ -39,7 +39,7 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
     private final @NotNull FriendCache friendCache;
     private final @Nullable GameModeCollection gameModeCollection;
 
-    public FriendListSub(@NotNull McPlayerService playerService, @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
+    FriendListSub(@NotNull McPlayerService playerService, @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
         this.playerService = playerService;
         this.friendCache = friendCache;
         this.gameModeCollection = gameModeCollection;
@@ -48,8 +48,8 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
     }
 
     @Override
-    public void execute(@NotNull CommandContext<CommandSource> context) {
-        Player player = (Player) context.getSource();
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player player = (Player) source;
 
         List<FriendCache.CachedFriend> friends = this.friendCache.get(player.getUniqueId());
         int maxPage = (int) Math.ceil(friends.size() / 8.0);
@@ -59,7 +59,7 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
             return;
         }
 
-        int page = context.getArguments().containsKey("page") ? Math.min(context.getArgument("page", Integer.class), maxPage) : 1;
+        int page = arguments.hasArgument("page") ? Math.min(arguments.getArgument("page", Integer.class), maxPage) : 1;
 
         List<FriendStatus> statuses = this.retrieveStatuses(friends);
         Collections.sort(statuses);

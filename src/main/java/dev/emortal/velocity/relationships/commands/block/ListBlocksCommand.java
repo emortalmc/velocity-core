@@ -1,13 +1,14 @@
 package dev.emortal.velocity.relationships.commands.block;
 
-import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
+import dev.emortal.velocity.command.ArgumentProvider;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -18,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 
-public final class ListBlocksCommand extends EmortalCommand {
+public final class ListBlocksCommand extends EmortalCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListBlocksCommand.class);
 
     private final RelationshipService relationshipService;
@@ -33,8 +34,9 @@ public final class ListBlocksCommand extends EmortalCommand {
         super.setDefaultExecutor(this::execute);
     }
 
-    private void execute(@NotNull CommandContext<CommandSource> context) {
-        Player sender = (Player) context.getSource();
+    @Override
+    public void execute(@NotNull CommandSource source, @NotNull ArgumentProvider arguments) {
+        Player sender = (Player) source;
 
         List<UUID> blockedIds;
         try {
