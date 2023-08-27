@@ -1,32 +1,15 @@
 package dev.emortal.velocity.party.notifier;
 
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.party.cache.LocalParty;
 import dev.emortal.velocity.adapter.player.PlayerProvider;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
 public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final Component NOTIFICATION_PARTY_DISBANDED = MINI_MESSAGE.deserialize("<red>The party you were in has been disbanded");
-    private static final String NOTIFICATION_PARTY_PLAYER_JOINED = "<green><username> has joined the party";
-
-    private static final String NOTIFICATION_PARTY_PLAYER_LEFT = "<red><username> has left the party";
-    private static final String NOTIFICATION_PARTY_KICKED = "<username> has been kicked from the party by <kicker>";
-    private static final String NOTIFICATION_PLAYER_KICKED = "<red>You have been kicked from the party by <kicker>";
-
-    private static final String NOTIFICATION_PARTY_LEADER_CHANGED = "<username> is now the party leader";
-    private static final Component NOTIFICATION_PARTY_OPENED = Component.text("The party is now open", NamedTextColor.GREEN);
-    private static final Component NOTIFICATION_PARTY_CLOSED = Component.text("The party is now closed", NamedTextColor.GREEN);
-
-    private static final String NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS = "<sender_username> has invited <username> to the party";
-    private static final String NOTIFICATION_PLAYER_INVITE_CREATED = "<click:run_command:'/party join <username>'><color:#3db83d>You have been invited to join <green><username>'s</green> party. <b><gradient:light_purple:gold>Click to accept</gradient></b></click>";
 
     private final PlayerProvider playerProvider;
 
@@ -37,7 +20,7 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
     @Override
     public void partyEmptied(@NotNull UUID memberId) {
         Player player = this.playerProvider.getPlayer(memberId);
-        if (player != null) player.sendMessage(NOTIFICATION_PARTY_DISBANDED);
+        if (player != null) ChatMessages.PARTY_DISBANDED.send(player);
     }
 
     @Override
@@ -47,33 +30,33 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
 
     @Override
     public void partyOpenStateChanged(@NotNull LocalParty party, boolean open) {
-        Component message = open ? NOTIFICATION_PARTY_OPENED : NOTIFICATION_PARTY_CLOSED;
+        ChatMessages message = open ? ChatMessages.YOU_OPENED_PARTY : ChatMessages.YOU_CLOSED_PARTY;
 
         for (UUID memberId : party.memberIds()) {
             Player member = this.playerProvider.getPlayer(memberId);
             if (member == null) continue;
 
-            member.sendMessage(message);
+            message.send(member);
         }
     }
 
     @Override
     public void partyLeaderChanged(@NotNull LocalParty party, @NotNull String newLeaderName) {
-        var usernamePlaceholder = Placeholder.unparsed("username", newLeaderName);
+        Component usernameArgument = Component.text(newLeaderName);
 
         for (UUID memberId : party.memberIds()) {
             Player member = this.playerProvider.getPlayer(memberId);
             if (member == null) continue;
 
-            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_LEADER_CHANGED, usernamePlaceholder));
+            ChatMessages.PARTY_LEADER_CHANGED.send(member, usernameArgument);
         }
     }
 
     @Override
     public void partyInviteCreated(@NotNull LocalParty party, @NotNull UUID senderId, @NotNull String senderName,
                                    @NotNull String targetName) {
-        var usernamePlaceholder = Placeholder.unparsed("username", targetName);
-        var senderNamePlaceholder = Placeholder.unparsed("sender_username", senderName);
+        Component usernameArgument = Component.text(targetName);
+        Component senderNameArgument = Component.text(senderName);
 
         for (UUID memberId : party.memberIds()) {
             if (memberId.equals(senderId)) continue; // Don't send a notification to the sender
@@ -81,7 +64,7 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
             Player member = this.playerProvider.getPlayer(memberId);
             if (member == null) continue;
 
-            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS, usernamePlaceholder, senderNamePlaceholder));
+            ChatMessages.PLAYER_INVITED_TO_PARTY.send(member, usernameArgument, senderNameArgument);
         }
     }
 
@@ -90,43 +73,43 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
         Player player = this.playerProvider.getPlayer(targetId);
         if (player == null) return;
 
-        player.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PLAYER_INVITE_CREATED, Placeholder.parsed("username", senderName)));
+        ChatMessages.YOU_INVITED_PLAYER_TO_PARTY.send(player, Component.text(senderName));
     }
 
     @Override
     public void playerJoined(@NotNull LocalParty party, @NotNull String joinerName) {
-        var usernamePlaceholder = Placeholder.unparsed("username", joinerName);
+        Component username = Component.text(joinerName);
 
         for (UUID memberId : party.memberIds()) {
             Player member = this.playerProvider.getPlayer(memberId);
             if (member == null) continue;
 
-            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_PLAYER_JOINED, usernamePlaceholder));
+            ChatMessages.PLAYER_JOINED_PARTY.send(member, username);
         }
     }
 
     @Override
     public void playerLeft(@NotNull LocalParty party, @NotNull String leaverName) {
-        var usernamePlaceholder = Placeholder.unparsed("username", leaverName);
+        Component username = Component.text(leaverName);
 
         for (UUID memberId : party.memberIds()) {
             Player member = this.playerProvider.getPlayer(memberId);
             if (member == null) continue;
 
-            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_PLAYER_LEFT, usernamePlaceholder));
+            ChatMessages.PLAYER_LEFT_PARTY.send(member, username);
         }
     }
 
     @Override
     public void playerKicked(@NotNull LocalParty party, @NotNull String targetName, @NotNull String kickerName) {
-        var usernamePlaceholder = Placeholder.unparsed("username", targetName);
-        var kickerPlaceholder = Placeholder.unparsed("kicker", kickerName);
+        Component username = Component.text(targetName);
+        Component kicker = Component.text(kickerName);
 
         for (UUID memberId : party.memberIds()) {
             Player member = this.playerProvider.getPlayer(memberId);
             if (member == null) continue;
 
-            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_KICKED, usernamePlaceholder, kickerPlaceholder));
+            ChatMessages.PLAYER_KICKED_FROM_PARTY.send(member, username, kicker);
         }
     }
 
@@ -135,6 +118,6 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
         Player target = this.playerProvider.getPlayer(targetId);
         if (target == null) return;
 
-        target.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PLAYER_KICKED, Placeholder.unparsed("kicker", kickerName)));
+        ChatMessages.YOU_KICKED_PLAYER_FROM_PARTY.send(target, Component.text(kickerName));
     }
 }

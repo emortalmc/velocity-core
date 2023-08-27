@@ -16,16 +16,12 @@ import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class BlockCommand extends EmortalCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockCommand.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final Component USAGE = MINI_MESSAGE.deserialize("<red>Usage: /block <username>");
 
     private final RelationshipService relationshipService;
     private final PlayerResolver playerResolver;
@@ -37,7 +33,7 @@ public final class BlockCommand extends EmortalCommand implements EmortalCommand
         this.playerResolver = playerResolver;
 
         super.setCondition(CommandConditions.playerOnly());
-        super.setDefaultExecutor(context -> context.getSource().sendMessage(USAGE));
+        super.setDefaultExecutor(context -> ChatMessages.BLOCK_USAGE.send(context.getSource()));
 
         var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggesters.all());
         super.addSyntax(this, usernameArgument);
@@ -54,6 +50,7 @@ public final class BlockCommand extends EmortalCommand implements EmortalCommand
         } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
             ChatMessages.GENERIC_ERROR.send(sender);
+            return;
         }
 
         if (target == null) {

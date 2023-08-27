@@ -17,8 +17,6 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +50,7 @@ public final class UserDescribeSub implements EmortalCommandExecutor {
         } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
             ChatMessages.GENERIC_ERROR.send(source);
+            return;
         }
 
         if (target == null) {
@@ -84,12 +83,12 @@ public final class UserDescribeSub implements EmortalCommandExecutor {
             }
         }
         Component groupsValue = Component.join(JoinConfiguration.commas(true), roleComponents);
-        String activeDisplayName = this.permissionCache.determineActiveName(roleIds);
+        PermissionCache.CachedRole primaryRole = this.permissionCache.determinePrimaryRole(roleIds);
 
         TextComponent.Builder exampleChatBuilder = Component.text();
 
-        if (activeDisplayName != null) {
-            exampleChatBuilder.append(MiniMessage.miniMessage().deserialize(activeDisplayName, Placeholder.unparsed("username", correctedUsername)));
+        if (primaryRole != null) {
+            exampleChatBuilder.append(primaryRole.formatDisplayName(correctedUsername));
         } else {
             exampleChatBuilder.append(Component.text(correctedUsername));
         }
@@ -100,12 +99,12 @@ public final class UserDescribeSub implements EmortalCommandExecutor {
             permissionCount += role.permissions().size();
         }
 
-        Component displayName = Component.text(activeDisplayName == null ? "null" : activeDisplayName);
+        String activeDisplayName = primaryRole == null || primaryRole.displayName() == null ? "null" : primaryRole.displayName();
         ChatMessages.USER_DESCRIPTION.send(source,
                 Component.text(correctedUsername),
                 groupsValue,
                 Component.text(permissionCount),
-                displayName,
+                Component.text(activeDisplayName),
                 exampleChatBuilder.build());
     }
 
