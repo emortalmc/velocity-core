@@ -30,14 +30,7 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
 
     @Override
     public void partyOpenStateChanged(@NotNull LocalParty party, boolean open) {
-        ChatMessages message = open ? ChatMessages.YOU_OPENED_PARTY : ChatMessages.YOU_CLOSED_PARTY;
-
-        for (UUID memberId : party.memberIds()) {
-            Player member = this.playerProvider.getPlayer(memberId);
-            if (member == null) continue;
-
-            message.send(member);
-        }
+        // we don't broadcast open state changed
     }
 
     @Override
@@ -73,7 +66,7 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
         Player player = this.playerProvider.getPlayer(targetId);
         if (player == null) return;
 
-        ChatMessages.YOU_INVITED_PLAYER_TO_PARTY.send(player, Component.text(senderName));
+        ChatMessages.YOU_INVITED_TO_PARTY.send(player, Component.text(senderName));
     }
 
     @Override

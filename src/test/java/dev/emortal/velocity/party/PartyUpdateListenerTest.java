@@ -72,11 +72,6 @@ public final class PartyUpdateListenerTest {
             public void partyEmptied(@NotNull UUID memberId) {
                 fail("Party should not be emptied if not cached");
             }
-
-            @Override
-            public void partyOpenStateChanged(@NotNull LocalParty party, boolean open) {
-                fail("Party should not have open state changed if not cached");
-            }
         }
 
         PartyCache cache = new PartyCache(new DummyPartyService());

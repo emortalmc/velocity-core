@@ -6,6 +6,7 @@ import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 
 public final class RoleDescribeSub implements EmortalCommandExecutor {
@@ -30,6 +31,6 @@ public final class RoleDescribeSub implements EmortalCommandExecutor {
                 Component.text(roleId),
                 Component.text(role.priority()),
                 Component.text(role.permissions().size()),
-                Component.text(role.displayName()));
+                MiniMessage.miniMessage().deserialize(role.displayName()));
     }
 }
