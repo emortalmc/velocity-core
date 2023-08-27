@@ -14,11 +14,10 @@ import dev.emortal.api.model.party.Party;
 import dev.emortal.api.model.party.PartyInvite;
 import dev.emortal.api.model.party.PartyMember;
 import dev.emortal.api.service.party.PartyService;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -34,20 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class PartyCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyCache.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final Component NOTIFICATION_PARTY_DISBANDED = MINI_MESSAGE.deserialize("<red>The party you were in has been disbanded");
-    private static final String NOTIFICATION_PARTY_PLAYER_JOINED = "<green><username> has joined the party";
-
-    private static final String NOTIFICATION_PARTY_PLAYER_LEFT = "<red><username> has left the party";
-    private static final String NOTIFICATION_PARTY_KICKED = "<username> has been kicked from the party by <kicker>";
-    private static final String NOTIFICATION_PLAYER_KICKED = "<red>You have been kicked from the party by <kicker>";
-
-    private static final String NOTIFICATION_PARTY_LEADER_CHANGED = "<username> is now the party leader";
-
-    private static final String NOTIFICATION_PARTY_INVITE_CREATED_INVITER = "<username> has been invited to the party";
-    private static final String NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS = "<sender_username> has invited <username> to the party";
-    private static final String NOTIFICATION_PLAYER_INVITE_CREATED = "<click:run_command:'/party join <username>'><color:#3db83d>You have been invited to join <green><username>'s</green> party. <b><gradient:light_purple:gold>Click to accept</gradient></b></click>";
 
     private final @NotNull PartyService partyService;
     private final @NotNull ProxyServer proxy;
@@ -104,7 +89,7 @@ public final class PartyCache {
 
             CachedParty playerRemoved = this.playerPartyMap.remove(memberId);
             if (playerRemoved != null) {
-                this.proxy.getPlayer(memberId).ifPresent(player -> player.sendMessage(NOTIFICATION_PARTY_DISBANDED));
+                this.proxy.getPlayer(memberId).ifPresent(ChatMessages.PARTY_DISBANDED::send);
             }
         }
 
@@ -135,7 +120,7 @@ public final class PartyCache {
             CachedParty playerRemoved = this.playerPartyMap.remove(memberId);
 
             if (playerRemoved != null) {
-                this.proxy.getPlayer(memberId).ifPresent(player -> player.sendMessage(NOTIFICATION_PARTY_DISBANDED));
+                this.proxy.getPlayer(memberId).ifPresent(ChatMessages.PARTY_DISBANDED::send);
             }
 
             // Just a fast finish optimisation
@@ -157,7 +142,7 @@ public final class PartyCache {
             Player member = this.proxy.getPlayer(memberId).orElse(null);
             if (member == null) continue;
 
-            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_PLAYER_JOINED, Placeholder.unparsed("username", player.getUsername())));
+            ChatMessages.PLAYER_JOINED_PARTY.send(member, Component.text(player.getUsername()));
         }
 
         this.playerPartyMap.put(playerId, this.partyMap.get(partyId));
@@ -179,12 +164,11 @@ public final class PartyCache {
                 Player member = this.proxy.getPlayer(memberId).orElse(null);
                 if (member == null) continue;
 
-                var usernamePlaceholder = Placeholder.unparsed("username", message.getMember().getUsername());
+                Component username = Component.text(message.getMember().getUsername());
                 if (isKick) {
-                    var kickerPlaceholder = Placeholder.unparsed("kicker", message.getKickedBy().getUsername());
-                    member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_KICKED, usernamePlaceholder, kickerPlaceholder));
+                    ChatMessages.PLAYER_KICKED_FROM_PARTY.send(member, username, Component.text(message.getKickedBy().getUsername()));
                 } else {
-                    member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_PLAYER_LEFT, usernamePlaceholder));
+                    ChatMessages.PLAYER_LEFT_PARTY.send(member, username);
                 }
             }
         }
@@ -194,7 +178,7 @@ public final class PartyCache {
         if (target == null) return;
 
         if (isKick) {
-            target.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PLAYER_KICKED, Placeholder.unparsed("kicker", message.getKickedBy().getUsername())));
+            ChatMessages.YOU_KICKED_FROM_PARTY.send(target, Component.text(message.getKickedBy().getUsername()));
         }
         // don't need to send a message if they're not kicked as they chose to leave
     }
@@ -210,8 +194,7 @@ public final class PartyCache {
             Player member = this.proxy.getPlayer(memberId).orElse(null);
             if (member == null) continue;
 
-            member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_LEADER_CHANGED,
-                    Placeholder.unparsed("username", message.getNewLeader().getUsername())));
+            ChatMessages.PARTY_LEADER_CHANGED.send(member, Component.text(message.getNewLeader().getUsername()));
         }
 
         party.setLeaderId(newLeaderId);
@@ -224,12 +207,13 @@ public final class PartyCache {
      */
     private void handleInviteCreated(@NotNull PartyInviteCreatedMessage message) {
         PartyInvite invite = message.getInvite();
+        Component senderName = Component.text(invite.getSenderUsername());
 
         // Notify the party members of the invite
         CachedParty party = this.cachePartyIfNotPresent(invite.getPartyId());
         if (party != null) {
-            String targetUsername = invite.getTargetUsername();
             UUID senderId = UUID.fromString(invite.getSenderId());
+            Component targetName = Component.text(invite.getTargetUsername());
 
             for (UUID memberId : party.getMembers().keySet()) {
                 if (memberId.equals(senderId)) continue; // Don't send a notification to the sender
@@ -237,24 +221,15 @@ public final class PartyCache {
                 Player member = this.proxy.getPlayer(memberId).orElse(null);
                 if (member == null) continue;
 
-                member.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED_MEMBERS,
-                                Placeholder.parsed("username", invite.getTargetUsername()),
-                                Placeholder.parsed("sender_username", invite.getSenderUsername())));
+                ChatMessages.PLAYER_INVITED_TO_PARTY.send(member, senderName, targetName);
             }
-
-            Player sender = this.proxy.getPlayer(senderId).orElse(null);
-            if (sender == null) return;
-
-            sender.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PARTY_INVITE_CREATED_INVITER,
-                    Placeholder.parsed("username", targetUsername)));
         }
 
         // Notify the invited player
         Player player = this.proxy.getPlayer(UUID.fromString(invite.getTargetId())).orElse(null);
         if (player == null) return;
 
-        player.sendMessage(MINI_MESSAGE.deserialize(NOTIFICATION_PLAYER_INVITE_CREATED,
-                Placeholder.parsed("username", invite.getSenderUsername())));
+        ChatMessages.YOU_INVITED_TO_PARTY.send(player, senderName);
     }
 
     /**

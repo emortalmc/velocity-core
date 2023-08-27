@@ -6,19 +6,14 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.party.ModifyPartyResult;
 import dev.emortal.api.service.party.PartyService;
-import dev.emortal.velocity.party.commands.PartyCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class PartyOpenSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyOpenSub.class);
-
-    private static final Component PARTY_OPENED_MESSAGE = Component.text("The party is now open", NamedTextColor.GREEN);
-    private static final Component NOT_LEADER_MESSAGE = Component.text("You are not the leader of the party", NamedTextColor.RED);
 
     private final @NotNull PartyService partyService;
 
@@ -34,15 +29,14 @@ public final class PartyOpenSub implements CommandExecutor<CommandSource> {
         try {
             result = this.partyService.setPartyOpen(executor.getUniqueId(), true);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to open party", exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to open party of '{}'", executor.getUniqueId(), exception);
+            ChatMessages.GENERIC_ERROR.send(executor);
             return;
         }
 
-        var message = switch (result) {
-            case SUCCESS -> PARTY_OPENED_MESSAGE;
-            case NOT_LEADER -> NOT_LEADER_MESSAGE;
-        };
-        executor.sendMessage(message);
+        switch (result) {
+            case SUCCESS -> ChatMessages.YOU_OPENED_PARTY.send(executor);
+            case NOT_LEADER -> ChatMessages.ERROR_PARTY_NO_PERMISSION.send(executor);
+        }
     }
 }

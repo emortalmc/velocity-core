@@ -4,15 +4,12 @@ import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
 import dev.emortal.api.command.CommandExecutor;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 public final class RolePermissionCheckSub implements CommandExecutor<CommandSource> {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String PERMISSION_STATE = "<green>Permission <permission> state for <role_id>: <state>";
 
     private final PermissionCache permissionCache;
 
@@ -26,14 +23,13 @@ public final class RolePermissionCheckSub implements CommandExecutor<CommandSour
         String roleId = context.getArgument("roleId", String.class);
         String permission = context.getArgument("permission", String.class);
 
-        PermissionCache.CachedRole role = RoleSubUtils.getRole(this.permissionCache, context);
-        if (role == null) return;
+        PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
+        if (role == null) {
+            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
+            return;
+        }
 
         Tristate permissionState = role.getPermissionState(permission);
-        source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_STATE,
-                Placeholder.unparsed("role_id", roleId),
-                Placeholder.unparsed("permission", permission),
-                Placeholder.unparsed("state", permissionState.toString()))
-        );
+        ChatMessages.PERMISSION_STATE.send(source, Component.text(roleId), Component.text(permission), Component.text(permissionState.toString()));
     }
 }

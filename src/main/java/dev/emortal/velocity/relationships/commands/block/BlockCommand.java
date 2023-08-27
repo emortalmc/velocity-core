@@ -11,10 +11,10 @@ import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.UsernameSuggestions;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -52,19 +52,19 @@ public final class BlockCommand extends EmortalCommand {
         try {
             target = this.mcPlayerService.getPlayerByUsername(targetUsername);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while trying to block the player", exception);
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred while trying to block the player"));
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(sender);
             return;
         }
 
         if (target == null) {
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>Player not found"));
+            ChatMessages.PLAYER_NOT_FOUND.send(sender);
             return;
         }
 
         UUID targetId = UUID.fromString(target.getId());
         if (targetId.equals(sender.getUniqueId())) {
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>You can't block yourself"));
+            ChatMessages.ERROR_CANNOT_BLOCK_SELF.send(sender);
             return;
         }
 
@@ -72,17 +72,15 @@ public final class BlockCommand extends EmortalCommand {
         try {
             result = this.relationshipService.block(sender.getUniqueId(), targetId);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while trying to block the player", exception);
-            sender.sendMessage(Component.text("An error occurred while trying to block " + targetUsername));
+            LOGGER.error("Failed to block '{}' for '{}'", targetUsername, sender.getUsername(), exception);
+            ChatMessages.GENERIC_ERROR.send(sender);
             return;
         }
 
-        var message = switch (result) {
-            case SUCCESS -> Component.text("You have blocked " + targetUsername, NamedTextColor.GREEN);
-            case ALREADY_BLOCKED -> Component.text("You have already blocked " + targetUsername, NamedTextColor.RED);
-            case FAILED_FRIENDS -> Component.text("You must unfriend " + targetUsername + " before blocking them", NamedTextColor.RED);
-            case UNRECOGNIZED -> Component.text("An error occurred while trying to block " + targetUsername);
-        };
-        sender.sendMessage(message);
+        switch (result) {
+            case SUCCESS -> ChatMessages.YOU_BLOCKED.send(sender, Component.text(targetUsername));
+            case ALREADY_BLOCKED -> ChatMessages.ERROR_ALREADY_BLOCKED.send(sender, Component.text(targetUsername));
+            case FAILED_FRIENDS -> ChatMessages.ERROR_CANNOT_BLOCK_FRIEND.send(sender, Component.text(targetUsername));
+        }
     }
 }

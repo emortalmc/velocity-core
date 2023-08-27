@@ -7,9 +7,8 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.UsernameSuggestions;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.NotNull;
 
 public final class MessageCommand extends EmortalCommand {
@@ -31,16 +30,16 @@ public final class MessageCommand extends EmortalCommand {
     }
 
     private void sendUsage(@NotNull CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(Component.text("Usage: /msg <player> <message>", NamedTextColor.RED));
+        ChatMessages.MESSAGE_USAGE.send(context.getSource());
     }
 
     private void execute(@NotNull CommandContext<CommandSource> context) {
+        Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("receiver", String.class);
         String message = context.getArgument("message", String.class);
-        Player player = (Player) context.getSource();
 
         if (player.getUsername().equalsIgnoreCase(targetUsername)) {
-            player.sendMessage(Component.text("You cannot send a message to yourself.", NamedTextColor.RED));
+            ChatMessages.ERROR_CANNOT_MESSAGE_SELF.send(player);
             return;
         }
 

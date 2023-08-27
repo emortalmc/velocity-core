@@ -6,13 +6,11 @@ import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.permission.AddRoleToPlayerResult;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
-import dev.emortal.velocity.permissions.commands.subs.role.RoleSubUtils;
-import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +19,6 @@ import java.util.UUID;
 
 public final class UserRoleAddSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRoleAddSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";
-    private static final String ROLE_ADDED = "<green>Role <role_id> added to user <username>";
-    private static final String ROLE_ALREADY_ADDED = "<red>User <username> already has role <role_id>";
-
-    private static final String PERMISSION_PLAYER_NOT_FOUND = "<red>Player <uuid> not found in permission service";
 
     private final PermissionService permissionService;
     private final PermissionCache permissionCache;
@@ -43,49 +34,48 @@ public final class UserRoleAddSub implements CommandExecutor<CommandSource> {
         String targetUsername = context.getArgument("username", String.class);
         String roleId = context.getArgument("roleId", String.class);
 
-        PermissionCache.CachedRole role = RoleSubUtils.getRole(this.permissionCache, context);
-        if (role == null) return;
-
-        PlayerResolver.CachedMcPlayer playerData;
-        try {
-            playerData = PlayerResolver.getPlayerData(targetUsername);
-        } catch (StatusException exception) {
-            Status status = exception.getStatus();
-            var usernamePlaceholder = Placeholder.unparsed("username", targetUsername);
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                source.sendMessage(MINI_MESSAGE.deserialize("<red>Player <username> not found", usernamePlaceholder));
-            } else {
-                source.sendMessage(MINI_MESSAGE.deserialize("<red>Failed to retrieve player data for <username>", usernamePlaceholder));
-            }
+        PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
+        if (role == null) {
+            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
             return;
         }
 
-        UUID targetId = playerData.uuid();
-        String correctUsername = playerData.username();
+        PlayerResolver.CachedMcPlayer target;
+        try {
+            target = PlayerResolver.getPlayerData(targetUsername);
+        } catch (StatusException exception) {
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(source);
+            return;
+        }
+
+        if (target == null) {
+            ChatMessages.PLAYER_NOT_FOUND.send(source, Component.text(targetUsername));
+            return;
+        }
+
+        UUID targetId = target.uuid();
+        String correctUsername = target.username();
 
         AddRoleToPlayerResult result;
         try {
             result = this.permissionService.addRoleToPlayer(targetId, roleId);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Something went wrong adding role to user", exception);
-            source.sendMessage(MINI_MESSAGE.deserialize("<red>Something went wrong"));
+            LOGGER.error("Failed to add role '{}' to '{}'", roleId, correctUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(source);
             return;
         }
 
-        var roleIdPlaceholder = Placeholder.unparsed("role_id", roleId);
-        var message = switch (result) {
+        switch (result) {
             case SUCCESS -> {
                 PermissionCache.User user = this.permissionCache.getUser(targetId);
                 if (user != null) user.roleIds().add(role.id());
 
-                yield MINI_MESSAGE.deserialize(ROLE_ADDED, roleIdPlaceholder, Placeholder.unparsed("username", correctUsername));
+                ChatMessages.USER_ROLE_ADDED.send(source, Component.text(roleId), Component.text(correctUsername));
             }
-            case PLAYER_NOT_FOUND -> MINI_MESSAGE.deserialize(PERMISSION_PLAYER_NOT_FOUND, Placeholder.unparsed("uuid", targetId.toString()));
-            case ROLE_NOT_FOUND -> MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, roleIdPlaceholder);
-            case ALREADY_HAS_ROLE -> MINI_MESSAGE.deserialize(ROLE_ALREADY_ADDED,
-                    Placeholder.unparsed("username", correctUsername),
-                    roleIdPlaceholder);
-        };
-        source.sendMessage(message);
+            case PLAYER_NOT_FOUND -> ChatMessages.PLAYER_NOT_FOUND.send(source, Component.text(correctUsername));
+            case ROLE_NOT_FOUND -> ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
+            case ALREADY_HAS_ROLE -> ChatMessages.ERROR_USER_ALREADY_HAS_ROLE.send(source, Component.text(correctUsername), Component.text(roleId));
+        }
     }
 }

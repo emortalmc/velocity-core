@@ -6,9 +6,8 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.privatemessages.LastMessageCache;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.NotNull;
 
 public final class ReplyCommand extends EmortalCommand {
@@ -29,16 +28,16 @@ public final class ReplyCommand extends EmortalCommand {
     }
 
     private void sendUsage(@NotNull CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(Component.text("Usage: /r <message>", NamedTextColor.RED));
+        ChatMessages.REPLY_USAGE.send(context.getSource());
     }
 
     private void execute(@NotNull CommandContext<CommandSource> context) {
-        String message = context.getArgument("message", String.class);
         Player player = (Player) context.getSource();
+        String message = context.getArgument("message", String.class);
 
         String targetUsername = this.lastMessageCache.getLastMessageSender(player.getUniqueId());
         if (targetUsername == null) {
-            player.sendMessage(Component.text("You have not received any messages yet.", NamedTextColor.RED));
+            ChatMessages.ERROR_NO_ONE_TO_REPLY_TO.send(player);
             return;
         }
 

@@ -7,11 +7,9 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.service.playertracker.PlayerTrackerService;
 import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.CorePlugin;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,14 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 
 public final class TabList {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(TabList.class);
-
-    private static final Component TAB_LIST_HEADER = Component.text()
-            .append(Component.text("┌                                                  ", NamedTextColor.GOLD))
-            .append(Component.text("┐ \n ", NamedTextColor.LIGHT_PURPLE))
-            .append(MINI_MESSAGE.deserialize("<gradient:gold:light_purple><bold>EmortalMC"))
-            .build();
 
     private final ProxyServer proxy;
 
@@ -47,7 +38,7 @@ public final class TabList {
 
     @Subscribe
     public void onPlayerJoin(@NotNull PostLoginEvent event) {
-        event.getPlayer().sendPlayerListHeaderAndFooter(TAB_LIST_HEADER, this.currentFooter);
+        event.getPlayer().sendPlayerListHeaderAndFooter(ChatMessages.TAB_LIST_HEADER.parse(), this.currentFooter);
     }
 
     private void updateFooter(@NotNull PlayerTrackerService playerTracker) {
@@ -70,11 +61,6 @@ public final class TabList {
     }
 
     private @NotNull Component createFooter(long playerCount) {
-        return Component.text()
-                .append(Component.text(" \n" + playerCount + " online", NamedTextColor.GRAY))
-                .append(Component.text("\nᴍᴄ.ᴇᴍᴏʀᴛᴀʟ.ᴅᴇᴠ", TextColor.color(38, 110, 224)))
-                .append(Component.text("\n└                                                  ", NamedTextColor.LIGHT_PURPLE))
-                .append(Component.text("┘ ", NamedTextColor.GOLD))
-                .build();
+        return ChatMessages.TAB_LIST_FOOTER.parse(Component.text(playerCount));
     }
 }

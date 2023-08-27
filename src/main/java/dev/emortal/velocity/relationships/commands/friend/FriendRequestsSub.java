@@ -7,13 +7,12 @@ import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.api.service.relationship.RequestedFriend;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,19 +24,10 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class FriendRequestsSub {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendRequestsSub.class);
 
-    private static final Component NO_INCOMING_REQUESTS_MESSAGE = Component.text("You have no incoming friend requests", NamedTextColor.LIGHT_PURPLE);
-    private static final String INCOMING_MESSAGE_TITLE = "<light_purple>--- Incoming Requests (Page <page>/<max_page>) ---</light_purple>";
-    private static final String INCOMING_MESSAGE_LINE = "<light_purple><time> ago <dark_purple>- <light_purple><username> <dark_purple>| <green><click:run_command:'/friend add <username>'>Accept</click><dark_purple>/<red><click:run_command:'/friend deny <username>'>Deny</click>";
     private static final Component INCOMING_MESSAGE_FOOTER = Component.text("-----------------------------------", NamedTextColor.LIGHT_PURPLE);
-
-    private static final Component NO_OUTGOING_REQUESTS_MESSAGE = Component.text("You have no outgoing friend requests", NamedTextColor.LIGHT_PURPLE);
-    private static final String OUTGOING_MESSAGE_TITLE = "<light_purple>--- Outgoing Requests (Page <page>/<max_page>) ---</light_purple>";
-    private static final String OUTGOING_MESSAGE_LINE = "<light_purple><time> ago <dark_purple>- <light_purple><username> <dark_purple>| <red><click:run_command:'/friend revoke <username>'>Revoke</click>";
     private static final Component OUTGOING_MESSAGE_FOOTER = Component.text("--------------------------------", NamedTextColor.LIGHT_PURPLE);
-
 
     private final RelationshipService relationshipService;
     private final McPlayerService mcPlayerService;
@@ -71,9 +61,9 @@ public final class FriendRequestsSub {
 
         if (friendRequests.isEmpty()) {
             if (incoming) {
-                player.sendMessage(NO_INCOMING_REQUESTS_MESSAGE);
+                ChatMessages.ERROR_NO_INCOMING_FRIEND_REQUESTS.send(player);
             } else {
-                player.sendMessage(NO_OUTGOING_REQUESTS_MESSAGE);
+                ChatMessages.ERROR_NO_OUTGOING_FRIEND_REQUESTS.send(player);
             }
             return;
         }
@@ -87,8 +77,8 @@ public final class FriendRequestsSub {
         try {
             players = this.mcPlayerService.getPlayersById(friendIds);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to get players: ", exception);
-            player.sendMessage(Component.text("Failed to get players", NamedTextColor.RED));
+            LOGGER.error("Failed to resolve friends from IDs '{}'", friendIds, exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
@@ -100,20 +90,18 @@ public final class FriendRequestsSub {
         int totalPages = (int) Math.ceil(friendRequests.size() / 10.0);
         int limitedPage = Math.min(totalPages, page);
 
+        ChatMessages header = incoming ? ChatMessages.INCOMING_FRIEND_REQUESTS_HEADER : ChatMessages.OUTGOING_FRIEND_REQUESTS_HEADER;
         TextComponent.Builder message = Component.text()
-                .append(MINI_MESSAGE.deserialize(incoming ? INCOMING_MESSAGE_TITLE : OUTGOING_MESSAGE_TITLE,
-                        Placeholder.parsed("page", String.valueOf(limitedPage)),
-                        Placeholder.parsed("max_page", String.valueOf(totalPages))))
-                .append(Component.newline());
+                .append(header.parse(Component.text(limitedPage), Component.text(totalPages)))
+                .appendNewline();
 
         for (int i = (page - 1) * 10; i < page * 10 && i < friendRequests.size(); i++) {
             RequestedFriend requestedFriend = friendRequests.get(i);
             String username = usernameMap.get(incoming ? requestedFriend.requesterId() : requestedFriend.targetId());
 
-            message.append(MINI_MESSAGE.deserialize(incoming ? INCOMING_MESSAGE_LINE : OUTGOING_MESSAGE_LINE,
-                            Placeholder.parsed("time", DurationFormatter.formatShortFromInstant(requestedFriend.requestTime())),
-                            Placeholder.parsed("username", username)))
-                    .append(Component.newline());
+            ChatMessages line = incoming ? ChatMessages.INCOMING_FRIEND_REQUEST_LINE : ChatMessages.OUTGOING_FRIEND_REQUEST_LINE;
+            String duration = DurationFormatter.formatShortFromInstant(requestedFriend.requestTime());
+            message.append(line.parse(Component.text(duration), Component.text(username))).appendNewline();
         }
 
         message.append(incoming ? INCOMING_MESSAGE_FOOTER : OUTGOING_MESSAGE_FOOTER);

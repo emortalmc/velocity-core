@@ -7,26 +7,16 @@ import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.party.KickPlayerFromPartyResult;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
-import dev.emortal.velocity.lang.TempLang;
-import dev.emortal.velocity.party.commands.PartyCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class PartyKickSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyKickSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-
-    private static final String KICKED_MESSAGE = "<green>Kicked <username> from your party";
-    private static final String NOT_LEADER_MESSAGE = "<red>You must be the party leader to kick players";
-    private static final String TARGET_IS_LEADER_MESSAGE = "<red>You cannot kick the party leader";
-    private static final String NOT_IN_PARTY_MESSAGE = "<red><username> is not in your party";
-
 
     private final @NotNull PartyService partyService;
 
@@ -43,13 +33,13 @@ public final class PartyKickSub implements CommandExecutor<CommandSource> {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            LOGGER.error("An error occurred PartyKickSub getPlayerByUsername: ", exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(executor);
             return;
         }
 
         if (target == null) {
-            TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(executor, Component.text(targetUsername));
             return;
         }
 
@@ -57,17 +47,16 @@ public final class PartyKickSub implements CommandExecutor<CommandSource> {
         try {
             result = this.partyService.kickPlayer(executor.getUniqueId(), executor.getUsername(), target.uuid());
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred PartyKickSub kickPlayerFromParty: ", exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to kick '{}' from party of '{}'", target.uuid(), executor.getUniqueId(), exception);
+            ChatMessages.GENERIC_ERROR.send(executor);
             return;
         }
 
-        var message = switch (result) {
-            case SUCCESS -> MINI_MESSAGE.deserialize(KICKED_MESSAGE, Placeholder.unparsed("username", target.username()));
-            case SELF_NOT_LEADER -> MINI_MESSAGE.deserialize(NOT_LEADER_MESSAGE);
-            case TARGET_IS_LEADER -> MINI_MESSAGE.deserialize(TARGET_IS_LEADER_MESSAGE);
-            case TARGET_NOT_IN_PARTY -> MINI_MESSAGE.deserialize(NOT_IN_PARTY_MESSAGE, Placeholder.unparsed("username", target.username()));
-        };
-        executor.sendMessage(message);
+        switch (result) {
+            case SUCCESS -> ChatMessages.YOU_KICKED_PLAYER_FROM_PARTY.send(executor, Component.text(target.username()));
+            case SELF_NOT_LEADER -> ChatMessages.ERROR_PARTY_NO_PERMISSION.send(executor);
+            case TARGET_IS_LEADER -> ChatMessages.ERROR_CANNOT_KICK_LEADER.send(executor);
+            case TARGET_NOT_IN_PARTY -> ChatMessages.ERROR_PLAYER_NOT_IN_PARTY.send(executor, Component.text(target.username()));
+        }
     }
 }

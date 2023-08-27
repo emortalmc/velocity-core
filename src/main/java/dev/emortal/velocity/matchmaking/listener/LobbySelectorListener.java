@@ -15,10 +15,9 @@ import dev.emortal.api.model.matchmaker.Assignment;
 import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;
 import dev.emortal.api.service.matchmaker.MatchmakerService;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -30,8 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 public final class LobbySelectorListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(LobbySelectorListener.class);
-
-    private static final Component ERROR_MESSAGE = MiniMessage.miniMessage().deserialize("<red>Failed to connect to lobby");
 
     private final ProxyServer proxy;
     private final MatchmakerService matchmaker;
@@ -56,13 +53,13 @@ public final class LobbySelectorListener {
 
     private void sendToLobbyServer(@NotNull PlayerChooseInitialServerEvent event, @NotNull Continuation continuation) {
         Player player = event.getPlayer();
-        LOGGER.debug("Queueing initial lobby for {}", player.getUsername());
+        LOGGER.debug("Queueing initial lobby for '{}'", player.getUsername());
 
         try {
             this.matchmaker.queueInitialLobby(player.getUniqueId());
         } catch (StatusRuntimeException exception) {
-            event.getPlayer().disconnect(ERROR_MESSAGE);
-            LOGGER.error("Failed to connect player to lobby", exception);
+            LOGGER.error("Failed to connect '{}' to lobby", player.getUsername(), exception);
+            event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.parse());
         }
 
         this.pendingPlayers.put(player.getUniqueId(), new EventCallbackContext(event, continuation));
@@ -80,14 +77,14 @@ public final class LobbySelectorListener {
             EventCallbackContext context = this.pendingPlayers.getIfPresent(playerId);
             if (context == null) continue; // Likely submitted by a different service.
 
-            LOGGER.debug("Found initial lobby match for {}: {}", context.playerName(), match);
+            LOGGER.debug("Found initial lobby match for '{}': {}", context.playerName(), match);
             this.pendingPlayers.invalidate(playerId);
             this.connectPlayerToAssignment(context, match.getAssignment());
         }
     }
 
     private void connectPlayerToAssignment(@NotNull EventCallbackContext context, @NotNull Assignment assignment) {
-        LOGGER.debug("Connecting {} to {}", context.playerName(), assignment);
+        LOGGER.debug("Connecting '{}' to {}", context.playerName(), assignment);
         RegisteredServer server = this.proxy.getServer(assignment.getServerId()).orElseGet(() -> this.createServerFromAssignment(assignment));
         context.setInitialServer(server);
     }
@@ -118,7 +115,7 @@ public final class LobbySelectorListener {
         }
 
         void disconnect() {
-            this.event.getPlayer().disconnect(ERROR_MESSAGE);
+            this.event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.parse());
             this.continuation.resume();
         }
     }

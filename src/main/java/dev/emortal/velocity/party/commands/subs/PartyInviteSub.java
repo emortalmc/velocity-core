@@ -8,23 +8,16 @@ import dev.emortal.api.model.party.PartyInvite;
 import dev.emortal.api.service.party.InvitePlayerToPartyResult;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
-import dev.emortal.velocity.lang.TempLang;
-import dev.emortal.velocity.party.commands.PartyCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class PartyInviteSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyInviteSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String NO_PERMISSION_MESSAGE = "<red>You must be the leader of the party to invite another player";
-    private static final String ALREADY_INVITED_MESSAGE = "<red><username> has already been invited to your party";
-    private static final String ALREADY_IN_PARTY_MESSAGE = "<red><username> is already in the party";
 
     private final @NotNull PartyService partyService;
 
@@ -41,18 +34,18 @@ public final class PartyInviteSub implements CommandExecutor<CommandSource> {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            LOGGER.error("An error occurred PartyInviteSub getPlayerByUsername: ", exception);
-            player.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         if (target == null) {
-            TempLang.PLAYER_NOT_FOUND.send(player, Placeholder.unparsed("search_username", targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(player, Component.text(targetUsername));
             return;
         }
 
         if (!target.online()) {
-            TempLang.PLAYER_NOT_ONLINE.send(player, Placeholder.unparsed("username", target.username()));
+            ChatMessages.PLAYER_NOT_ONLINE.send(player, Component.text(target.username()));
             return;
         }
 
@@ -60,20 +53,20 @@ public final class PartyInviteSub implements CommandExecutor<CommandSource> {
         try {
             result = this.partyService.invitePlayer(player.getUniqueId(), player.getUsername(), target.uuid(), target.username());
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred PartyInviteSub invitePlayerToParty: ", exception);
-            player.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to invite '{}' to party of '{}'", target.uuid(), player.getUniqueId(), exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         switch (result) {
-            case InvitePlayerToPartyResult.Success(PartyInvite ignored) -> {} // do nothing as we listen for the Kafka message
+            case InvitePlayerToPartyResult.Success(PartyInvite ignored) ->
+                    ChatMessages.YOU_INVITED_PLAYER_TO_PARTY.send(player, Component.text(target.username()));
             case InvitePlayerToPartyResult.Error error -> {
-                var message = switch (error) {
-                    case NO_PERMISSION -> MINI_MESSAGE.deserialize(NO_PERMISSION_MESSAGE);
-                    case TARGET_ALREADY_INVITED -> MINI_MESSAGE.deserialize(ALREADY_INVITED_MESSAGE, Placeholder.unparsed("username", target.username()));
-                    case TARGET_IN_THIS_PARTY -> MINI_MESSAGE.deserialize(ALREADY_IN_PARTY_MESSAGE, Placeholder.unparsed("username", target.username()));
-                };
-                player.sendMessage(message);
+                switch (error) {
+                    case NO_PERMISSION -> ChatMessages.ERROR_PARTY_NO_PERMISSION.send(player);
+                    case TARGET_ALREADY_INVITED -> ChatMessages.ERROR_PLAYER_INVITED_TO_PARTY.send(player, Component.text(target.username()));
+                    case TARGET_IN_THIS_PARTY -> ChatMessages.ERROR_PLAYER_IN_THIS_PARTY.send(player, Component.text(target.username()));
+                }
             }
         }
     }

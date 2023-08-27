@@ -10,26 +10,13 @@ import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.relationships.FriendCache;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class FriendCommand extends EmortalCommand {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final Component HELP_MESSAGE = MINI_MESSAGE.deserialize(
-            """
-                    <light_purple>------ Friend Help ------
-                    <click:run_command:'/friend list'>/friend list</click>
-                    <click:suggest_command:'/friend add '>/friend add <name></click>
-                    <click:suggest_command:'/friend remove '>/friend remove <name></click>
-                    <click:suggest_command:'/friend requests '>/friend requests <incoming/outgoing> [page]</click>
-                    <click:suggest_command:'/friend purge requests '>/friend purge requests <incoming/outgoing></click>
-                    -----------------------"""//todo purge requests
-    );
 
     public FriendCommand(@NotNull McPlayerService mcPlayerService, @NotNull RelationshipService relationshipService,
                          @NotNull UsernameSuggestions usernameSuggestions, @NotNull FriendCache friendCache,
@@ -66,6 +53,6 @@ public final class FriendCommand extends EmortalCommand {
     }
 
     private void sendHelp(@NotNull CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(HELP_MESSAGE);
+        ChatMessages.FRIEND_HELP.send(context.getSource());
     }
 }

@@ -7,14 +7,12 @@ import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.model.party.Party;
 import dev.emortal.api.model.party.PartyMember;
 import dev.emortal.api.service.party.PartyService;
-import dev.emortal.velocity.party.commands.PartyCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,15 +22,8 @@ import java.util.List;
 
 public final class PartyListSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyListSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     private static final TextColor LEADER_COLOR = TextColor.color(255, 225, 115);
-    private static final String MESSAGE_CONTENT = """
-            <color:#2383d1><strikethrough>          </strikethrough> <bold><color:#2ba0ff>ʏᴏᴜʀ ᴘᴀʀᴛʏ </bold>(<party_size>) <strikethrough>          </strikethrough></color>
-                        
-            <member_content>
-                        
-            <color:#2383d1><strikethrough>                                          </strikethrough>""";
 
     private final @NotNull PartyService partyService;
 
@@ -48,19 +39,17 @@ public final class PartyListSub implements CommandExecutor<CommandSource> {
         try {
             party = this.partyService.getPartyByPlayer(executor.getUniqueId());
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to get party for player {}", executor.getUsername(), exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to get party of '{}'", executor.getUsername(), exception);
+            ChatMessages.GENERIC_ERROR.send(executor);
             return;
         }
 
         if (party == null) {
-            executor.sendMessage(PartyCommand.NOT_IN_PARTY_MESSAGE);
+            ChatMessages.ERROR_YOU_NOT_IN_PARTY.send(executor);
             return;
         }
 
-        var partySize = Placeholder.unparsed("party_size", String.valueOf(party.getMembersCount()));
-        var memberContent = Placeholder.component("member_content", this.createMessageContent(party));
-        executor.sendMessage(MINI_MESSAGE.deserialize(MESSAGE_CONTENT, partySize, memberContent));
+        ChatMessages.PARTY_LIST.send(executor, Component.text(party.getMembersCount()), this.createMessageContent(party));
     }
 
     private @NotNull Component createMessageContent(@NotNull Party party) {

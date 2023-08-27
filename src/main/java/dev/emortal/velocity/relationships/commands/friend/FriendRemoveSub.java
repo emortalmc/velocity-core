@@ -8,11 +8,10 @@ import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.relationships.FriendCache;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,11 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 
 public final class FriendRemoveSub implements CommandExecutor<CommandSource> {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendRemoveSub.class);
-
-    private static final String FRIEND_REMOVED_MESSAGE = "<light_purple>You are no longer friends with <color:#c98fff><username></color>";
-    private static final String NOT_FRIENDS_MESSAGE = "<light_purple>You are not friends with <color:#c98fff><username></color>";
 
     private final McPlayerService mcPlayerService;
     private final RelationshipService relationshipService;
@@ -45,14 +40,13 @@ public final class FriendRemoveSub implements CommandExecutor<CommandSource> {
         try {
             target = this.mcPlayerService.getPlayerByUsername(targetUsername);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to get player by username", exception);
-            player.sendMessage(Component.text("Failed to remove friend " + targetUsername));
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         if (target == null) {
-            LOGGER.error("Failed to get player {} by username", targetUsername);
-            player.sendMessage(Component.text("Failed to remove friend " + targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(player);
             return;
         }
 
@@ -63,23 +57,17 @@ public final class FriendRemoveSub implements CommandExecutor<CommandSource> {
         try {
             result = this.relationshipService.removeFriend(player.getUniqueId(), player.getUsername(), targetId);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to remove friend: ", exception);
-            player.sendMessage(Component.text("Failed to remove friend " + correctedUsername));
+            LOGGER.error("Failed to remove friend '{}' from '{}'", correctedUsername, player.getUsername(), exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
-        var usernamePlaceholder = Placeholder.component("username", Component.text(correctedUsername));
-        var message = switch (result) {
+        switch (result) {
             case REMOVED -> {
                 this.friendCache.remove(player.getUniqueId(), targetId);
-                yield MINI_MESSAGE.deserialize(FRIEND_REMOVED_MESSAGE, usernamePlaceholder);
+                ChatMessages.FRIEND_REMOVED.send(player, Component.text(correctedUsername));
             }
-            case NOT_FRIENDS -> MINI_MESSAGE.deserialize(NOT_FRIENDS_MESSAGE, usernamePlaceholder);
-            case UNRECOGNIZED -> {
-                LOGGER.error("An error occurred while {} tried to remove {} as a friend", player.getUsername(), correctedUsername);
-                yield Component.text("An error occurred");
-            }
-        };
-        player.sendMessage(message);
+            case NOT_FRIENDS -> ChatMessages.ERROR_NOT_FRIENDS.send(player, Component.text(correctedUsername));
+        }
     }
 }

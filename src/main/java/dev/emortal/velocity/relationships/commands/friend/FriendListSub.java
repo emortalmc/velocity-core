@@ -9,15 +9,13 @@ import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.ProtoTimestampConverter;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.relationships.FriendCache;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -34,12 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class FriendListSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendListSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
-    private static final Component NO_FRIENDS_MESSAGE = MINI_MESSAGE.deserialize("<light_purple>You have no friends. Use /friend add <name> to add someone.");
-    private static final String MESSAGE_TITLE = "<light_purple>----- Friends (Page <page>/<max_page>) -----</light_purple>";
-    private static final String ONLINE_LINE = "<click:suggest_command:'/message <username> '><green><username> - <server></green></click>";
-    private static final String OFFLINE_LINE = "<red><username> - Seen <last_seen></red>";
     private static final Component MESSAGE_FOOTER = Component.text("----------------------------", NamedTextColor.LIGHT_PURPLE);
 
     private final @NotNull McPlayerService mcPlayerService;
@@ -62,7 +55,7 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
         int maxPage = (int) Math.ceil(friends.size() / 8.0);
 
         if (maxPage == 0) {
-            player.sendMessage(NO_FRIENDS_MESSAGE);
+            ChatMessages.ERROR_NO_FRIENDS.send(player);
             return;
         }
 
@@ -80,24 +73,20 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
 
     private @NotNull Component createMessage(@NotNull List<FriendStatus> statuses, int page, int maxPage) {
         TextComponent.Builder message = Component.text()
-                .append(MINI_MESSAGE.deserialize(MESSAGE_TITLE,
-                        Placeholder.parsed("page", String.valueOf(page)),
-                        Placeholder.parsed("max_page", String.valueOf(maxPage))))
-                .append(Component.newline());
+                .append(ChatMessages.FRIEND_LIST_HEADER.parse(Component.text(page), Component.text(maxPage)))
+                .appendNewline();
 
         for (FriendStatus status : statuses) {
-            var usernamePlaceholder = Placeholder.parsed("username", status.username());
-            String line = status.online() ? ONLINE_LINE : OFFLINE_LINE;
+            ChatMessages line = status.online() ? ChatMessages.FRIEND_LIST_ONLINE_LINE : ChatMessages.FRIEND_LIST_OFFLINE_LINE;
 
-            TagResolver.Single secondPlaceholder;
+            Component secondArgument;
             if (status.online()) {
-                secondPlaceholder = Placeholder.parsed("server", this.createActivityForServer(status.serverId()));
+                secondArgument = Component.text(this.createActivityForServer(status.serverId()));
             } else {
-                secondPlaceholder = Placeholder.parsed("last_seen", DurationFormatter.formatShortFromInstant(status.lastSeen()));
+                secondArgument = Component.text(DurationFormatter.formatShortFromInstant(status.lastSeen()));
             }
 
-            message.append(MINI_MESSAGE.deserialize(line, usernamePlaceholder, secondPlaceholder));
-            message.append(Component.newline());
+            message.append(line.parse(Component.text(status.username()), secondArgument)).appendNewline();
         }
 
         message.append(MESSAGE_FOOTER);
@@ -119,7 +108,7 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
         try {
             players = this.mcPlayerService.getPlayersById(playerIds);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to retrieve player statuses: ", exception);
+            LOGGER.error("Failed to resolve friends from IDs '{}'", playerIds, exception);
             return new ArrayList<>(statuses.values());
         }
 
@@ -135,25 +124,6 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
         }
 
         return new ArrayList<>(statuses.values());
-    }
-
-    private record FriendStatus(@NotNull UUID uuid, @NotNull Instant friendsSince, @Nullable String username, boolean online,
-                                @Nullable String serverId, @Nullable Instant lastSeen) implements Comparable<FriendStatus> {
-
-        FriendStatus(@NotNull UUID uuid, @NotNull Instant friendsSince) {
-            this(uuid, friendsSince, null, false, null, null);
-        }
-
-        @NotNull FriendStatus toFull(@Nullable String username, boolean online, @Nullable String serverId, @Nullable Instant lastSeen) {
-            return new FriendStatus(this.uuid, this.friendsSince, username, online, serverId, lastSeen);
-        }
-
-        public int compareTo(@NotNull FriendListSub.FriendStatus o) {
-            if (this.online && !o.online) return -1;
-            if (!this.online && o.online) return 1;
-            if (!this.online) return o.lastSeen.compareTo(this.lastSeen); // both offline
-            return this.username.compareTo(o.username);
-        }
     }
 
     private @NotNull String createActivityForServer(@NotNull String serverId) {
@@ -179,5 +149,24 @@ public final class FriendListSub implements CommandExecutor<CommandSource> {
         }
 
         return gameModeConfig;
+    }
+
+    private record FriendStatus(@NotNull UUID uuid, @NotNull Instant friendsSince, @Nullable String username, boolean online,
+                                @Nullable String serverId, @Nullable Instant lastSeen) implements Comparable<FriendStatus> {
+
+        FriendStatus(@NotNull UUID uuid, @NotNull Instant friendsSince) {
+            this(uuid, friendsSince, null, false, null, null);
+        }
+
+        @NotNull FriendStatus toFull(@Nullable String username, boolean online, @Nullable String serverId, @Nullable Instant lastSeen) {
+            return new FriendStatus(this.uuid, this.friendsSince, username, online, serverId, lastSeen);
+        }
+
+        public int compareTo(@NotNull FriendListSub.FriendStatus o) {
+            if (this.online && !o.online) return -1;
+            if (!this.online && o.online) return 1;
+            if (!this.online) return o.lastSeen.compareTo(this.lastSeen); // both offline
+            return this.username.compareTo(o.username);
+        }
     }
 }

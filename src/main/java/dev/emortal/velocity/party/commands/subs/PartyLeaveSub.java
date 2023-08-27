@@ -6,24 +6,14 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.party.LeavePartyResult;
 import dev.emortal.api.service.party.PartyService;
-import dev.emortal.velocity.party.commands.PartyCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class PartyLeaveSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyLeaveSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-
-    private static final Component LEFT_MESSAGE = MINI_MESSAGE.deserialize("<green>Left party");
-    private static final Component LEFT_AS_LEADER_MESSAGE = MINI_MESSAGE.deserialize("""
-            <red>You are the leader of the party
-            <red>Use /party disband to disband the party or /party leader <player> to transfer leadership""");
-
 
     private final @NotNull PartyService partyService;
 
@@ -40,15 +30,14 @@ public final class PartyLeaveSub implements CommandExecutor<CommandSource> {
         try {
             result = this.partyService.leaveParty(executor.getUniqueId());
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to leave party", exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to remove '{}' from party", executor.getUniqueId(), exception);
+            ChatMessages.GENERIC_ERROR.send(executor);
             return;
         }
 
-        var message = switch (result) {
-            case SUCCESS -> LEFT_MESSAGE;
-            case CANNOT_LEAVE_AS_LEADER -> LEFT_AS_LEADER_MESSAGE;
-        };
-        executor.sendMessage(message);
+        switch (result) {
+            case SUCCESS -> ChatMessages.YOU_LEFT_PARTY.send(executor);
+            case CANNOT_LEAVE_AS_LEADER -> ChatMessages.ERROR_CANNOT_LEAVE_AS_LEADER.send(executor);
+        }
     }
 }

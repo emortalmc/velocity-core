@@ -8,10 +8,9 @@ import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +20,6 @@ import java.util.UUID;
 
 public final class ListBlocksCommand extends EmortalCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListBlocksCommand.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String BLOCKED_PLAYERS_MESSAGE = "<red>Blocked Players (<count>): <blocked_players></red>";
 
     private final McPlayerService mcPlayerService;
     private final RelationshipService relationshipService;
@@ -44,13 +40,13 @@ public final class ListBlocksCommand extends EmortalCommand {
         try {
             blockedIds = this.relationshipService.getBlockedList(sender.getUniqueId());
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while trying to list your blocked players", exception);
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred while trying to list your blocked players"));
+            LOGGER.error("Failed to get blocked player IDs for '{}'", sender.getUsername(), exception);
+            ChatMessages.GENERIC_ERROR.send(sender);
             return;
         }
 
         if (blockedIds.isEmpty()) {
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>You have not blocked any players"));
+            ChatMessages.ERROR_BLOCKED_LIST_EMPTY.send(sender);
             return;
         }
 
@@ -58,8 +54,8 @@ public final class ListBlocksCommand extends EmortalCommand {
         try {
             blockedPlayers = this.mcPlayerService.getPlayersById(blockedIds);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while trying to list your blocked players", exception);
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred while trying to list your blocked players"));
+            LOGGER.error("Failed to resolve blocked players from IDs '{}'", blockedIds, exception);
+            ChatMessages.GENERIC_ERROR.send(sender);
             return;
         }
 
@@ -67,10 +63,6 @@ public final class ListBlocksCommand extends EmortalCommand {
                 .map(McPlayer::getCurrentUsername)
                 .toList());
 
-        Component message = MINI_MESSAGE.deserialize(BLOCKED_PLAYERS_MESSAGE,
-                Placeholder.unparsed("count", String.valueOf(blockedPlayers.size())),
-                Placeholder.unparsed("blocked_players", blockedNames));
-
-        sender.sendMessage(message);
+        ChatMessages.BLOCKED_PLAYERS.send(sender, Component.text(blockedPlayers.size()), Component.text(blockedNames));
     }
 }

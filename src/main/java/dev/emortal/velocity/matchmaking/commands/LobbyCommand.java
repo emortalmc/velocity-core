@@ -6,19 +6,14 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.service.matchmaker.MatchmakerService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class LobbyCommand extends EmortalCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(LobbyCommand.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final Component SENDING_MESSAGE = MINI_MESSAGE.deserialize("<green>Sending you to the lobby...");
-    private static final Component ERROR_MESSAGE = MINI_MESSAGE.deserialize("<red>Something went wrong while sending you to the lobby!");
 
     private final MatchmakerService matchmaker;
 
@@ -35,10 +30,10 @@ public final class LobbyCommand extends EmortalCommand {
 
         try {
             this.matchmaker.sendPlayerToLobby(sender.getUniqueId(), false);
-            sender.sendMessage(SENDING_MESSAGE);
+            ChatMessages.SENDING_TO_LOBBY.send(sender);
         } catch (StatusRuntimeException exception) {
-            sender.sendMessage(ERROR_MESSAGE);
-            LOGGER.error("Error while sending player to lobby (username: {})", sender.getUsername(), exception);
+            LOGGER.error("Failed to send '{}' to lobby", sender.getUsername(), exception);
+            ChatMessages.ERROR_SENDING_TO_LOBBY.send(sender);
         }
     }
 }

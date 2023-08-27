@@ -6,22 +6,17 @@ import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.model.permission.Role;
 import dev.emortal.api.service.permission.CreateRoleResult;
 import dev.emortal.api.service.permission.PermissionService;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class RoleCreateSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleCreateSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String ROLE_ALREADY_EXISTS = "<red>Role <role_id> already exists";
-    private static final String ROLE_CREATED = "<green>Role <role_id> created";
 
     private final PermissionService permissionService;
     private final PermissionCache permissionCache;
@@ -40,20 +35,21 @@ public final class RoleCreateSub implements CommandExecutor<CommandSource> {
         try {
             result = this.permissionService.createRole(roleId, 0, "<username>");
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while creating role", exception);
-            source.sendMessage(Component.text("An error occurred while creating role", NamedTextColor.RED));
+            LOGGER.error("Failed to create role '{}'", roleId, exception);
+            ChatMessages.GENERIC_ERROR.send(source);
             return;
         }
 
-        var message = switch (result) {
+        switch (result) {
             case CreateRoleResult.Success(Role role) -> {
                 this.permissionCache.setRole(role);
-                yield MINI_MESSAGE.deserialize(ROLE_CREATED, Placeholder.unparsed("role_id", role.getId()));
+                ChatMessages.ROLE_CREATED.send(source, Component.text(roleId));
             }
-            case CreateRoleResult.Error error -> switch (error) {
-                case ROLE_ALREADY_EXISTS -> MINI_MESSAGE.deserialize(ROLE_ALREADY_EXISTS, Placeholder.unparsed("role_id", roleId));
-            };
-        };
-        source.sendMessage(message);
+            case CreateRoleResult.Error error -> {
+                switch (error) {
+                    case ROLE_ALREADY_EXISTS -> ChatMessages.ERROR_ROLE_ALREADY_EXISTS.send(source, Component.text(roleId));
+                }
+            }
+        }
     }
 }

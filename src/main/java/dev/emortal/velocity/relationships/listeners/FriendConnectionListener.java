@@ -3,20 +3,15 @@ package dev.emortal.velocity.relationships.listeners;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.emortal.api.message.relationship.FriendConnectionMessage;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.UUID;
 
 public final class FriendConnectionListener {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String FRIEND_CONNECT_MESSAGE = "<green>Friend > <username> has connected";
-    private static final String FRIEND_DISCONNECT_MESSAGE = "<green>Friend > <username> has disconnected";
 
     private final ProxyServer proxy;
 
@@ -33,11 +28,10 @@ public final class FriendConnectionListener {
             Player target = this.proxy.getPlayer(targetId).orElse(null);
             if (target == null) continue;
 
-            TagResolver tagResolver = Placeholder.unparsed("username", username);
             if (joined) {
-                target.sendMessage(MINI_MESSAGE.deserialize(FRIEND_CONNECT_MESSAGE, tagResolver));
+                ChatMessages.FRIEND_CONNECTED.send(target, Component.text(username));
             } else {
-                target.sendMessage(MINI_MESSAGE.deserialize(FRIEND_DISCONNECT_MESSAGE, tagResolver));
+                ChatMessages.FRIEND_DISCONNECTED.send(target, Component.text(username));
             }
         }
     }

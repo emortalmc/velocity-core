@@ -6,13 +6,10 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
-import dev.emortal.velocity.lang.TempLang;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,13 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 
 public final class FriendDenySubs {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendAddSub.class);
-
-    private static final String FRIEND_REQUEST_DENIED_MESSAGE = "<light_purple>Removed your friend request from <color:#c98fff><username></color>";
-    private static final String FRIEND_REQUEST_REVOKED_MESSAGE = "<light_purple>Revoked your friend request to <color:#c98fff><username></color>";
-    private static final String NO_REQUEST_RECEIVED_MESSAGE = "<light_purple>You have not received a friend request from <color:#c98fff><username></color>";
-    private static final String NO_REQUEST_SENT_MESSAGE = "<light_purple>You have not sent a friend request to <color:#c98fff><username></color>";
 
     private final RelationshipService relationshipService;
 
@@ -35,14 +26,14 @@ public final class FriendDenySubs {
     }
 
     public void executeRevoke(@NotNull CommandContext<CommandSource> context) {
-        this.executeCommon(context, FRIEND_REQUEST_REVOKED_MESSAGE, NO_REQUEST_SENT_MESSAGE);
+        this.executeCommon(context, ChatMessages.FRIEND_REQUEST_REVOKED, ChatMessages.ERROR_NO_FRIEND_REQUEST_SENT);
     }
 
     public void executeDeny(@NotNull CommandContext<CommandSource> context) {
-        this.executeCommon(context, FRIEND_REQUEST_DENIED_MESSAGE, NO_REQUEST_RECEIVED_MESSAGE);
+        this.executeCommon(context, ChatMessages.FRIEND_REQUEST_DENIED, ChatMessages.ERROR_NO_FRIEND_REQUEST_RECEIVED);
     }
 
-    private void executeCommon(@NotNull CommandContext<CommandSource> context, @NotNull String deniedMessage, @NotNull String noRequestMessage) {
+    private void executeCommon(@NotNull CommandContext<CommandSource> context, @NotNull ChatMessages denied, @NotNull ChatMessages noRequest) {
         Player player = (Player) context.getSource();
         String targetUsername = context.getArgument("username", String.class);
 
@@ -50,13 +41,13 @@ public final class FriendDenySubs {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            LOGGER.error("Failed to retrieve player UUID", exception);
-            player.sendMessage(Component.text("An unknown error occurred", NamedTextColor.RED));
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         if (target == null) {
-            TempLang.PLAYER_NOT_FOUND.send(player, Placeholder.unparsed("search_username", targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(player, Component.text(targetUsername));
             return;
         }
 
@@ -67,20 +58,14 @@ public final class FriendDenySubs {
         try {
             result = this.relationshipService.denyFriendRequest(player.getUniqueId(), targetId);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to deny friend request", exception);
-            player.sendMessage(Component.text("Failed to deny friend request for " + correctedUsername));
+            LOGGER.error("Failed to deny friend request from '{}' to '{}'", correctedUsername, player.getUsername(), exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
-        var usernamePlaceholder = Placeholder.parsed("username", correctedUsername);
-        var message = switch (result) {
-            case DENIED -> MINI_MESSAGE.deserialize(deniedMessage, usernamePlaceholder);
-            case NO_REQUEST -> MINI_MESSAGE.deserialize(noRequestMessage, usernamePlaceholder);
-            case UNRECOGNIZED -> {
-                LOGGER.error("An error occurred denying a friend request from {} to {}", player.getUsername(), correctedUsername);
-                yield Component.text("An error occurred");
-            }
-        };
-        player.sendMessage(message);
+        switch (result) {
+            case DENIED -> denied.send(player, Component.text(correctedUsername));
+            case NO_REQUEST -> noRequest.send(player, Component.text(correctedUsername));
+        }
     }
 }

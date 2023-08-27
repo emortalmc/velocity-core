@@ -3,14 +3,10 @@ package dev.emortal.velocity.listener;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.PlayerClientBrandEvent;
 import com.velocitypowered.api.proxy.Player;
-import net.kyori.adventure.text.Component;
+import dev.emortal.velocity.lang.ChatMessages;
 import org.jetbrains.annotations.NotNull;
 
 public final class LunarKicker {
-    private static final Component NO_LUNAR = Component.text("""
-            EmortalMC has a strict no Lunar Client policy
-
-            Please consider using a more capable client, such as Fabric""");
 
     @Subscribe
     public void onPlayerJoin(@NotNull PlayerClientBrandEvent event) {
@@ -18,7 +14,7 @@ public final class LunarKicker {
         String brand = event.getBrand().toLowerCase();
 
         if (brand.contains("lunar")) {
-            player.disconnect(NO_LUNAR);
+            ChatMessages.NO_LUNAR.send(player);
         }
     }
 }

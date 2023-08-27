@@ -12,14 +12,12 @@ import dev.emortal.api.utils.ProtoDurationConverter;
 import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.SessionCache;
 import dev.emortal.velocity.player.UsernameSuggestions;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,11 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 public final class PlaytimeCommand extends EmortalCommand {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(PlaytimeCommand.class);
-
-    private static final String PLAYTIME_SELF_MESSAGE = "<light_purple>Your playtime is <playtime>.";
-    private static final String PLAYTIME_OTHER_MESSAGE = "<light_purple><name>'s playtime is <playtime>.";
 
     private final McPlayerService playerService;
     private final UsernameSuggestions usernameSuggestions;
@@ -60,15 +54,15 @@ public final class PlaytimeCommand extends EmortalCommand {
         try {
             mcPlayer = this.playerService.getPlayerById(player.getUniqueId());
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to get playtime for player {}", player.getUsername(), exception);
-            player.sendMessage(Component.text("Failed to get playtime."));
+            LOGGER.error("Failed to get player data for '{}'", player.getUsername(), exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         SessionCache.CachedSession currentSession = this.sessionCache.get(player.getUniqueId());
         if (currentSession == null) {
-            LOGGER.error("The session for {} who requested their own playtime could not be found!", player.getUniqueId());
-            player.sendMessage(Component.text("You do not exist. Please report this to an administrator."));
+            LOGGER.error("Failed to get current session for '{}'", player.getUsername());
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
@@ -76,8 +70,7 @@ public final class PlaytimeCommand extends EmortalCommand {
         Duration totalDuration = ProtoDurationConverter.fromProto(mcPlayer.getHistoricPlayTime()).plus(currentSessionDuration);
 
         String playtime = DurationFormatter.formatBigToSmall(totalDuration);
-        Component message = MINI_MESSAGE.deserialize(PLAYTIME_SELF_MESSAGE, Placeholder.unparsed("playtime", playtime));
-        player.sendMessage(message);
+        ChatMessages.YOUR_PLAYTIME.send(player, Component.text(playtime));
     }
 
     private void executeForOther(@NotNull CommandContext<CommandSource> context) {
@@ -88,14 +81,13 @@ public final class PlaytimeCommand extends EmortalCommand {
         try {
             targetPlayer = PlaytimeCommand.this.playerService.getPlayerByUsername(targetName);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to get playtime for player {}", targetName, exception);
-            player.sendMessage(Component.text("Failed to get playtime.", NamedTextColor.RED));
+            LOGGER.error("Failed to get player data for '{}'", targetName, exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         if (targetPlayer == null) {
-            LOGGER.error("Player {} who requested their own playtime could not be found!", targetName);
-            player.sendMessage(Component.text("You do not exist. Please report this to an administrator.", NamedTextColor.RED));
+            ChatMessages.PLAYER_NOT_FOUND.send(player, Component.text(targetName));
             return;
         }
 
@@ -107,9 +99,6 @@ public final class PlaytimeCommand extends EmortalCommand {
 
         String correctedUsername = targetPlayer.getCurrentUsername();
         String playtime = DurationFormatter.formatBigToSmall(totalDuration);
-        Component message = MINI_MESSAGE.deserialize(PLAYTIME_OTHER_MESSAGE,
-                Placeholder.unparsed("playtime", playtime), Placeholder.unparsed("name", correctedUsername));
-
-        player.sendMessage(message);
+        ChatMessages.OTHER_PLAYTIME.send(player, Component.text(correctedUsername), Component.text(playtime));
     }
 }

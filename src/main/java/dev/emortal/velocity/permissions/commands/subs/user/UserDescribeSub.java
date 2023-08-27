@@ -6,8 +6,8 @@ import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.grpc.permission.PermissionProto;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
-import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -23,23 +23,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 public final class UserDescribeSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserDescribeSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String USER_NOT_FOUND = "<red>User <user_id> not found";
-    private static final String USER_DESCRIPTION = """
-            <light_purple>----- User Summary (<username>) -----
-            Groups: <groups>
-            Permissions: <permission_count>
-            Display Name: <group_display_name>
-            Example Chat: <reset><example_chat>
-            <light_purple>-----------<footer_addon>-------------""";
 
     private final PermissionService permissionService;
     private final PermissionCache permissionCache;
@@ -54,28 +43,29 @@ public final class UserDescribeSub implements CommandExecutor<CommandSource> {
         CommandSource source = context.getSource();
         String targetUsername = context.getArgument("username", String.class);
 
-        PlayerResolver.CachedMcPlayer playerData;
+        PlayerResolver.CachedMcPlayer target;
         try {
-            playerData = PlayerResolver.getPlayerData(targetUsername);
+            target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            Status status = exception.getStatus();
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                source.sendMessage(MINI_MESSAGE.deserialize(USER_NOT_FOUND, Placeholder.unparsed("user_id", targetUsername)));
-            } else {
-                LOGGER.error("Failed to retrieve player data for user {}", targetUsername, status.asRuntimeException());
-            }
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(source);
             return;
         }
 
-        UUID targetId = playerData.uuid();
-        String correctedUsername = playerData.username();
+        if (target == null) {
+            ChatMessages.ERROR_USER_NOT_FOUND.send(source, Component.text(targetUsername));
+            return;
+        }
+
+        UUID targetId = target.uuid();
+        String correctedUsername = target.username();
 
         PermissionProto.PlayerRolesResponse response;
         try {
             response = this.permissionService.getPlayerRoles(targetId);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to retrieve roles for user {}", targetId, exception);
-            source.sendMessage(Component.text("An error occurred retrieving roles", NamedTextColor.RED));
+            LOGGER.error("Failed to retrieve roles for '{}'", targetId, exception);
+            ChatMessages.GENERIC_ERROR.send(source);
             return;
         }
 
@@ -97,7 +87,7 @@ public final class UserDescribeSub implements CommandExecutor<CommandSource> {
         TextComponent.Builder exampleChatBuilder = Component.text();
 
         if (activeDisplayName != null) {
-            exampleChatBuilder.append(MINI_MESSAGE.deserialize(activeDisplayName, Placeholder.unparsed("username", correctedUsername)));
+            exampleChatBuilder.append(MiniMessage.miniMessage().deserialize(activeDisplayName, Placeholder.unparsed("username", correctedUsername)));
         } else {
             exampleChatBuilder.append(Component.text(correctedUsername));
         }
@@ -108,14 +98,13 @@ public final class UserDescribeSub implements CommandExecutor<CommandSource> {
             permissionCount += role.permissions().size();
         }
 
-        source.sendMessage(MINI_MESSAGE.deserialize(USER_DESCRIPTION,
-                Placeholder.unparsed("username", correctedUsername),
-                Placeholder.component("groups", groupsValue),
-                Placeholder.unparsed("permission_count", String.valueOf(permissionCount)),
-                Placeholder.unparsed("group_display_name", activeDisplayName == null ? "null" : activeDisplayName),
-                Placeholder.component("example_chat", exampleChatBuilder.build()),
-                Placeholder.unparsed("footer_addon", this.createFooterAddon(correctedUsername))
-        ));
+        Component displayName = Component.text(activeDisplayName == null ? "null" : activeDisplayName);
+        ChatMessages.USER_DESCRIPTION.send(source,
+                Component.text(correctedUsername),
+                groupsValue,
+                Component.text(permissionCount),
+                displayName,
+                exampleChatBuilder.build());
     }
 
     private @NotNull List<PermissionCache.CachedRole> sortRolesByWeight(@NotNull List<String> roleIds) {
@@ -124,11 +113,5 @@ public final class UserDescribeSub implements CommandExecutor<CommandSource> {
                 .filter(Objects::nonNull)
                 .sorted((a, b) -> Integer.compare(b.priority(), a.priority()))
                 .toList();
-    }
-
-    private @NotNull String createFooterAddon(@NotNull String headerText) {
-        char[] footerAddon = new char[headerText.length()];
-        Arrays.fill(footerAddon, '-');
-        return new String(footerAddon);
     }
 }

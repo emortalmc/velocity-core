@@ -10,21 +10,16 @@ import dev.emortal.api.model.permission.Role;
 import dev.emortal.api.service.permission.PermissionService;
 import dev.emortal.api.service.permission.RoleUpdate;
 import dev.emortal.api.service.permission.UpdateRoleResult;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class RolePermissionAddSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RolePermissionAddSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String ROLE_NOT_FOUND = "<red>Role <role_id> not found";
-    private static final String PERMISSION_ADDED = "<green>Permission '<permission>' set to <value> for role <role_id>";
-    private static final String PERMISSION_ALREADY_EXISTS = "<red>Permission '<permission>' already set to <value> for <role_id>";
 
     private final PermissionService permissionService;
     private final PermissionCache permissionCache;
@@ -39,26 +34,24 @@ public final class RolePermissionAddSub implements CommandExecutor<CommandSource
         CommandSource source = context.getSource();
         String roleId = context.getArgument("roleId", String.class);
         String permission = context.getArgument("permission", String.class);
-        boolean value = context.getArgument("value", Boolean.class);
-        Tristate tristateValue = value ? Tristate.TRUE : Tristate.FALSE;
+        boolean newValue = context.getArgument("value", Boolean.class);
+        Tristate newState = Tristate.fromBoolean(newValue);
 
-        PermissionCache.CachedRole role = RoleSubUtils.getRole(this.permissionCache, context);
-        if (role == null) return;
+        PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
+        if (role == null) {
+            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
+            return;
+        }
 
-        var roleIdPlaceholder = Placeholder.unparsed("role_id", roleId);
         Tristate oldState = role.getPermissionState(permission);
-        if (oldState == tristateValue) {
-            source.sendMessage(MINI_MESSAGE.deserialize(PERMISSION_ALREADY_EXISTS,
-                    roleIdPlaceholder,
-                    Placeholder.unparsed("permission", permission),
-                    Placeholder.unparsed("value", String.valueOf(value)))
-            );
+        if (oldState == newState) {
+            ChatMessages.ERROR_PERMISSION_ALREADY_SET.send(source, Component.text(roleId), Component.text(permission), Component.text(newValue));
             return;
         }
 
         RoleUpdate.Builder updateBuilder = RoleUpdate.builder(roleId)
                 .setPermission(PermissionNode.newBuilder()
-                        .setState(tristateValue == Tristate.TRUE ? PermissionState.ALLOW : PermissionState.DENY)
+                        .setState(newState == Tristate.TRUE ? PermissionState.ALLOW : PermissionState.DENY)
                         .setNode(permission)
                         .build());
         if (oldState != Tristate.UNDEFINED) updateBuilder.unsetPermission(permission);
@@ -68,22 +61,21 @@ public final class RolePermissionAddSub implements CommandExecutor<CommandSource
         try {
             result = this.permissionService.updateRole(update);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Error while adding permission to role", exception);
-            source.sendMessage(MINI_MESSAGE.deserialize("<red>Error while adding permission to role"));
+            LOGGER.error("Failed to set permission '{}' on role '{}' to '{}'", permission, roleId, newValue, exception);
+            ChatMessages.GENERIC_ERROR.send(source);
             return;
         }
 
-        var message = switch (result) {
+        switch (result) {
             case UpdateRoleResult.Success(Role newRole) -> {
                 this.permissionCache.setRole(newRole);
-                var permissionPlaceholder = Placeholder.unparsed("permission", permission);
-                var valuePlaceholder = Placeholder.unparsed("value", String.valueOf(value));
-                yield MINI_MESSAGE.deserialize(PERMISSION_ADDED, roleIdPlaceholder, permissionPlaceholder, valuePlaceholder);
+                ChatMessages.PERMISSION_ADDED_TO_ROLE.send(source, Component.text(roleId), Component.text(permission), Component.text(newValue));
             }
-            case UpdateRoleResult.Error error -> switch (error) {
-                case ROLE_NOT_FOUND -> MINI_MESSAGE.deserialize(ROLE_NOT_FOUND, Placeholder.unparsed("role_id", roleId));
-            };
-        };
-        source.sendMessage(message);
+            case UpdateRoleResult.Error error -> {
+                switch (error) {
+                    case ROLE_NOT_FOUND -> ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
+                }
+            }
+        }
     }
 }

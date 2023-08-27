@@ -7,25 +7,16 @@ import dev.emortal.api.command.CommandExecutor;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.api.service.party.SetPartyLeaderResult;
 import dev.emortal.api.utils.resolvers.PlayerResolver;
-import dev.emortal.velocity.lang.TempLang;
-import dev.emortal.velocity.party.commands.PartyCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class PartyLeaderSub implements CommandExecutor<CommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyLeaderSub.class);
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-
-    private static final String UPDATED_LEADER_MESSAGE = "<green>Successfully updated the party leader";
-    private static final String NOT_LEADER_MESSAGE = "<red>You must be the party leader to update the party leader";
-    private static final String NOT_IN_PARTY_MESSAGE = "<red><username> is not in your party";
-
 
     private final @NotNull PartyService partyService;
 
@@ -42,13 +33,13 @@ public final class PartyLeaderSub implements CommandExecutor<CommandSource> {
         try {
             target = PlayerResolver.getPlayerData(targetUsername);
         } catch (StatusException exception) {
-            LOGGER.error("An error occurred PartyLeaderSub retrievePlayerData: {}", exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(executor);
             return;
         }
 
         if (target == null) {
-            TempLang.PLAYER_NOT_FOUND.send(executor, Placeholder.unparsed("search_username", targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(executor, Component.text(targetUsername));
             return;
         }
 
@@ -56,16 +47,15 @@ public final class PartyLeaderSub implements CommandExecutor<CommandSource> {
         try {
             result = this.partyService.setPartyLeader(executor.getUniqueId(), executor.getUsername(), target.uuid());
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred PartyLeaderSub setPartyLeader: ", exception);
-            executor.sendMessage(PartyCommand.ERROR_MESSAGE);
+            LOGGER.error("Failed to set leader to '{}' for party of '{}'", target.uuid(), executor.getUniqueId(), exception);
+            ChatMessages.GENERIC_ERROR.send(executor);
             return;
         }
 
-        var message = switch (result) {
-            case SUCCESS -> MINI_MESSAGE.deserialize(UPDATED_LEADER_MESSAGE);
-            case SELF_NOT_LEADER -> MINI_MESSAGE.deserialize(NOT_LEADER_MESSAGE);
-            case TARGET_NOT_IN_PARTY -> MINI_MESSAGE.deserialize(NOT_IN_PARTY_MESSAGE, Placeholder.unparsed("username", target.username()));
-        };
-        executor.sendMessage(message);
+        switch (result) {
+            case SUCCESS -> ChatMessages.YOU_UPDATED_PARTY_LEADER.send(executor);
+            case SELF_NOT_LEADER -> ChatMessages.ERROR_PARTY_NO_PERMISSION.send(executor);
+            case TARGET_NOT_IN_PARTY -> ChatMessages.ERROR_PLAYER_NOT_IN_PARTY.send(executor, Component.text(target.username()));
+        }
     }
 }

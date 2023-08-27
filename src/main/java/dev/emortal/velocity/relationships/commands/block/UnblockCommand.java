@@ -11,6 +11,7 @@ import dev.emortal.api.service.relationship.DeleteBlockResult;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.UsernameSuggestions;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
@@ -51,19 +52,19 @@ public final class UnblockCommand extends EmortalCommand {
         try {
             target = this.mcPlayerService.getPlayerByUsername(targetUsername);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while trying to unblock the player", exception);
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred while trying to unblock the player"));
+            LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
+            ChatMessages.GENERIC_ERROR.send(sender);
             return;
         }
 
         if (target == null) {
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>Player not found"));
+            ChatMessages.PLAYER_NOT_FOUND.send(sender);
             return;
         }
 
         UUID targetId = UUID.fromString(target.getId());
         if (targetId.equals(sender.getUniqueId())) {
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>You can't unblock yourself"));
+            ChatMessages.ERROR_CANNOT_UNBLOCK_SELF.send(sender);
             return;
         }
 
@@ -71,15 +72,14 @@ public final class UnblockCommand extends EmortalCommand {
         try {
             result = this.relationshipService.unblock(sender.getUniqueId(), targetId);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("An error occurred while trying to unblock the player", exception);
-            sender.sendMessage(MINI_MESSAGE.deserialize("<red>An error occurred while trying to unblock the player"));
+            LOGGER.error("Failed to unblock '{}' for '{}'", targetUsername, sender.getUsername(), exception);
+            ChatMessages.GENERIC_ERROR.send(sender);
             return;
         }
 
-        var message = switch (result) {
-            case SUCCESS -> Component.text(target.getCurrentUsername() + " has been unblocked");
-            case NOT_BLOCKED -> MINI_MESSAGE.deserialize("<red>You have not blocked the player");
-        };
-        sender.sendMessage(message);
+        switch (result) {
+            case SUCCESS -> ChatMessages.YOU_UNBLOCKED.send(sender, Component.text(target.getCurrentUsername()));
+            case NOT_BLOCKED -> ChatMessages.ERROR_NOT_BLOCKED.send(sender);
+        }
     }
 }

@@ -3,23 +3,14 @@ package dev.emortal.velocity.serverlist;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
 import com.velocitypowered.api.proxy.server.ServerPing;
+import dev.emortal.velocity.lang.ChatMessages;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class ServerPingListener {
-    private static final Component MOTD = Component.text()
-            .append(Component.text("▓▒░              ", NamedTextColor.LIGHT_PURPLE))
-            .append(Component.text("⚡   ", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
-            .append(MiniMessage.miniMessage().deserialize("<gradient:gold:light_purple><bold>EmortalMC"))
-            .append(Component.text("   ⚡", NamedTextColor.GOLD, TextDecoration.BOLD))
-            .append(Component.text("              ░▒▓", NamedTextColor.GOLD))
-            .build();
-
     private static final String[] MOTDS = new String[] {
             "coolest server to ever exist",
             "better than hypixel",
@@ -38,11 +29,20 @@ public final class ServerPingListener {
 
     @Subscribe
     public void onServerPing(@NotNull ProxyPingEvent event) {
-        String randomMessage = MOTDS[ThreadLocalRandom.current().nextInt(MOTDS.length)];
-        ServerPing ping = event.getPing().asBuilder()
-                .description(MOTD.append(Component.text("\n" + randomMessage, NamedTextColor.YELLOW)))
-                .build();
-
+        ServerPing ping = event.getPing().asBuilder().description(createMessage()).build();
         event.setPing(ping);
+    }
+
+    private static @NotNull Component createMessage() {
+        String randomMessage = selectRandomMessage();
+        return Component.text()
+                .append(ChatMessages.PING_MOTD.parse())
+                .appendNewline()
+                .append(Component.text(randomMessage, NamedTextColor.YELLOW))
+                .build();
+    }
+
+    private static @NotNull String selectRandomMessage() {
+        return MOTDS[ThreadLocalRandom.current().nextInt(MOTDS.length)];
     }
 }

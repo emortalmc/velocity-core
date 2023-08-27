@@ -3,8 +3,7 @@ package dev.emortal.velocity.party.commands.subs;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import dev.emortal.api.command.CommandExecutor;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import dev.emortal.velocity.lang.ChatMessages;
 import org.jetbrains.annotations.NotNull;
 
 /*
@@ -14,14 +13,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class PartySettingsSub implements CommandExecutor<CommandSource> {
 
-    private static final Component HELP_MESSAGE = MiniMessage.miniMessage().deserialize("""
-            <light_purple>----- Party Settings Help -----
-            /party settings
-            /party settings <setting> <value>
-            ---------------------------</light_purple>""");
-
     @Override
     public void execute(@NotNull CommandContext<CommandSource> context) {
-        context.getSource().sendMessage(HELP_MESSAGE);
+        ChatMessages.PARTY_SETTINGS_HELP.send(context.getSource());
     }
 }

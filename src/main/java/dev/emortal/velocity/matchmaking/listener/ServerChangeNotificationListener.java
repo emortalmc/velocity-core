@@ -8,18 +8,15 @@ import dev.emortal.api.kurushimi.messages.MatchCreatedMessage;
 import dev.emortal.api.model.matchmaker.Assignment;
 import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
 public final class ServerChangeNotificationListener {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final String TELEPORT_MESSAGE = "<green>Sending you to <gold><server_id><green>...</green>";
 
     private final ProxyServer proxy;
 
@@ -47,7 +44,7 @@ public final class ServerChangeNotificationListener {
                     server = this.proxy.registerServer(new ServerInfo(assignment.getServerId(), address));
                 }
 
-                player.sendMessage(MINI_MESSAGE.deserialize(TELEPORT_MESSAGE, Placeholder.unparsed("server_id", assignment.getServerId())));
+                ChatMessages.SENDING_TO_SERVER.send(player, Component.text(assignment.getServerId()));
                 player.createConnectionRequest(server).fireAndForget();
             }
         }
