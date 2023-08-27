@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-@ModuleData(name = "liveconfig", dependencies = {@Dependency(name = "kubernetes", required = false)})
+@ModuleData(name = "live-config", dependencies = {@Dependency(name = "kubernetes", required = false)})
 public final class LiveConfigModule extends Module {
     private static final Logger LOGGER = LoggerFactory.getLogger(LiveConfigModule.class);
 
