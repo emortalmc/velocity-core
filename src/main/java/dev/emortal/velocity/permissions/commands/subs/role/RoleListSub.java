@@ -9,6 +9,7 @@ import dev.emortal.velocity.permissions.PermissionCache;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public final class RoleListSub implements EmortalCommandExecutor {
             lines.add(ChatMessages.ROLE_LIST_LINE.parse(Component.text(role.id()),
                     Component.text(role.priority()),
                     Component.text(role.permissions().size()),
-                    Component.text(role.displayName()),
+                    MiniMessage.miniMessage().deserialize(role.displayName()),
                     exampleChat));
         }
 
