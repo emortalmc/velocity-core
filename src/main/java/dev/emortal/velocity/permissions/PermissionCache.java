@@ -77,7 +77,7 @@ public final class PermissionCache {
         }
 
         Set<String> roleIds = Sets.newConcurrentHashSet(response.getRoleIdsList());
-        User user = new User(id, roleIds, this.determineActiveName(roleIds));
+        User user = new User(id, roleIds);
         this.userCache.put(id, user);
     }
 
@@ -133,19 +133,19 @@ public final class PermissionCache {
         return this.roleCache.remove(id) != null;
     }
 
-    public @Nullable String determineActiveName(@NotNull Collection<String> roleIds) {
+    public @Nullable CachedRole determinePrimaryRole(@NotNull Collection<String> roleIds) {
         int currentPriority = 0;
-        String currentActiveName = null;
+        CachedRole currentPrimaryRole = null;
 
         for (CachedRole role : this.roleCache.values()) {
             if (role.displayName() == null || !roleIds.contains(role.id())) continue;
             if (role.priority() <= currentPriority) continue;
 
             currentPriority = role.priority();
-            currentActiveName = role.displayName();
+            currentPrimaryRole = role;
         }
 
-        return currentActiveName;
+        return currentPrimaryRole;
     }
 
     @Subscribe
@@ -153,7 +153,7 @@ public final class PermissionCache {
         this.userCache.remove(event.getPlayer().getUniqueId());
     }
 
-    public record User(@NotNull UUID id, @NotNull Set<String> roleIds, @Nullable String displayName) {
+    public record User(@NotNull UUID id, @NotNull Set<String> roleIds) {
     }
 
     public record CachedRole(@NotNull String id, int priority, @Nullable String displayName,

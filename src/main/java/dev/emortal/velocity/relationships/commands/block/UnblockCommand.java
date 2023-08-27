@@ -16,16 +16,12 @@ import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class UnblockCommand extends EmortalCommand implements EmortalCommandExecutor {
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Logger LOGGER = LoggerFactory.getLogger(UnblockCommand.class);
-
-    private static final Component USAGE = MINI_MESSAGE.deserialize("<red>Usage: /unblock <username>");
 
     private final RelationshipService relationshipService;
     private final PlayerResolver playerResolver;
@@ -37,7 +33,7 @@ public final class UnblockCommand extends EmortalCommand implements EmortalComma
         this.relationshipService = relationshipService;
 
         super.setCondition(CommandConditions.playerOnly());
-        super.setDefaultExecutor(context -> context.getSource().sendMessage(USAGE));
+        super.setDefaultExecutor(context -> ChatMessages.UNBLOCK_USAGE.send(context.getSource()));
 
         var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggesters.all());
         super.addSyntax(this, usernameArgument);
@@ -77,7 +73,7 @@ public final class UnblockCommand extends EmortalCommand implements EmortalComma
         }
 
         switch (result) {
-            case SUCCESS -> ChatMessages.YOU_UNBLOCKED.send(sender, Component.text(target.getCurrentUsername()));
+            case SUCCESS -> ChatMessages.YOU_UNBLOCKED.send(sender, Component.text(target.username()));
             case NOT_BLOCKED -> ChatMessages.ERROR_NOT_BLOCKED.send(sender);
         }
     }

@@ -170,6 +170,8 @@ public enum ChatMessages {
     YOU_BLOCKED(green("You have blocked {0}")),
     BLOCKED_PLAYERS(red("Blocked Players ({0}): {1}")),
     YOU_UNBLOCKED(green("{0} has been unblocked")),
+    BLOCK_USAGE(red("Usage: /block <username>")),
+    UNBLOCK_USAGE(red("Usage: /unblock <username>")),
 
     ERROR_CANNOT_BLOCK_SELF(red("You can't block yourself")),
     ERROR_ALREADY_BLOCKED(red("You have already blocked {0}")),

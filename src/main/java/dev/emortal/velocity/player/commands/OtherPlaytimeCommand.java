@@ -9,12 +9,10 @@ import dev.emortal.api.utils.ProtoDurationConverter;
 import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.velocity.command.ArgumentProvider;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +22,6 @@ import java.time.Instant;
 
 final class OtherPlaytimeCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelfPlaytimeCommand.class);
-
-    private static final String PLAYTIME_OTHER_MESSAGE = "<light_purple><name>'s playtime is <playtime>.";
 
     private final McPlayerService playerService;
 
@@ -38,32 +34,28 @@ final class OtherPlaytimeCommand implements EmortalCommandExecutor {
         Player player = (Player) source;
         String targetName = arguments.getArgument("username", String.class);
 
-        McPlayer targetPlayer;
+        McPlayer target;
         try {
-            targetPlayer = this.playerService.getPlayerByUsername(targetName);
+            target = this.playerService.getPlayerByUsername(targetName);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to get playtime for player {}", targetName, exception);
-            player.sendMessage(Component.text("Failed to get playtime.", NamedTextColor.RED));
+            LOGGER.error("Failed to get player data for '{}'", targetName, exception);
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
-        if (targetPlayer == null) {
-            LOGGER.error("Player {} who requested their own playtime could not be found!", targetName);
-            player.sendMessage(Component.text("You do not exist. Please report this to an administrator.", NamedTextColor.RED));
+        if (target == null) {
+            ChatMessages.PLAYER_NOT_FOUND.send(player);
             return;
         }
 
-        LoginSession currentSession = targetPlayer.hasCurrentSession() ? targetPlayer.getCurrentSession() : null;
+        LoginSession currentSession = target.hasCurrentSession() ? target.getCurrentSession() : null;
 
         Duration currentSessionDuration = currentSession == null ? Duration.ZERO
                 : Duration.between(ProtoTimestampConverter.fromProto(currentSession.getLoginTime()), Instant.now());
-        Duration totalDuration = currentSessionDuration.plus(ProtoDurationConverter.fromProto(targetPlayer.getHistoricPlayTime()));
+        Duration totalDuration = currentSessionDuration.plus(ProtoDurationConverter.fromProto(target.getHistoricPlayTime()));
 
-        String correctedUsername = targetPlayer.getCurrentUsername();
+        String correctedUsername = target.getCurrentUsername();
         String playtime = DurationFormatter.formatBigToSmall(totalDuration);
-        Component message = MiniMessage.miniMessage().deserialize(PLAYTIME_OTHER_MESSAGE,
-                Placeholder.unparsed("playtime", playtime), Placeholder.unparsed("name", correctedUsername));
-
-        player.sendMessage(message);
+        ChatMessages.OTHER_PLAYTIME.send(player, Component.text(playtime), Component.text(correctedUsername));
     }
 }

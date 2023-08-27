@@ -7,12 +7,11 @@ import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.utils.ProtoDurationConverter;
 import dev.emortal.velocity.command.ArgumentProvider;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
+import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.SessionCache;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +21,6 @@ import java.time.Instant;
 
 final class SelfPlaytimeCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelfPlaytimeCommand.class);
-
-    private static final String PLAYTIME_SELF_MESSAGE = "<light_purple>Your playtime is <playtime>.";
 
     private final McPlayerService playerService;
     private final SessionCache sessionCache;
@@ -57,7 +54,6 @@ final class SelfPlaytimeCommand implements EmortalCommandExecutor {
         Duration totalDuration = ProtoDurationConverter.fromProto(mcPlayer.getHistoricPlayTime()).plus(currentSessionDuration);
 
         String playtime = DurationFormatter.formatBigToSmall(totalDuration);
-        Component message = MiniMessage.miniMessage().deserialize(PLAYTIME_SELF_MESSAGE, Placeholder.unparsed("playtime", playtime));
-        player.sendMessage(message);
+        ChatMessages.YOUR_PLAYTIME.send(player, Component.text(playtime));
     }
 }
