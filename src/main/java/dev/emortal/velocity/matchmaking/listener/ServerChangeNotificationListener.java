@@ -2,7 +2,7 @@ package dev.emortal.velocity.matchmaking.listener;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
-import dev.emortal.api.message.matchmaker.MatchCreatedMessage;
+import dev.emortal.api.message.gamesdk.GameReadyMessage;
 import dev.emortal.api.model.matchmaker.Assignment;
 import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;
@@ -25,10 +25,10 @@ public final class ServerChangeNotificationListener {
         this.playerProvider = playerProvider;
         this.serverProvider = serverProvider;
 
-        messaging.addListener(MatchCreatedMessage.class, message -> this.onMatchCreated(message.getMatch()));
+        messaging.addListener(GameReadyMessage.class, message -> this.onGameReady(message.getMatch()));
     }
 
-    private void onMatchCreated(@NotNull Match match) {
+    private void onGameReady(@NotNull Match match) {
         if (!match.hasAssignment()) return;
         Assignment assignment = match.getAssignment();
 
