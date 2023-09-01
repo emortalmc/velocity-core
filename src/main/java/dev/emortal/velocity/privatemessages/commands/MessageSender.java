@@ -19,8 +19,8 @@ import java.util.UUID;
 public final class MessageSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageSender.class);
 
-    private final MessageService messageService;
-    private final PlayerResolver playerResolver;
+    private final @NotNull MessageService messageService;
+    private final @NotNull PlayerResolver playerResolver;
 
     public MessageSender(@NotNull MessageService messageService, @NotNull PlayerResolver playerResolver) {
         this.messageService = messageService;
@@ -50,7 +50,7 @@ public final class MessageSender {
             return;
         }
 
-        var privateMessage = PrivateMessage.newBuilder()
+        PrivateMessage privateMessage = PrivateMessage.newBuilder()
                 .setSenderId(player.getUniqueId().toString())
                 .setSenderUsername(player.getUsername())
                 .setRecipientId(targetId.toString())

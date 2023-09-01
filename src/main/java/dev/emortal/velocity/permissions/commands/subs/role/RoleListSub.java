@@ -18,7 +18,7 @@ import java.util.List;
 
 public final class RoleListSub implements EmortalCommandExecutor {
 
-    private final PermissionCache permissionCache;
+    private final @NotNull PermissionCache permissionCache;
 
     public RoleListSub(@NotNull PermissionCache permissionCache) {
         this.permissionCache = permissionCache;

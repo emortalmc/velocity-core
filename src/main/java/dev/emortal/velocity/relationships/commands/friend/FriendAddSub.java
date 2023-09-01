@@ -23,9 +23,9 @@ import java.util.UUID;
 final class FriendAddSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendAddSub.class);
 
-    private final RelationshipService relationshipService;
-    private final FriendCache friendCache;
-    private final PlayerResolver playerResolver;
+    private final @NotNull RelationshipService relationshipService;
+    private final @NotNull FriendCache friendCache;
+    private final @NotNull PlayerResolver playerResolver;
 
     FriendAddSub(@NotNull RelationshipService relationshipService, @NotNull FriendCache friendCache, @NotNull PlayerResolver playerResolver) {
         this.relationshipService = relationshipService;

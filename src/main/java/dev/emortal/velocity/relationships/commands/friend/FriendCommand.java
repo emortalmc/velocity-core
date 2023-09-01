@@ -7,7 +7,6 @@ import com.velocitypowered.api.command.CommandSource;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
@@ -23,7 +22,7 @@ public final class FriendCommand extends EmortalCommand {
                          @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
         super("friend");
 
-        super.setCondition(CommandConditions.playerOnly());
+        super.setPlayerOnly();
         super.setDefaultExecutor(this::sendHelp);
 
         var pageArgument = argument("page", IntegerArgumentType.integer(1), null);

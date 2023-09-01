@@ -5,7 +5,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.velocity.command.ArgumentProvider;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
@@ -20,7 +19,7 @@ public final class MessageCommand extends EmortalCommand implements EmortalComma
         super("message", "msg");
         this.messageSender = messageSender;
 
-        super.setCondition(CommandConditions.playerOnly());
+        super.setPlayerOnly();
         super.setDefaultExecutor(this::sendUsage);
 
         var receiverArgument = argument("receiver", StringArgumentType.word(), usernameSuggesters.online());

@@ -13,4 +13,7 @@ public final class Environment {
     public static @NotNull String getHostname() {
         return HOSTNAME;
     }
+
+    private Environment() {
+    }
 }

@@ -38,7 +38,6 @@ public final class PermissionModule extends VelocityModule {
         new PermissionUpdateListener(cache, messaging);
 
         super.registerCommand(new PermissionCommand(service, cache, super.playerResolver(), super.adapters().commandManager().usernameSuggesters()));
-
         return true;
     }
 

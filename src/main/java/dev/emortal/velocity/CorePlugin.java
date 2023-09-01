@@ -25,13 +25,11 @@ import dev.emortal.velocity.relationships.RelationshipsModule;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@Plugin(
-        id = "core",
-        name = "Core"
-)
+@Plugin(id = "core", name = "Core")
 public final class CorePlugin {
 
-    private final ProxyServer proxy;
+    private final @NotNull ProxyServer proxy;
+
     private @Nullable ModuleManager moduleManager;
 
     @Inject

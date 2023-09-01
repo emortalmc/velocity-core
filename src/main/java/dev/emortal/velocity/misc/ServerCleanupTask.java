@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 final class ServerCleanupTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerCleanupTask.class);
 
-    private final ServerProvider serverProvider;
+    private final @NotNull ServerProvider serverProvider;
 
     ServerCleanupTask(@NotNull ServerProvider serverProvider) {
         this.serverProvider = serverProvider;
@@ -20,7 +20,7 @@ final class ServerCleanupTask {
 
     @Subscribe
     public void onPlayerDisconnect(@NotNull DisconnectEvent event) {
-        event.getPlayer().getCurrentServer().ifPresent(conn -> this.checkServer(conn.getServer()));
+        event.getPlayer().getCurrentServer().ifPresent(connection -> this.checkServer(connection.getServer()));
     }
 
     @Subscribe
@@ -32,6 +32,6 @@ final class ServerCleanupTask {
         if (!server.getPlayersConnected().isEmpty()) return;
 
         this.serverProvider.unregisterServer(server.getServerInfo());
-        LOGGER.info("Unregistered server {}", server.getServerInfo().getName());
+        LOGGER.info("Unregistered server '{}'", server.getServerInfo().getName());
     }
 }

@@ -24,9 +24,9 @@ import java.util.UUID;
 final class PartyUpdateListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyUpdateListener.class);
 
-    private final PartyCache partyCache;
-    private final PlayerProvider playerProvider;
-    private final PartyUpdateNotifier updateNotifier;
+    private final @NotNull PartyCache partyCache;
+    private final @NotNull PlayerProvider playerProvider;
+    private final @NotNull PartyUpdateNotifier updateNotifier;
 
     PartyUpdateListener(@NotNull PartyCache partyCache, @NotNull PlayerProvider playerProvider, @NotNull PartyUpdateNotifier updateNotifier,
                         @NotNull MessageHandler messaging) {

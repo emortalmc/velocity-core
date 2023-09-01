@@ -23,7 +23,7 @@ public final class LastMessageCache {
     }
 
     @Subscribe
-    public void onPlayerDisconnect(@NotNull DisconnectEvent event) {
+    void onPlayerDisconnect(@NotNull DisconnectEvent event) {
         this.lastMessageMap.remove(event.getPlayer().getUniqueId());
     }
 }

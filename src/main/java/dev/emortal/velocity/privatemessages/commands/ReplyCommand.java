@@ -5,7 +5,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.velocity.command.ArgumentProvider;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
@@ -14,15 +13,15 @@ import org.jetbrains.annotations.NotNull;
 
 public final class ReplyCommand extends EmortalCommand implements EmortalCommandExecutor {
 
-    private final MessageSender messageSender;
-    private final LastMessageCache lastMessageCache;
+    private final @NotNull MessageSender messageSender;
+    private final @NotNull LastMessageCache lastMessageCache;
 
     public ReplyCommand(@NotNull MessageSender messageSender, @NotNull LastMessageCache lastMessageCache) {
         super("reply", "r");
         this.messageSender = messageSender;
         this.lastMessageCache = lastMessageCache;
 
-        super.setCondition(CommandConditions.playerOnly());
+        super.setPlayerOnly();
         super.setDefaultExecutor(this::sendUsage);
 
         var messageArgument = argument("message", StringArgumentType.greedyString(), null);

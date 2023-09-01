@@ -28,8 +28,8 @@ import java.util.concurrent.TimeUnit;
 public final class LobbySelectorListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(LobbySelectorListener.class);
 
-    private final ServerProvider serverProvider;
-    private final MatchmakerService matchmaker;
+    private final @NotNull ServerProvider serverProvider;
+    private final @NotNull MatchmakerService matchmaker;
 
     // NOTE: This is not cleaned up if there's a failed request, we may have problems :skull:
     private final Cache<UUID, EventCallbackContext> pendingPlayers = Caffeine.newBuilder()
@@ -96,7 +96,7 @@ public final class LobbySelectorListener {
         if (cause != RemovalCause.EXPIRED) return;
         if (playerId == null || context == null) return;
 
-        LOGGER.debug("Failed to find initial lobby match in time for {}", context.playerName());
+        LOGGER.debug("Failed to find initial lobby match in time for '{}'", context.playerName());
         context.disconnect();
     }
 

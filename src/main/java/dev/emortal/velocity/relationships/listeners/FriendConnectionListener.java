@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public final class FriendConnectionListener {
 
-    private final PlayerProvider playerProvider;
+    private final @NotNull PlayerProvider playerProvider;
 
     public FriendConnectionListener(@NotNull PlayerProvider playerProvider, @NotNull MessagingModule messaging) {
         this.playerProvider = playerProvider;

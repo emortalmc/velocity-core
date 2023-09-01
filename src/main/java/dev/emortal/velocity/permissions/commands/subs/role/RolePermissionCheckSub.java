@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 public final class RolePermissionCheckSub implements EmortalCommandExecutor {
 
-    private final PermissionCache permissionCache;
+    private final @NotNull PermissionCache permissionCache;
 
     public RolePermissionCheckSub(@NotNull PermissionCache permissionCache) {
         this.permissionCache = permissionCache;

@@ -28,12 +28,12 @@ public final class SessionCache {
     }
 
     @Subscribe
-    private void onPlayerConnect(@NotNull PostLoginEvent event) {
+    void onPlayerConnect(@NotNull PostLoginEvent event) {
         this.put(event.getPlayer().getUniqueId(), new CachedSession(Instant.now()));
     }
 
     @Subscribe
-    private void onPlayerDisconnect(@NotNull DisconnectEvent event) {
+    void onPlayerDisconnect(@NotNull DisconnectEvent event) {
         this.remove(event.getPlayer().getUniqueId());
     }
 

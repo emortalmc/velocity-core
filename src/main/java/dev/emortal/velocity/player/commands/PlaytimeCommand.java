@@ -2,7 +2,6 @@ package dev.emortal.velocity.player.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.emortal.api.service.mcplayer.McPlayerService;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.player.SessionCache;
 import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
@@ -14,7 +13,7 @@ public final class PlaytimeCommand extends EmortalCommand {
                            @NotNull UsernameSuggesterProvider usernameSuggesters) {
         super("playtime");
 
-        super.setCondition(CommandConditions.playerOnly());
+        super.setPlayerOnly();
         super.setDefaultExecutor(new SelfPlaytimeCommand(playerService, sessionCache));
 
         var usernameArgument = argument("username", StringArgumentType.word(), usernameSuggesters.all());

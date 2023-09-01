@@ -34,10 +34,10 @@ final class ResourcePackForcer {
         byte[] sha1 = this.fetchSha1();
         this.resourcePackInfo = resourcePackProvider.createResourcePack(PACK_URL, sha1, ChatMessages.RESOURCE_PACK_DOWNLOAD.parse(), true);
 
-        LOGGER.info("Update resource pack info with hash {}", this.byteArrayToHexString(sha1));
+        LOGGER.info("Update resource pack info with hash {}", byteArrayToHexString(sha1));
     }
 
-    public @NotNull String byteArrayToHexString(byte[] bytes) {
+    private static @NotNull String byteArrayToHexString(byte[] bytes) {
         StringBuilder result = new StringBuilder();
         for (byte value : bytes) {
             result.append(Integer.toString((value & 0xff) + 0x100, 16).substring(1));
@@ -62,14 +62,14 @@ final class ResourcePackForcer {
     }
 
     @Subscribe
-    public void onPlayerJoin(@NotNull ServerPostConnectEvent event) {
+    void onPlayerJoin(@NotNull ServerPostConnectEvent event) {
         if (event.getPreviousServer() != null) return; // Don't send the resource pack if the player is switching servers
 
         event.getPlayer().sendResourcePackOffer(this.resourcePackInfo);
     }
 
     @Subscribe
-    public void onPlayerResourceStatus(@NotNull PlayerResourcePackStatusEvent event) {
+    void onPlayerResourceStatus(@NotNull PlayerResourcePackStatusEvent event) {
         LOGGER.info("Player {} resource pack status {}", event.getPlayer().getUsername(), event.getStatus());
         Player player = event.getPlayer();
         switch (event.getStatus()) {

@@ -28,7 +28,7 @@ final class ServerPingListener {
     };
 
     @Subscribe
-    public void onServerPing(@NotNull ProxyPingEvent event) {
+    void onServerPing(@NotNull ProxyPingEvent event) {
         ServerPing ping = event.getPing().asBuilder().description(createMessage()).build();
         event.setPing(ping);
     }

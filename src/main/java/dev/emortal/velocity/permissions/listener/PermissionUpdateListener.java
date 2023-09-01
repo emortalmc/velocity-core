@@ -14,7 +14,7 @@ import java.util.UUID;
 public final class PermissionUpdateListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionUpdateListener.class);
 
-    private final PermissionCache cache;
+    private final @NotNull PermissionCache cache;
 
     public PermissionUpdateListener(@NotNull PermissionCache cache, @NotNull MessagingModule messagingCore) {
         this.cache = cache;

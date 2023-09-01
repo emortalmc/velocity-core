@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 public abstract class VelocityModule extends Module {
 
-    public VelocityModule(@NotNull VelocityModuleEnvironment environment) {
+    protected VelocityModule(@NotNull VelocityModuleEnvironment environment) {
         super(environment);
     }
 

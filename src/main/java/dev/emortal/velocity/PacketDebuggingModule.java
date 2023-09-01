@@ -75,7 +75,6 @@ public final class PacketDebuggingModule extends VelocityModule {
     }
 
     private final class PacketCounter extends ChannelDuplexHandler {
-
         private static final int SEGMENT_BITS = 0x7F;
         private static final int CONTINUE_BIT = 0x80;
 
@@ -85,7 +84,7 @@ public final class PacketDebuggingModule extends VelocityModule {
         }
 
         @Override
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        public void write(@NotNull ChannelHandlerContext ctx, @NotNull Object msg, @NotNull ChannelPromise promise) throws Exception {
             ByteBuf buf = ((ByteBuf) msg).copy();
             int packetId = readVarInt(buf);
 

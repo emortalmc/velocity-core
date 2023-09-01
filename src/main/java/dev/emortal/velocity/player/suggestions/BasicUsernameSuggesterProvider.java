@@ -4,7 +4,6 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.velocitypowered.api.command.CommandSource;
 import dev.emortal.api.grpc.mcplayer.McPlayerProto.SearchPlayersByUsernameRequest.FilterMethod;
 import dev.emortal.api.service.mcplayer.McPlayerService;
-import dev.emortal.api.utils.GrpcStubCollection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

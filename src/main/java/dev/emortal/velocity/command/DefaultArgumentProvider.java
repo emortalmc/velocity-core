@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 final class DefaultArgumentProvider implements ArgumentProvider {
 
-    private final CommandContext<CommandSource> context;
+    private final @NotNull CommandContext<CommandSource> context;
 
     DefaultArgumentProvider(@NotNull CommandContext<CommandSource> context) {
         this.context = context;

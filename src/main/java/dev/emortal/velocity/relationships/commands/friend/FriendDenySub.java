@@ -29,10 +29,10 @@ final class FriendDenySub implements EmortalCommandExecutor {
         return new FriendDenySub(relationshipService, playerResolver, ChatMessages.FRIEND_REQUEST_REVOKED, ChatMessages.ERROR_NO_FRIEND_REQUEST_SENT);
     }
 
-    private final RelationshipService relationshipService;
-    private final PlayerResolver playerResolver;
-    private final ChatMessages denied;
-    private final ChatMessages noRequest;
+    private final @NotNull RelationshipService relationshipService;
+    private final @NotNull PlayerResolver playerResolver;
+    private final @NotNull ChatMessages denied;
+    private final @NotNull ChatMessages noRequest;
 
     private FriendDenySub(@NotNull RelationshipService relationshipService, @NotNull PlayerResolver playerResolver, @NotNull ChatMessages denied,
                           @NotNull ChatMessages noRequest) {

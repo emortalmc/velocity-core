@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
 public final class PermissionCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionCache.class);
 
-    private final PermissionService permissionService;
-    private final Set<PermissionBlocker> permissionBlockers;
+    private final @NotNull PermissionService permissionService;
+    private final @NotNull Set<PermissionBlocker> permissionBlockers;
 
     private final Map<String, CachedRole> roleCache = Collections.synchronizedMap(new LinkedHashMap<>());
     private final Map<UUID, User> userCache = new ConcurrentHashMap<>();
@@ -47,11 +47,6 @@ public final class PermissionCache {
 
     @Blocking
     private void loadRoles() {
-        if (this.permissionService == null) {
-            LOGGER.warn("Permission service is not available! Not loading roles");
-            return;
-        }
-
         List<Role> roles;
         try {
             roles = this.permissionService.getAllRoles();
@@ -125,7 +120,7 @@ public final class PermissionCache {
     }
 
     public void setRole(@NotNull Role roleResponse) {
-        var role = CachedRole.fromRole(roleResponse);
+        CachedRole role = CachedRole.fromRole(roleResponse);
         this.roleCache.put(roleResponse.getId(), role);
     }
 
@@ -149,7 +144,7 @@ public final class PermissionCache {
     }
 
     @Subscribe
-    public void onDisconnect(@NotNull DisconnectEvent event) {
+    void onDisconnect(@NotNull DisconnectEvent event) {
         this.userCache.remove(event.getPlayer().getUniqueId());
     }
 
@@ -193,7 +188,7 @@ public final class PermissionCache {
             return MiniMessage.miniMessage().deserialize(this.displayName, Placeholder.unparsed("username", username));
         }
 
-        public record PermissionNode(String permission, Tristate state) {
+        public record PermissionNode(@NotNull String permission, @NotNull Tristate state) {
         }
     }
 }

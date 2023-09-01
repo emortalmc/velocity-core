@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
 
-    private final PlayerProvider playerProvider;
+    private final @NotNull PlayerProvider playerProvider;
 
     public ChatPartyUpdateNotifier(@NotNull PlayerProvider playerProvider) {
         this.playerProvider = playerProvider;

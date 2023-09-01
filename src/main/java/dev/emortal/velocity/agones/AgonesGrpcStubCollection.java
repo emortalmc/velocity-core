@@ -6,7 +6,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.jetbrains.annotations.Nullable;
 
-public final class AgonesGrpcStubCollection {
+final class AgonesGrpcStubCollection {
     private static final boolean AGONES_SDK_ENABLED;
     private static final String AGONES_ADDRESS = "localhost"; // SDK runs as a sidecar in production so address is always localhost
     private static final int AGONES_GRPC_PORT;
@@ -23,7 +23,7 @@ public final class AgonesGrpcStubCollection {
     private final @Nullable dev.agones.sdk.beta.SDKGrpc.SDKBlockingStub betaAgonesService;
     private final @Nullable dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub alphaAgonesService;
 
-    public AgonesGrpcStubCollection() {
+    AgonesGrpcStubCollection() {
         if (!AGONES_SDK_ENABLED) {
             this.agonesService = null;
             this.standardAgonesService = null;
@@ -42,19 +42,19 @@ public final class AgonesGrpcStubCollection {
         this.alphaAgonesService = dev.agones.sdk.alpha.SDKGrpc.newBlockingStub(agonesChannel);
     }
 
-    public @Nullable SDKGrpc.SDKBlockingStub getAgonesService() {
-        return agonesService;
+    @Nullable SDKGrpc.SDKBlockingStub getAgonesService() {
+        return this.agonesService;
     }
 
-    public @Nullable SDKGrpc.SDKStub getStandardAgonesService() {
-        return standardAgonesService;
+    @Nullable SDKGrpc.SDKStub getStandardAgonesService() {
+        return this.standardAgonesService;
     }
 
-    public @Nullable dev.agones.sdk.beta.SDKGrpc.SDKBlockingStub getBetaAgonesService() {
-        return betaAgonesService;
+    @Nullable dev.agones.sdk.beta.SDKGrpc.SDKBlockingStub getBetaAgonesService() {
+        return this.betaAgonesService;
     }
 
-    public @Nullable dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub getAlphaAgonesService() {
-        return alphaAgonesService;
+    @Nullable dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub getAlphaAgonesService() {
+        return this.alphaAgonesService;
     }
 }

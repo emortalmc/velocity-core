@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 final class PartyCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyCache.class);
 
-    private final PartyService partyService;
+    private final @NotNull PartyService partyService;
 
     private final Map<String, CachedParty> parties = new ConcurrentHashMap<>();
 
@@ -82,6 +82,7 @@ final class PartyCache {
 
         private final @NotNull String id;
         private final @NotNull Map<UUID, CachedPartyMember> members;
+
         private @NotNull UUID leaderId;
         private boolean open;
 
@@ -144,7 +145,7 @@ final class PartyCache {
         }
 
         @Override
-        public String toString() {
+        public @NotNull String toString() {
             return "CachedParty{" +
                     "id='" + this.id + '\'' +
                     ", members=" + this.members +

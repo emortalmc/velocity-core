@@ -22,9 +22,9 @@ import java.util.UUID;
 final class FriendRemoveSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendRemoveSub.class);
 
-    private final RelationshipService relationshipService;
-    private final FriendCache friendCache;
-    private final PlayerResolver playerResolver;
+    private final @NotNull RelationshipService relationshipService;
+    private final @NotNull FriendCache friendCache;
+    private final @NotNull PlayerResolver playerResolver;
 
     FriendRemoveSub(@NotNull RelationshipService relationshipService, @NotNull FriendCache friendCache, @NotNull PlayerResolver playerResolver) {
         this.relationshipService = relationshipService;

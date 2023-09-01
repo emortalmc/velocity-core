@@ -3,6 +3,7 @@ package dev.emortal.velocity.command;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.command.Command;
 import dev.emortal.api.command.element.ArgumentElement;
 import dev.emortal.api.command.element.LiteralElement;
@@ -11,12 +12,16 @@ import org.jetbrains.annotations.Nullable;
 
 public abstract class EmortalCommand extends Command<CommandSource> {
 
-    public EmortalCommand(@NotNull String name, @NotNull String... aliases) {
+    protected EmortalCommand(@NotNull String name, @NotNull String... aliases) {
         super(name, aliases);
     }
 
-    public EmortalCommand(@NotNull String name) {
+    protected EmortalCommand(@NotNull String name) {
         super(name);
+    }
+
+    protected void setPlayerOnly() {
+        this.setCondition(Player.class::isInstance);
     }
 
     protected static @NotNull LiteralElement<CommandSource> literal(@NotNull String name) {

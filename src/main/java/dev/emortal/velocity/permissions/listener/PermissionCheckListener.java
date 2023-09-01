@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 public final class PermissionCheckListener {
 
-    private final PermissionCache permissionCache;
+    private final @NotNull PermissionCache permissionCache;
 
     public PermissionCheckListener(@NotNull PermissionCache permissionCache) {
         this.permissionCache = permissionCache;

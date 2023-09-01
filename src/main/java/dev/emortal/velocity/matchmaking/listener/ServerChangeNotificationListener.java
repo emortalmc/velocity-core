@@ -17,8 +17,8 @@ import java.util.UUID;
 
 public final class ServerChangeNotificationListener {
 
-    private final PlayerProvider playerProvider;
-    private final ServerProvider serverProvider;
+    private final @NotNull PlayerProvider playerProvider;
+    private final @NotNull ServerProvider serverProvider;
 
     public ServerChangeNotificationListener(@NotNull PlayerProvider playerProvider, @NotNull ServerProvider serverProvider,
                                             @NotNull MessagingModule messaging) {

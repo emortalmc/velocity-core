@@ -6,7 +6,6 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.service.relationship.DeleteBlockResult;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.ArgumentProvider;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
@@ -23,8 +22,8 @@ import org.slf4j.LoggerFactory;
 public final class UnblockCommand extends EmortalCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(UnblockCommand.class);
 
-    private final RelationshipService relationshipService;
-    private final PlayerResolver playerResolver;
+    private final @NotNull RelationshipService relationshipService;
+    private final @NotNull PlayerResolver playerResolver;
 
     public UnblockCommand(@NotNull RelationshipService relationshipService, @NotNull PlayerResolver playerResolver,
                           @NotNull UsernameSuggesterProvider usernameSuggesters) {
@@ -32,7 +31,7 @@ public final class UnblockCommand extends EmortalCommand implements EmortalComma
         this.playerResolver = playerResolver;
         this.relationshipService = relationshipService;
 
-        super.setCondition(CommandConditions.playerOnly());
+        super.setPlayerOnly();
         super.setDefaultExecutor(context -> ChatMessages.UNBLOCK_USAGE.send(context.getSource()));
 
         var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggesters.all());

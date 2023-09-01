@@ -23,9 +23,9 @@ final class FriendRequestPurgeSub implements EmortalCommandExecutor {
         return new FriendRequestPurgeSub(relationshipService, false, ChatMessages.PURGED_OUTGOING_FRIEND_REQUESTS);
     }
 
-    private final RelationshipService friendService;
+    private final @NotNull RelationshipService friendService;
     private final boolean incoming;
-    private final ChatMessages success;
+    private final @NotNull ChatMessages success;
 
     private FriendRequestPurgeSub(@NotNull RelationshipService friendService, boolean incoming, @NotNull ChatMessages success) {
         this.friendService = friendService;

@@ -21,9 +21,9 @@ import java.util.UUID;
 public final class UserRoleAddSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRoleAddSub.class);
 
-    private final PermissionService permissionService;
-    private final PermissionCache permissionCache;
-    private final PlayerResolver playerResolver;
+    private final @NotNull PermissionService permissionService;
+    private final @NotNull PermissionCache permissionCache;
+    private final @NotNull PlayerResolver playerResolver;
 
     public UserRoleAddSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache,
                           @NotNull PlayerResolver playerResolver) {

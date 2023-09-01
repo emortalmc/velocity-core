@@ -6,7 +6,6 @@ import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.grpc.relationship.RelationshipProto;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.ArgumentProvider;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
@@ -23,8 +22,8 @@ import org.slf4j.LoggerFactory;
 public final class BlockCommand extends EmortalCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockCommand.class);
 
-    private final RelationshipService relationshipService;
-    private final PlayerResolver playerResolver;
+    private final @NotNull RelationshipService relationshipService;
+    private final @NotNull PlayerResolver playerResolver;
 
     public BlockCommand(@NotNull RelationshipService relationshipService, @NotNull PlayerResolver playerResolver,
                         @NotNull UsernameSuggesterProvider usernameSuggesters) {
@@ -32,7 +31,7 @@ public final class BlockCommand extends EmortalCommand implements EmortalCommand
         this.relationshipService = relationshipService;
         this.playerResolver = playerResolver;
 
-        super.setCondition(CommandConditions.playerOnly());
+        super.setPlayerOnly();
         super.setDefaultExecutor(context -> ChatMessages.BLOCK_USAGE.send(context.getSource()));
 
         var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggesters.all());

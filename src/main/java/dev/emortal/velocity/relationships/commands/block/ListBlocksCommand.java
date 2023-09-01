@@ -6,7 +6,6 @@ import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.ArgumentProvider;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
@@ -22,16 +21,16 @@ import java.util.UUID;
 public final class ListBlocksCommand extends EmortalCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListBlocksCommand.class);
 
-    private final RelationshipService relationshipService;
-    private final McPlayerService playerService;
+    private final @NotNull RelationshipService relationshipService;
+    private final @NotNull McPlayerService playerService;
 
     public ListBlocksCommand(@NotNull RelationshipService relationshipService, @NotNull McPlayerService playerService) {
         super("listblocks");
         this.relationshipService = relationshipService;
         this.playerService = playerService;
 
-        super.setCondition(CommandConditions.playerOnly());
-        super.setDefaultExecutor(this::execute);
+        super.setPlayerOnly();
+        super.setDefaultExecutor(this);
     }
 
     @Override

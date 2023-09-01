@@ -17,7 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class FriendCache {
 
-    private final RelationshipService relationshipService;
+    private final @NotNull RelationshipService relationshipService;
+
     private final Map<UUID, List<CachedFriend>> friendMap = new ConcurrentHashMap<>();
 
     public FriendCache(@NotNull RelationshipService relationshipService) {
@@ -37,7 +38,7 @@ public final class FriendCache {
     }
 
     public void remove(@NotNull UUID playerId, @NotNull UUID friendId) {
-        this.friendMap.get(playerId).removeIf(cachedFriend -> cachedFriend.playerId().equals(friendId));
+        this.friendMap.get(playerId).removeIf(friend -> friend.playerId().equals(friendId));
     }
 
     public void removeAll(@NotNull UUID playerId) {
@@ -45,7 +46,7 @@ public final class FriendCache {
     }
 
     @Subscribe
-    public void onPlayerLogin(@NotNull PostLoginEvent event) {
+    void onPlayerLogin(@NotNull PostLoginEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
 
         List<Friend> friends;
@@ -65,7 +66,7 @@ public final class FriendCache {
     }
 
     @Subscribe
-    public void onPlayerDisconnect(@NotNull DisconnectEvent event) {
+    void onPlayerDisconnect(@NotNull DisconnectEvent event) {
         this.removeAll(event.getPlayer().getUniqueId());
     }
 

@@ -4,7 +4,6 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.service.matchmaker.MatchmakerService;
 import dev.emortal.velocity.command.ArgumentProvider;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
@@ -16,13 +15,13 @@ import org.slf4j.LoggerFactory;
 public final class LobbyCommand extends EmortalCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LobbyCommand.class);
 
-    private final MatchmakerService matchmaker;
+    private final @NotNull MatchmakerService matchmaker;
 
     public LobbyCommand(@NotNull MatchmakerService matchmaker) {
         super("lobby");
         this.matchmaker = matchmaker;
 
-        super.setCondition(CommandConditions.playerOnly());
+        super.setPlayerOnly();
         super.setDefaultExecutor(this);
     }
 

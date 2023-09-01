@@ -2,7 +2,6 @@ package dev.emortal.velocity.party.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.emortal.api.service.party.PartyService;
-import dev.emortal.velocity.command.CommandConditions;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.party.commands.subs.PartyCloseSub;
@@ -25,7 +24,7 @@ public final class PartyCommand extends EmortalCommand {
                         @NotNull UsernameSuggesterProvider usernameSuggesterProvider) {
         super("party");
 
-        super.setCondition(CommandConditions.playerOnly());
+        super.setPlayerOnly();
         super.setDefaultExecutor(context -> ChatMessages.PARTY_HELP.send(context.getSource()));
 
         var playerArgument = argument("player", StringArgumentType.word(), usernameSuggesterProvider.online());

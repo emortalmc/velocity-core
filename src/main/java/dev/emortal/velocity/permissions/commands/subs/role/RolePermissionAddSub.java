@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 public final class RolePermissionAddSub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(RolePermissionAddSub.class);
 
-    private final PermissionService permissionService;
-    private final PermissionCache permissionCache;
+    private final @NotNull PermissionService permissionService;
+    private final @NotNull PermissionCache permissionCache;
 
     public RolePermissionAddSub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache) {
         this.permissionService = permissionService;

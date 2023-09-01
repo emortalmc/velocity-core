@@ -40,13 +40,11 @@ public final class MessagingModule extends VelocityModule implements MessageHand
             return false;
         }
 
-        KafkaSettings kafkaSettings = KafkaSettings.builder().bootstrapServers(KAFKA_HOST + ":" + KAFKA_PORT).build();
-
-        this.kafkaConsumer = new FriendlyKafkaConsumer(kafkaSettings);
-        this.kafkaProducer = new FriendlyKafkaProducer(kafkaSettings);
+        KafkaSettings settings = KafkaSettings.builder().bootstrapServers(KAFKA_HOST + ":" + KAFKA_PORT).build();
+        this.kafkaConsumer = new FriendlyKafkaConsumer(settings);
+        this.kafkaProducer = new FriendlyKafkaProducer(settings);
 
         super.registerEventListener(new PlayerUpdateListener(this.kafkaProducer));
-
         return true;
     }
 

@@ -21,9 +21,9 @@ import java.time.Duration;
 import java.time.Instant;
 
 final class OtherPlaytimeCommand implements EmortalCommandExecutor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SelfPlaytimeCommand.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OtherPlaytimeCommand.class);
 
-    private final McPlayerService playerService;
+    private final @NotNull McPlayerService playerService;
 
     OtherPlaytimeCommand(@NotNull McPlayerService playerService) {
         this.playerService = playerService;

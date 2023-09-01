@@ -22,8 +22,8 @@ import java.time.Instant;
 final class SelfPlaytimeCommand implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelfPlaytimeCommand.class);
 
-    private final McPlayerService playerService;
-    private final SessionCache sessionCache;
+    private final @NotNull McPlayerService playerService;
+    private final @NotNull SessionCache sessionCache;
 
     SelfPlaytimeCommand(@NotNull McPlayerService playerService, @NotNull SessionCache sessionCache) {
         this.playerService = playerService;

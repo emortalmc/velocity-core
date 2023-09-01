@@ -25,7 +25,6 @@ public final class AgonesModule extends VelocityModule {
         }
 
         super.registerEventListener(new AgonesListener(stubCollection));
-
         return true;
     }
 

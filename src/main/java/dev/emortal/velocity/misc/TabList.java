@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 public final class TabList {
     private static final Logger LOGGER = LoggerFactory.getLogger(TabList.class);
 
-    private final PlayerProvider playerProvider;
+    private final @NotNull PlayerProvider playerProvider;
 
     private @NotNull Component currentFooter = Component.empty();
 

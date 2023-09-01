@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 public final class RoleDescribeSub implements EmortalCommandExecutor {
 
-    private final PermissionCache permissionCache;
+    private final @NotNull PermissionCache permissionCache;
 
     public RoleDescribeSub(@NotNull PermissionCache permissionCache) {
         this.permissionCache = permissionCache;

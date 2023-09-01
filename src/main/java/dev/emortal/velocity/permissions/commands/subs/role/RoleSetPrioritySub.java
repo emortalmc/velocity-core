@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 public final class RoleSetPrioritySub implements EmortalCommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleSetPrioritySub.class);
 
-    private final PermissionService permissionService;
-    private final PermissionCache permissionCache;
+    private final @NotNull PermissionService permissionService;
+    private final @NotNull PermissionCache permissionCache;
 
     public RoleSetPrioritySub(@NotNull PermissionService permissionService, @NotNull PermissionCache permissionCache) {
         this.permissionService = permissionService;

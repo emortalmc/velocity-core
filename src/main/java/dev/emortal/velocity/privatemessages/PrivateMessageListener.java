@@ -13,10 +13,11 @@ import java.util.UUID;
 
 public final class PrivateMessageListener {
 
-    private final PlayerProvider playerProvider;
-    private final LastMessageCache lastMessageCache;
+    private final @NotNull PlayerProvider playerProvider;
+    private final @NotNull LastMessageCache lastMessageCache;
 
-    public PrivateMessageListener(@NotNull PlayerProvider playerProvider, @NotNull MessagingModule messaging, LastMessageCache lastMessageCache) {
+    public PrivateMessageListener(@NotNull PlayerProvider playerProvider, @NotNull MessagingModule messaging,
+                                  @NotNull LastMessageCache lastMessageCache) {
         this.playerProvider = playerProvider;
         this.lastMessageCache = lastMessageCache;
 

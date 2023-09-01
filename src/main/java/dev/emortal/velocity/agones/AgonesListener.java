@@ -16,21 +16,21 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public final class AgonesListener {
+final class AgonesListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(AgonesListener.class);
 
     private final SDKGrpc.SDKBlockingStub agonesService;
     private final SDKGrpc.SDKStub standardAgonesService;
     private final dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub alphaAgonesService;
 
-    public AgonesListener(@NotNull AgonesGrpcStubCollection stubManager) {
+    AgonesListener(@NotNull AgonesGrpcStubCollection stubManager) {
         this.agonesService = stubManager.getAgonesService();
         this.standardAgonesService = stubManager.getStandardAgonesService();
         this.alphaAgonesService = stubManager.getAlphaAgonesService();
     }
 
     @Subscribe(async = true)
-    public void onListenerBound(@NotNull ListenerBoundEvent event) {
+    void onListenerBound(@NotNull ListenerBoundEvent event) {
         try {
             this.agonesService.ready(AgonesSDKProto.Empty.getDefaultInstance());
         } catch (StatusRuntimeException exception) {
@@ -41,7 +41,7 @@ public final class AgonesListener {
     }
 
     @Subscribe(async = true)
-    public void onLogin(@NotNull LoginEvent event) {
+    void onLogin(@NotNull LoginEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         AlphaAgonesSDKProto.PlayerID playerId = AlphaAgonesSDKProto.PlayerID.newBuilder().setPlayerID(id.toString()).build();
 
@@ -57,7 +57,7 @@ public final class AgonesListener {
     }
 
     @Subscribe(async = true)
-    public void onDisconnect(@NotNull DisconnectEvent event) {
+    void onDisconnect(@NotNull DisconnectEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         AlphaAgonesSDKProto.PlayerID playerId = AlphaAgonesSDKProto.PlayerID.newBuilder().setPlayerID(id.toString()).build();
 

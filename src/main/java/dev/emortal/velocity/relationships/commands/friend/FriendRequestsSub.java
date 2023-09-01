@@ -51,10 +51,10 @@ final class FriendRequestsSub implements EmortalCommandExecutor {
         return new FriendRequestsSub(relationshipService, playerService, false, OUTGOING);
     }
 
-    private final RelationshipService relationshipService;
-    private final McPlayerService playerService;
+    private final @NotNull RelationshipService relationshipService;
+    private final @NotNull McPlayerService playerService;
     private final boolean incoming;
-    private final Context context;
+    private final @NotNull Context context;
 
     private FriendRequestsSub(@NotNull RelationshipService relationshipService, @NotNull McPlayerService playerService, boolean incoming,
                               @NotNull Context context) {
@@ -98,8 +98,8 @@ final class FriendRequestsSub implements EmortalCommandExecutor {
         }
 
         Map<UUID, String> usernameMap = new HashMap<>();
-        for (var playerResponse : players) {
-            usernameMap.put(UUID.fromString(playerResponse.getId()), playerResponse.getCurrentUsername());
+        for (McPlayer mcPlayer : players) {
+            usernameMap.put(UUID.fromString(mcPlayer.getId()), mcPlayer.getCurrentUsername());
         }
 
         int totalPages = (int) Math.ceil(friendRequests.size() / 10.0);

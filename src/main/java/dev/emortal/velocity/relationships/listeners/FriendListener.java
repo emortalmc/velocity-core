@@ -17,8 +17,8 @@ import java.util.UUID;
 
 public final class FriendListener {
 
-    private final PlayerProvider playerProvider;
-    private final FriendCache friendCache;
+    private final @NotNull PlayerProvider playerProvider;
+    private final @NotNull FriendCache friendCache;
 
     public FriendListener(@NotNull PlayerProvider playerProvider, @NotNull MessagingModule messaging, @NotNull FriendCache friendCache) {
         this.playerProvider = playerProvider;

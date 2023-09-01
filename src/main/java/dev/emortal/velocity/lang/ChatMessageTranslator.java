@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 final class ChatMessageTranslator {
-    private static final Pattern ARG_PATTERN = Pattern.compile("\\{[0-9]+}");
+    private static final Pattern ARG_PATTERN = Pattern.compile("\\{\\d+}");
 
     static @NotNull Component translate(@NotNull Component input, @NotNull List<Component> args) {
         Component output = input;

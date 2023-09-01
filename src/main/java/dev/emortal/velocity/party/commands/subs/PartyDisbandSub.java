@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class PartyDisbandSub implements EmortalCommandExecutor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PartyListSub.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PartyDisbandSub.class);
 
     private final @NotNull PartyService partyService;
 
