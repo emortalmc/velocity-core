@@ -70,4 +70,7 @@ final class ChatMessageTranslator {
         int index = Integer.parseInt(group.substring(1, group.length() - 1));
         return index < args.size() ? args.get(index) : Component.text("$$" + index);
     }
+
+    private ChatMessageTranslator() {
+    }
 }

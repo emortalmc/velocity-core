@@ -4,7 +4,9 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.velocitypowered.api.command.CommandSource;
+import dev.emortal.api.liveconfigparser.configs.ConfigProvider;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
+import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.service.mcplayer.McPlayerService;
 import dev.emortal.api.service.relationship.RelationshipService;
 import dev.emortal.velocity.command.EmortalCommand;
@@ -19,7 +21,7 @@ public final class FriendCommand extends EmortalCommand {
 
     public FriendCommand(@NotNull RelationshipService relationshipService, @NotNull McPlayerService playerService,
                          @NotNull PlayerResolver playerResolver, @NotNull UsernameSuggesterProvider usernameSuggesters,
-                         @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
+                         @NotNull FriendCache friendCache, @Nullable ConfigProvider<GameModeConfig> gameModes) {
         super("friend");
 
         super.setPlayerOnly();
@@ -29,7 +31,7 @@ public final class FriendCommand extends EmortalCommand {
         var usernameArgument = argument("username", StringArgumentType.string(), usernameSuggesters.all());
         var friendsArgument = argument("username", StringArgumentType.string(), usernameSuggesters.friends());
 
-        var listSub = new FriendListSub(playerService, friendCache, gameModeCollection);
+        var listSub = new FriendListSub(playerService, friendCache, gameModes);
         super.addSyntax(listSub, literal("list"));
         super.addSyntax(listSub, literal("list"), pageArgument);
 

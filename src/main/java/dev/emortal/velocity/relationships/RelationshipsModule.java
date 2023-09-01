@@ -1,6 +1,7 @@
 package dev.emortal.velocity.relationships;
 
-import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
+import dev.emortal.api.liveconfigparser.configs.ConfigProvider;
+import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.modules.annotation.Dependency;
 import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.mcplayer.McPlayerService;
@@ -47,7 +48,7 @@ public final class RelationshipsModule extends VelocityModule {
         super.registerEventListener(cache);
 
         LiveConfigModule liveConfig = this.getModule(LiveConfigModule.class);
-        GameModeCollection gameModes = liveConfig.getGameModes();
+        ConfigProvider<GameModeConfig> gameModes = liveConfig.getGameModes();
 
         if (playerService == null) {
             LOGGER.warn("Relationship commands will not be registered due to missing player service.");

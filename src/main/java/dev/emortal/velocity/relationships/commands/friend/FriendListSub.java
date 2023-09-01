@@ -2,7 +2,7 @@ package dev.emortal.velocity.relationships.commands.friend;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
+import dev.emortal.api.liveconfigparser.configs.ConfigProvider;
 import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.model.mcplayer.McPlayer;
 import dev.emortal.api.service.mcplayer.McPlayerService;
@@ -37,14 +37,14 @@ final class FriendListSub implements EmortalCommandExecutor {
 
     private final @NotNull McPlayerService playerService;
     private final @NotNull FriendCache friendCache;
-    private final @Nullable GameModeCollection gameModeCollection;
+    private final @Nullable ConfigProvider<GameModeConfig> gameModes;
 
-    FriendListSub(@NotNull McPlayerService playerService, @NotNull FriendCache friendCache, @Nullable GameModeCollection gameModeCollection) {
+    FriendListSub(@NotNull McPlayerService playerService, @NotNull FriendCache friendCache, @Nullable ConfigProvider<GameModeConfig> gameModes) {
         this.playerService = playerService;
         this.friendCache = friendCache;
-        this.gameModeCollection = gameModeCollection;
+        this.gameModes = gameModes;
 
-        if (gameModeCollection == null) LOGGER.warn("GameModeCollection is null. Friend statuses will not be displayed.");
+        if (gameModes == null) LOGGER.warn("GameModeCollection is null. Friend statuses will not be displayed.");
     }
 
     @Override
@@ -139,10 +139,10 @@ final class FriendListSub implements EmortalCommandExecutor {
     }
 
     private @Nullable GameModeConfig getGameModeConfig(@NotNull String fleetId) {
-        if (this.gameModeCollection == null) return null;
+        if (this.gameModes == null) return null;
 
         GameModeConfig gameModeConfig = null;
-        for (GameModeConfig config : this.gameModeCollection.getAllConfigs()) {
+        for (GameModeConfig config : this.gameModes.allConfigs()) {
             if (!config.fleetName().equals(fleetId)) continue;
             gameModeConfig = config;
             break;

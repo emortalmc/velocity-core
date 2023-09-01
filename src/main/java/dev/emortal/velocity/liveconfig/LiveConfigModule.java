@@ -1,7 +1,8 @@
 package dev.emortal.velocity.liveconfig;
 
+import dev.emortal.api.liveconfigparser.configs.ConfigProvider;
 import dev.emortal.api.liveconfigparser.configs.LiveConfigCollection;
-import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeCollection;
+import dev.emortal.api.liveconfigparser.configs.gamemode.GameModeConfig;
 import dev.emortal.api.modules.Module;
 import dev.emortal.api.modules.annotation.Dependency;
 import dev.emortal.api.modules.annotation.ModuleData;
@@ -18,14 +19,14 @@ import java.io.IOException;
 public final class LiveConfigModule extends Module {
     private static final Logger LOGGER = LoggerFactory.getLogger(LiveConfigModule.class);
 
-    @SuppressWarnings("NotNullFieldNotInitialized") // Where this would be null, the module will not be loaded
-    private @NotNull LiveConfigCollection configCollection;
+    private @Nullable LiveConfigCollection configCollection;
 
     public LiveConfigModule(@NotNull ModuleEnvironment environment) {
         super(environment);
     }
 
-    public @Nullable GameModeCollection getGameModes() {
+    public @Nullable ConfigProvider<GameModeConfig> getGameModes() {
+        if (this.configCollection == null) return null;
         return this.configCollection.gameModes();
     }
 
@@ -38,7 +39,7 @@ public final class LiveConfigModule extends Module {
         ApiClient client = kubernetesModule != null ? kubernetesModule.getApiClient() : null;
 
         try {
-            this.configCollection = new LiveConfigCollection(client);
+            this.configCollection = LiveConfigCollection.create(client);
             return true;
         } catch (IOException exception) {
             LOGGER.error("Failed to load live configs!", exception);
@@ -48,6 +49,8 @@ public final class LiveConfigModule extends Module {
 
     @Override
     public void onUnload() {
+        if (this.configCollection == null) return;
+
         try {
             this.configCollection.close();
         } catch (IOException exception) {
