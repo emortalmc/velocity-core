@@ -27,7 +27,7 @@ public final class TabList {
         this.playerProvider = playerProvider;
 
         if (playerTracker == null) {
-            this.currentFooter = this.createFooter(0);
+            this.currentFooter = this.createFooter(this.playerProvider.playerCount());
         } else {
             scheduler.repeat(() -> this.updateFooter(playerTracker), 5, TimeUnit.SECONDS);
         }
@@ -43,8 +43,8 @@ public final class TabList {
         try {
             playerCount = playerTracker.getGlobalPlayerCount();
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to update tab list footer: ", exception);
-            return;
+            LOGGER.warn("Failed to get global player count to update tab list footer", exception);
+            playerCount = this.playerProvider.playerCount();
         }
 
         this.currentFooter = this.createFooter(playerCount);

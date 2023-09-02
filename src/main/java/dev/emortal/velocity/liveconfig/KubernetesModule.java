@@ -18,8 +18,6 @@ import java.io.IOException;
 public final class KubernetesModule extends Module {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesModule.class);
 
-    private static final boolean KUBERNETES_ENABLED = Environment.isProduction(); // Kubernetes support can only be enabled if run in-cluster
-
     private @Nullable ApiClient apiClient;
 
     public KubernetesModule(@NotNull ModuleEnvironment environment) {
@@ -32,7 +30,7 @@ public final class KubernetesModule extends Module {
 
     @Override
     public boolean onLoad() {
-        if (!KUBERNETES_ENABLED) return false;
+        if (!Environment.isKubernetes()) return false;
 
         try {
             this.apiClient = Config.defaultClient();

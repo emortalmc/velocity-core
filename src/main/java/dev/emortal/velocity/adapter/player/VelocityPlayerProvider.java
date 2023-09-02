@@ -30,4 +30,9 @@ public final class VelocityPlayerProvider implements PlayerProvider {
     public @NotNull Collection<Player> allPlayers() {
         return this.proxy.getAllPlayers();
     }
+
+    @Override
+    public int playerCount() {
+        return this.proxy.getPlayerCount();
+    }
 }

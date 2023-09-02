@@ -14,4 +14,6 @@ public interface PlayerProvider {
     @Nullable Player getPlayer(@NotNull String username);
 
     @NotNull Collection<Player> allPlayers();
+
+    int playerCount();
 }
