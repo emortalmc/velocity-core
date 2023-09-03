@@ -22,13 +22,13 @@ import org.jetbrains.annotations.Nullable;
 
 public final class VelocityModuleEnvironmentProvider implements ModuleEnvironmentProvider {
 
-    private final @NotNull AdapterContext adapterContext;
     private final @Nullable McPlayerService playerService;
+    private final @NotNull AdapterContext adapterContext;
     private final @NotNull PlayerResolver playerResolver;
 
     public VelocityModuleEnvironmentProvider(@NotNull ProxyServer proxy, @NotNull CorePlugin plugin) {
-        this.adapterContext = this.createAdapterContext(proxy, plugin);
         this.playerService = GrpcStubCollection.getPlayerService().orElse(null);
+        this.adapterContext = this.createAdapterContext(proxy, plugin);
         this.playerResolver = new PlayerResolver(this.playerService, this.adapterContext.playerProvider());
     }
 
