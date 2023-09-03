@@ -27,32 +27,55 @@ public final class MessageSender {
         this.playerResolver = playerResolver;
     }
 
-    void sendMessage(@NotNull Player player, @NotNull String targetUsername, @NotNull String message) {
+    void sendMessage(@NotNull Player sender, @NotNull UUID targetId, @NotNull String message) {
+        CachedMcPlayer target;
+        try {
+            target = this.playerResolver.getPlayer(targetId);
+        } catch (StatusException exception) {
+            LOGGER.error("Failed to get player data for '{}'", targetId, exception);
+            ChatMessages.GENERIC_ERROR.send(sender);
+            return;
+        }
+
+        if (target == null) {
+            ChatMessages.GENERIC_ERROR.send(sender);
+            LOGGER.error("Player data not found for '{}'", targetId);
+            return;
+        }
+
+        this.sendMessage(sender, target, message);
+    }
+
+    void sendMessage(@NotNull Player sender, @NotNull String targetUsername, @NotNull String message) {
         CachedMcPlayer target;
         try {
             target = this.playerResolver.getPlayer(targetUsername);
         } catch (StatusException exception) {
             LOGGER.error("Failed to get player data for '{}'", targetUsername, exception);
-            ChatMessages.GENERIC_ERROR.send(player);
+            ChatMessages.GENERIC_ERROR.send(sender);
             return;
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(player, Component.text(targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(sender, Component.text(targetUsername));
             return;
         }
 
+        this.sendMessage(sender, target, message);
+    }
+
+    void sendMessage(@NotNull Player sender, @NotNull CachedMcPlayer target, @NotNull String message) {
         String correctedUsername = target.username();
         UUID targetId = target.uuid();
 
         if (!target.online()) {
-            ChatMessages.PLAYER_NOT_ONLINE.send(player, Component.text(correctedUsername));
+            ChatMessages.PLAYER_NOT_ONLINE.send(sender, Component.text(correctedUsername));
             return;
         }
 
         PrivateMessage privateMessage = PrivateMessage.newBuilder()
-                .setSenderId(player.getUniqueId().toString())
-                .setSenderUsername(player.getUsername())
+                .setSenderId(sender.getUniqueId().toString())
+                .setSenderUsername(sender.getUsername())
                 .setRecipientId(targetId.toString())
                 .setMessage(message)
                 .build();
@@ -61,19 +84,19 @@ public final class MessageSender {
         try {
             result = this.messageService.sendPrivateMessage(privateMessage);
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to send message from '{}' to '{}': '{}'", player.getUsername(), correctedUsername, message, exception);
-            ChatMessages.GENERIC_ERROR.send(player);
+            LOGGER.error("Failed to send message from '{}' to '{}': '{}'", sender.getUsername(), correctedUsername, message, exception);
+            ChatMessages.GENERIC_ERROR.send(sender);
             return;
         }
 
         switch (result) {
             case SendPrivateMessageResult.Success(PrivateMessage ignored) ->
-                    ChatMessages.PRIVATE_MESSAGE_SENT.send(player, Component.text(correctedUsername), Component.text(message));
+                    ChatMessages.PRIVATE_MESSAGE_SENT.send(sender, Component.text(correctedUsername), Component.text(message));
             case SendPrivateMessageResult.Error error -> {
                 switch (error) {
-                    case YOU_BLOCKED -> ChatMessages.ERROR_YOU_BLOCKED.send(player, Component.text(correctedUsername));
-                    case PRIVACY_BLOCKED -> ChatMessages.ERROR_THEY_BLOCKED.send(player, Component.text(correctedUsername));
-                    case PLAYER_NOT_ONLINE -> ChatMessages.PLAYER_NOT_ONLINE.send(player, Component.text(correctedUsername));
+                    case YOU_BLOCKED -> ChatMessages.ERROR_YOU_BLOCKED.send(sender, Component.text(correctedUsername));
+                    case PRIVACY_BLOCKED -> ChatMessages.ERROR_THEY_BLOCKED.send(sender, Component.text(correctedUsername));
+                    case PLAYER_NOT_ONLINE -> ChatMessages.PLAYER_NOT_ONLINE.send(sender, Component.text(correctedUsername));
                 }
             }
         }

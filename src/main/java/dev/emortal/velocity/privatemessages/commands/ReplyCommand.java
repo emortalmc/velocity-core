@@ -11,6 +11,8 @@ import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.privatemessages.LastMessageCache;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.UUID;
+
 public final class ReplyCommand extends EmortalCommand implements EmortalCommandExecutor {
 
     private final @NotNull MessageSender messageSender;
@@ -37,12 +39,12 @@ public final class ReplyCommand extends EmortalCommand implements EmortalCommand
         Player player = (Player) source;
         String message = arguments.getArgument("message", String.class);
 
-        String targetUsername = this.lastMessageCache.getLastMessageSender(player.getUniqueId());
-        if (targetUsername == null) {
+        UUID targetId = this.lastMessageCache.getLastMessageSender(player.getUniqueId());
+        if (targetId == null) {
             ChatMessages.ERROR_NO_ONE_TO_REPLY_TO.send(player);
             return;
         }
 
-        this.messageSender.sendMessage(player, targetUsername, message);
+        this.messageSender.sendMessage(player, targetId, message);
     }
 }

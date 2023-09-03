@@ -12,18 +12,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class LastMessageCache {
 
     // recipient, last person who messaged them
-    private final Map<UUID, String> lastMessageMap = new ConcurrentHashMap<>();
+    private final Map<UUID, UUID> lastRecipientMap = new ConcurrentHashMap<>();
 
-    void setLastMessage(@NotNull UUID recipient, @NotNull String sender) {
-        this.lastMessageMap.put(recipient, sender);
+    void setLastRecipient(@NotNull UUID recipientId, @NotNull UUID senderId) {
+        this.lastRecipientMap.put(recipientId, senderId);
     }
 
-    public @Nullable String getLastMessageSender(@NotNull UUID recipient) {
-        return this.lastMessageMap.get(recipient);
+    public @Nullable UUID getLastMessageSender(@NotNull UUID recipientId) {
+        return this.lastRecipientMap.get(recipientId);
     }
 
     @Subscribe
     void onPlayerDisconnect(@NotNull DisconnectEvent event) {
-        this.lastMessageMap.remove(event.getPlayer().getUniqueId());
+        this.lastRecipientMap.remove(event.getPlayer().getUniqueId());
     }
 }
