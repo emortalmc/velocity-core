@@ -157,8 +157,8 @@ public enum ChatMessages {
     YOUR_PLAYTIME(Component.text("Your playtime is {0}", NamedTextColor.LIGHT_PURPLE)),
     OTHER_PLAYTIME(Component.text("{0}'s playtime is {1}", NamedTextColor.LIGHT_PURPLE)),
 
-    PRIVATE_MESSAGE_SENT("<dark_purple>(<light_purple>You -> {0}<dark_purple>) <light_purple>{1}"),
-    PRIVATE_MESSAGE_RECEIVED("<dark_purple>(<light_purple>{0} -> You<dark_purple>) <light_purple>{1}"),
+    PRIVATE_MESSAGE_SENT("<dark_purple>[<light_purple><bold>YOU</bold></light_purple> <gray>→</gray> <color:#ff9ef5>{0}</color>] <gray>{1}"),
+    PRIVATE_MESSAGE_RECEIVED("<dark_purple>[<color:#ff9ef5>{0}</color> <gray>→</gray> <light_purple><bold>YOU</bold></light_purple>] <gray>{1}"),
     MESSAGE_USAGE(red("Usage: /msg <player> <message>")),
     REPLY_USAGE(red("Usage: /r <message>")),
 
