@@ -30,7 +30,7 @@ dependencies {
 
     implementation("dev.emortal.api:common-proto-sdk:e0f0e8c")
     implementation("dev.emortal.api:agones-sdk:1.0.7")
-    implementation("dev.emortal.api:live-config-parser:7c88aa1")
+    implementation("dev.emortal.api:live-config-parser:03b46ea")
     implementation("dev.emortal.api:module-system:f3e496c")
     implementation("dev.emortal.api:command-system:d93e26f") {
         exclude(group = "com.mojang", module = "brigadier") // use Velocity Brigadier provided by Velocity

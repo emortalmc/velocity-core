@@ -26,4 +26,9 @@ public record FixedPlayerProvider(@Nullable Player player) implements PlayerProv
         if (this.player == null) return List.of();
         return List.of(this.player);
     }
+
+    @Override
+    public int playerCount() {
+        return 1;
+    }
 }
