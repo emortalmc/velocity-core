@@ -1,7 +1,9 @@
 package dev.emortal.velocity.matchmaking.listener;
 
 import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.api.proxy.server.ServerInfo;
 import dev.emortal.api.message.gamesdk.GameReadyMessage;
 import dev.emortal.api.message.matchmaker.MatchCreatedMessage;
 import dev.emortal.api.model.matchmaker.Assignment;
@@ -41,7 +43,9 @@ public final class ServerChangeNotificationListener {
 
     private void movePlayersToMatch(@NotNull Match match) {
         if (!match.hasAssignment()) return;
+
         Assignment assignment = match.getAssignment();
+        String serverId = assignment.getServerId();
 
         for (Ticket ticket : match.getTicketsList()) {
             if (!ticket.getAutoTeleport()) continue;
@@ -52,14 +56,27 @@ public final class ServerChangeNotificationListener {
                 Player player = this.playerProvider.getPlayer(uuid);
                 if (player == null) continue;
 
-                RegisteredServer server = this.serverProvider.getServer(assignment.getServerId());
-                if (server == null) {
-                    server = this.serverProvider.createServer(assignment.getServerId(), assignment.getServerAddress(), assignment.getServerPort());
+                if (this.isPlayerOnTargetServer(player, serverId)) {
+                    // Don't move players already on the target server
+                    continue;
                 }
 
-                ChatMessages.SENDING_TO_SERVER.send(player, Component.text(assignment.getServerId()));
+                RegisteredServer server = this.serverProvider.getServer(serverId);
+                if (server == null) {
+                    server = this.serverProvider.createServer(serverId, assignment.getServerAddress(), assignment.getServerPort());
+                }
+
+                ChatMessages.SENDING_TO_SERVER.send(player, Component.text(serverId));
                 player.createConnectionRequest(server).fireAndForget();
             }
         }
+    }
+
+    private boolean isPlayerOnTargetServer(@NotNull Player player, @NotNull String targetServerId) {
+        ServerConnection connection = player.getCurrentServer().orElse(null);
+        if (connection == null) return false;
+
+        ServerInfo serverInfo = connection.getServerInfo();
+        return serverInfo.getName().equals(targetServerId);
     }
 }
