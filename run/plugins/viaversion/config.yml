@@ -60,7 +60,7 @@ map-1_16-world-names:
   overworld: minecraft:overworld
   nether: minecraft:the_nether
   end: minecraft:the_end
-max-pps: 2000 # TODO change back to 800
+max-pps: 20000 # TODO change back to 800
 max-pps-kick-msg: You are sending too many packets!
 # Minimize the cooldown animation in 1.8 servers
 minimize-cooldown: true
