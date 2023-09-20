@@ -26,13 +26,14 @@ final class ChatMessageTranslator {
             output = translateClickEvent(output, args);
             output = translateHoverEvent(output, args);
         }
-        return translateChildren(output);
+        return translateChildren(output, args);
     }
 
-    private static @NotNull Component translateChildren(@NotNull Component input) {
+    private static @NotNull Component translateChildren(@NotNull Component input, @NotNull List<Component> args) {
         List<Component> children = new ArrayList<>();
         for (Component component : input.children()) {
-            children.add(translateChildren(component));
+            Component output = translate(component, args);
+            children.add(translateChildren(output, args));
         }
         return input.children(children);
     }
