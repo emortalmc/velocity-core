@@ -34,9 +34,6 @@ public final class CoreListenersModule extends VelocityModule {
         // fuck lunar
         eventManager.register(new LunarKicker());
 
-        // server cleanup
-        eventManager.register(new ServerCleanupTask(super.adapters().serverProvider()));
-
         return true;
     }
 

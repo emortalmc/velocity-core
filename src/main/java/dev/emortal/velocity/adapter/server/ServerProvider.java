@@ -1,15 +1,14 @@
 package dev.emortal.velocity.adapter.server;
 
 import com.velocitypowered.api.proxy.server.RegisteredServer;
-import com.velocitypowered.api.proxy.server.ServerInfo;
+import dev.emortal.api.model.matchmaker.Assignment;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public interface ServerProvider {
 
-    @Nullable RegisteredServer getServer(@NotNull String name);
-
     @NotNull RegisteredServer createServer(@NotNull String name, @NotNull String address, int port);
 
-    void unregisterServer(@NotNull ServerInfo info);
+    default @NotNull RegisteredServer createServerFromAssignment(@NotNull Assignment assignment) {
+        return this.createServer(assignment.getServerId(), assignment.getServerAddress(), assignment.getServerPort());
+    }
 }

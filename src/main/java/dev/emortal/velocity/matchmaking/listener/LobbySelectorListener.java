@@ -84,11 +84,7 @@ public final class LobbySelectorListener {
     private void connectPlayerToAssignment(@NotNull EventCallbackContext context, @NotNull Assignment assignment) {
         LOGGER.debug("Connecting '{}' to {}", context.playerName(), assignment);
 
-        RegisteredServer server = this.serverProvider.getServer(assignment.getServerId());
-        if (server == null) {
-            server = this.serverProvider.createServer(assignment.getServerId(), assignment.getServerAddress(), assignment.getServerPort());
-        }
-
+        RegisteredServer server = this.serverProvider.createServerFromAssignment(assignment);
         context.setInitialServer(server);
     }
 

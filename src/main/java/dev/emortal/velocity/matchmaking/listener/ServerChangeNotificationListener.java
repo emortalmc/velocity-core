@@ -61,10 +61,7 @@ public final class ServerChangeNotificationListener {
                     continue;
                 }
 
-                RegisteredServer server = this.serverProvider.getServer(serverId);
-                if (server == null) {
-                    server = this.serverProvider.createServer(serverId, assignment.getServerAddress(), assignment.getServerPort());
-                }
+                RegisteredServer server = this.serverProvider.createServerFromAssignment(assignment);
 
                 ChatMessages.SENDING_TO_SERVER.send(player, Component.text(serverId));
                 player.createConnectionRequest(server).fireAndForget();
