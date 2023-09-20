@@ -30,7 +30,7 @@ public final class KubernetesModule extends Module {
 
     @Override
     public boolean onLoad() {
-        if (!Environment.isKubernetes()) return false;
+        if (!Environment.isProduction()) return false;
 
         try {
             this.apiClient = Config.defaultClient();

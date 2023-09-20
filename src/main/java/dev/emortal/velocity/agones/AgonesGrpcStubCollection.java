@@ -13,7 +13,7 @@ final class AgonesGrpcStubCollection {
 
     static {
         String agonesPortString = System.getenv("AGONES_SDK_GRPC_PORT");
-        AGONES_SDK_ENABLED = Environment.isKubernetes() || agonesPortString != null;
+        AGONES_SDK_ENABLED = Environment.isProduction() || agonesPortString != null;
         AGONES_GRPC_PORT = AGONES_SDK_ENABLED ? Integer.parseInt(agonesPortString) : Integer.MIN_VALUE;
     }
 

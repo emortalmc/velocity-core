@@ -29,7 +29,7 @@ public final class PermissionModule extends VelocityModule {
 
     @Override
     public boolean onLoad() {
-        if (Environment.isDevelopment()) {
+        if (!Environment.isProduction()) {
             if (GRANT_ALL_PERMISSIONS) {
                 LOGGER.warn("Permission service unavailable. Granting all permissions.");
                 super.registerEventListener(new GrantAllPermissionsListener());
