@@ -28,10 +28,10 @@ dependencies {
     annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
-    implementation("dev.emortal.api:common-proto-sdk:e0f0e8c")
+    implementation("dev.emortal.api:common-proto-sdk:8975e47")
     implementation("dev.emortal.api:agones-sdk:1.0.7")
-    implementation("dev.emortal.api:live-config-parser:03b46ea")
-    implementation("dev.emortal.api:module-system:f3e496c")
+    implementation("dev.emortal.api:live-config-parser:8f566b9")
+    implementation("dev.emortal.api:module-system:229a4a9")
     implementation("dev.emortal.api:command-system:d93e26f") {
         exclude(group = "com.mojang", module = "brigadier") // use Velocity Brigadier provided by Velocity
     }
