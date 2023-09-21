@@ -1,9 +1,7 @@
 plugins {
     java
     id("com.github.johnrengelman.shadow") version "8.1.1"
-
     jacoco
-    id("io.freefair.lombok") version "8.1.0"
 }
 
 group = "dev.emortal.velocity"
@@ -21,14 +19,14 @@ repositories {
 
 dependencies {
     // Metrics
-    implementation("io.pyroscope:agent:0.11.5")
+    implementation("io.pyroscope:agent:0.12.0")
 
     compileOnly("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     compileOnly("com.velocitypowered:velocity-proxy:3.2.0-SNAPSHOT")
     annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
-    implementation("dev.emortal.api:common-proto-sdk:8975e47")
+    implementation("dev.emortal.api:common-proto-sdk:94cec5a")
     implementation("dev.emortal.api:agones-sdk:1.0.7")
     implementation("dev.emortal.api:live-config-parser:8f566b9")
     implementation("dev.emortal.api:module-system:229a4a9")
@@ -36,18 +34,18 @@ dependencies {
         exclude(group = "com.mojang", module = "brigadier") // use Velocity Brigadier provided by Velocity
     }
 
-    implementation("io.kubernetes:client-java:18.0.0")
+    implementation("io.kubernetes:client-java:18.0.1")
 
-    implementation("com.github.ben-manes.caffeine:caffeine:3.1.6")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
     compileOnly("org.jetbrains:annotations:24.0.1")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
-    testImplementation("org.mockito:mockito-core:5.4.0")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.4.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
     testImplementation("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
-    testRuntimeOnly("org.slf4j:slf4j-nop:2.0.7")
+    testRuntimeOnly("org.slf4j:slf4j-nop:2.0.9")
 }
 
 java {
