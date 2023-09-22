@@ -59,8 +59,6 @@ spec:
                   mountPath: /app/config/gamemodes
 
               env:
-                - name: JAVA_OPTS
-                  value: "-Xms4G -Xmx4G"
                 - name: VELOCITY_FORWARDING_SECRET
                   valueFrom:
                     secretKeyRef:
@@ -84,9 +82,9 @@ spec:
                       key: address
 
               resources:
-                limits:
-                  memory: "8Gi"
-                  cpu: "3"
                 requests:
                   memory: "8Gi"
                   cpu: "500m"
+                limits:
+                  memory: "8Gi"
+                  cpu: "3"
