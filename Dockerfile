@@ -1,9 +1,7 @@
 FROM --platform=$BUILDPLATFORM azul/zulu-openjdk:21-jre
 
 # Download packages
-# libstdc++6 libstdc++ => required for pyroscope
-RUN apt-get update \
-    && apt-get install wget libstdc++6 libstdc++
+RUN apt-get update
 
 # We manually set the Velocity version to avoid bugs
 ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.2.0-SNAPSHOT/builds/259/downloads/velocity-3.2.0-SNAPSHOT-259.jar"
