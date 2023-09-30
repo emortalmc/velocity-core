@@ -26,7 +26,7 @@ dependencies {
     annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
-    implementation("dev.emortal.api:common-proto-sdk:94cec5a")
+    implementation("dev.emortal.api:common-proto-sdk:80b0a9a")
     implementation("dev.emortal.api:agones-sdk:1.0.7")
     implementation("dev.emortal.api:live-config-parser:8f566b9")
     implementation("dev.emortal.api:module-system:229a4a9")
@@ -50,15 +50,15 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(20))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
 tasks {
     compileJava {
         options.compilerArgs.addAll(listOf(
-                "--release", "20",
-                "--enable-preview"
+                "--release", "21"
+//                "--enable-preview"
         ))
     }
     shadowJar {

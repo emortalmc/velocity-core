@@ -93,10 +93,10 @@ public final class PermissionCache {
             CachedRole role = this.roleCache.get(roleId);
             if (role == null || currentPriority > role.priority()) continue;
 
-            for (CachedRole.PermissionNode(String nodePermission, Tristate state) : role.permissions()) {
-                if (!nodePermission.equals(permission)) continue;
+            for (CachedRole.PermissionNode node : role.permissions()) {
+                if (!node.permission().equals(permission)) continue;
                 currentPriority = role.priority();
-                currentState = state;
+                currentState = node.state();
             }
         }
 
@@ -176,9 +176,9 @@ public final class PermissionCache {
             return Integer.compare(this.priority, o.priority);
         }
 
-        public @NotNull Tristate getPermissionState(@NotNull String node) {
-            for (PermissionNode(String permission, Tristate state) : this.permissions) {
-                if (permission.equals(node)) return state;
+        public @NotNull Tristate getPermissionState(@NotNull String nodeString) {
+            for (PermissionNode node : this.permissions) {
+                if (node.permission().equals(nodeString)) return node.state();
             }
             return Tristate.UNDEFINED;
         }

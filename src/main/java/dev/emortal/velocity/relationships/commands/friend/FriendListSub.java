@@ -95,8 +95,8 @@ final class FriendListSub implements EmortalCommandExecutor {
 
     private @NotNull List<FriendStatus> retrieveStatuses(@NotNull List<FriendCache.CachedFriend> friends) {
         Map<UUID, FriendStatus> statuses = new ConcurrentHashMap<>();
-        for (FriendCache.CachedFriend(UUID playerId, Instant friendsSince) : friends) {
-            statuses.put(playerId, new FriendStatus(playerId, friendsSince));
+        for (FriendCache.CachedFriend friend : friends) {
+            statuses.put(friend.playerId(), new FriendStatus(friend.playerId(), friend.friendsSince()));
         }
 
         List<UUID> playerIds = new ArrayList<>();

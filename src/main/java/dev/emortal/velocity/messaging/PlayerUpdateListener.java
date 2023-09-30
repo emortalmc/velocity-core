@@ -30,7 +30,12 @@ final class PlayerUpdateListener {
                 .setPlayerId(player.getUniqueId().toString())
                 .setPlayerUsername(player.getUsername())
                 .setServerId(Environment.getHostname())
+                .setSkin(PlayerConnectMessage.PlayerSkin.newBuilder()
+                        .setTexture("")
+                        .setSignature(""))
                 .build();
+
+        System.out.println("PLAYER PROPERTIES: " + player.getGameProfileProperties());
 
         this.kafkaProducer.produceAndForget(KAFKA_CONNECTIONS_TOPIC, message);
     }

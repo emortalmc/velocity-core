@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM eclipse-temurin:20-jre
+FROM --platform=$BUILDPLATFORM azul/zulu-openjdk:21-jre
 
 # Download packages
 RUN apt-get install wget \

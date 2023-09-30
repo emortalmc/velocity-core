@@ -57,8 +57,8 @@ public final class PacketDebuggingModule extends VelocityModule {
         StringJoiner joiner = new StringJoiner("\n");
         joiner.add("Packet Stats:");
 
-        for (PacketStat(int id, long count) : packetStats) {
-            joiner.add('\t' + id + " - " + count);
+        for (PacketStat packetStat : packetStats) {
+            joiner.add('\t' + packetStat.id() + " - " + packetStat.count());
         }
 
         System.out.println(joiner);

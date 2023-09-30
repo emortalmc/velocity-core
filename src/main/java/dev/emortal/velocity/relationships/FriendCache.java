@@ -58,8 +58,8 @@ public final class FriendCache {
         }
 
         List<CachedFriend> cachedFriends = new ArrayList<>();
-        for (Friend(UUID id, Instant friendsSince) : friends) {
-            cachedFriends.add(new CachedFriend(id, friendsSince));
+        for (Friend friend : friends) {
+            cachedFriends.add(new CachedFriend(friend.id(), friend.friendsSince()));
         }
 
         this.set(playerId, cachedFriends);
