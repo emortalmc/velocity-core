@@ -46,7 +46,7 @@ spec:
           containers:
           
             - name: velocity
-              image: ghcr.io/emortalmc/velocity-core:5972b71b08fe3fcc32c5c4452cd0d0846ad91230
+              image: ghcr.io/emortalmc/velocity-core:e321be2b660801c4a141605411e3ac1c9cdda501
               args: ["--enable-preview", "-XX:+UseZGC", "-Xmx3G", "-Xms3G", "-jar", "/app/velocity.jar"]
 
               lifecycle:
