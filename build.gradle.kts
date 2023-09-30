@@ -29,8 +29,8 @@ dependencies {
     implementation("dev.emortal.api:common-proto-sdk:80b0a9a")
     implementation("dev.emortal.api:agones-sdk:1.0.7")
     implementation("dev.emortal.api:live-config-parser:8f566b9")
-    implementation("dev.emortal.api:module-system:229a4a9")
-    implementation("dev.emortal.api:command-system:d93e26f") {
+    implementation("dev.emortal.api:module-system:1.0.0")
+    implementation("dev.emortal.api:command-system:1.0.0") {
         exclude(group = "com.mojang", module = "brigadier") // use Velocity Brigadier provided by Velocity
     }
 
@@ -58,7 +58,6 @@ tasks {
     compileJava {
         options.compilerArgs.addAll(listOf(
                 "--release", "21"
-//                "--enable-preview"
         ))
     }
     shadowJar {
