@@ -13,6 +13,7 @@ jobs:
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           java-version: "21"
+          java-distribution: "azul"
 
   deploy:
     needs: "build"
