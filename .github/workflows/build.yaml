@@ -12,6 +12,7 @@ jobs:
       - uses: "emortalmc/actions/java/build@main"
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
+          java-version: "21"
 
   deploy:
     needs: "build"
