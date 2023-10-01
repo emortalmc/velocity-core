@@ -101,7 +101,7 @@ public final class PermissionCommand extends EmortalCommand {
                     literal("role"), literal("remove"), roleIdArgument);
 
             var permissionArgument = argument("permission", StringArgumentType.word(), null);
-            super.addSyntax(context -> {}, literal("permission"), literal("check"), permissionArgument);
+            super.addSyntax(context -> {}, usernameArgument, literal("permission"), literal("check"), permissionArgument);
         }
     }
 }
