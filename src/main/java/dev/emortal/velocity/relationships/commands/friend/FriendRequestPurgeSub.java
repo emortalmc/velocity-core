@@ -7,7 +7,6 @@ import dev.emortal.velocity.command.ArgumentProvider;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +24,9 @@ final class FriendRequestPurgeSub implements EmortalCommandExecutor {
 
     private final @NotNull RelationshipService friendService;
     private final boolean incoming;
-    private final @NotNull ChatMessages success;
+    private final @NotNull ChatMessages.Args1<Integer> success;
 
-    private FriendRequestPurgeSub(@NotNull RelationshipService friendService, boolean incoming, @NotNull ChatMessages success) {
+    private FriendRequestPurgeSub(@NotNull RelationshipService friendService, boolean incoming, @NotNull ChatMessages.Args1<Integer> success) {
         this.friendService = friendService;
         this.incoming = incoming;
         this.success = success;
@@ -46,6 +45,6 @@ final class FriendRequestPurgeSub implements EmortalCommandExecutor {
             return;
         }
 
-        this.success.send(player, Component.text(deniedRequests));
+        this.success.send(player, deniedRequests);
     }
 }

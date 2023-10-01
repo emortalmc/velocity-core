@@ -35,7 +35,7 @@ public final class TabList {
 
     @Subscribe
     public void onPlayerJoin(@NotNull PostLoginEvent event) {
-        event.getPlayer().sendPlayerListHeaderAndFooter(ChatMessages.TAB_LIST_HEADER.parse(), this.currentFooter);
+        event.getPlayer().sendPlayerListHeaderAndFooter(ChatMessages.TAB_LIST_HEADER.get(), this.currentFooter);
     }
 
     private void updateFooter(@NotNull PlayerTrackerService playerTracker) {
@@ -58,6 +58,6 @@ public final class TabList {
     }
 
     private @NotNull Component createFooter(long playerCount) {
-        return ChatMessages.TAB_LIST_FOOTER.parse(Component.text(playerCount));
+        return ChatMessages.TAB_LIST_FOOTER.get(playerCount);
     }
 }

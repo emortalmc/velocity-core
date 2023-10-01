@@ -11,7 +11,6 @@ import dev.emortal.velocity.player.resolver.CachedMcPlayer;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ public final class UserRoleRemoveSub implements EmortalCommandExecutor {
 
         PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
         if (role == null) {
-            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
+            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, roleId);
             return;
         }
 
@@ -53,7 +52,7 @@ public final class UserRoleRemoveSub implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(source, Component.text(targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(source, targetUsername);
             return;
         }
 
@@ -70,9 +69,9 @@ public final class UserRoleRemoveSub implements EmortalCommandExecutor {
         }
 
         switch (result) {
-            case SUCCESS -> ChatMessages.USER_ROLE_REMOVED.send(source, Component.text(roleId), Component.text(correctUsername));
-            case DOES_NOT_HAVE_ROLE -> ChatMessages.ERROR_USER_MISSING_ROLE.send(source, Component.text(roleId));
-            case PLAYER_NOT_FOUND -> ChatMessages.PLAYER_NOT_FOUND.send(source, Component.text(correctUsername));
+            case SUCCESS -> ChatMessages.USER_ROLE_REMOVED.send(source, roleId, correctUsername);
+            case DOES_NOT_HAVE_ROLE -> ChatMessages.ERROR_USER_MISSING_ROLE.send(source, correctUsername, roleId);
+            case PLAYER_NOT_FOUND -> ChatMessages.PLAYER_NOT_FOUND.send(source, correctUsername);
         }
     }
 }

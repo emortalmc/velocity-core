@@ -54,7 +54,7 @@ public final class UserDescribeSub implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.ERROR_USER_NOT_FOUND.send(source, Component.text(targetUsername));
+            ChatMessages.ERROR_USER_NOT_FOUND.send(source, targetUsername);
             return;
         }
 
@@ -100,12 +100,7 @@ public final class UserDescribeSub implements EmortalCommandExecutor {
         }
 
         String activeDisplayName = primaryRole == null || primaryRole.displayName() == null ? "null" : primaryRole.displayName();
-        ChatMessages.USER_DESCRIPTION.send(source,
-                Component.text(correctedUsername),
-                groupsValue,
-                Component.text(permissionCount),
-                Component.text(activeDisplayName),
-                exampleChatBuilder.build());
+        ChatMessages.USER_DESCRIPTION.send(source, correctedUsername, groupsValue, permissionCount, activeDisplayName, exampleChatBuilder.build());
     }
 
     private @NotNull List<PermissionCache.CachedRole> sortRolesByWeight(@NotNull List<String> roleIds) {

@@ -5,7 +5,6 @@ import dev.emortal.api.message.relationship.FriendConnectionMessage;
 import dev.emortal.velocity.adapter.player.PlayerProvider;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -29,9 +28,9 @@ public final class FriendConnectionListener {
             if (target == null) continue;
 
             if (joined) {
-                ChatMessages.FRIEND_CONNECTED.send(target, Component.text(username));
+                ChatMessages.FRIEND_CONNECTED.send(target, username);
             } else {
-                ChatMessages.FRIEND_DISCONNECTED.send(target, Component.text(username));
+                ChatMessages.FRIEND_DISCONNECTED.send(target, username);
             }
         }
     }

@@ -73,20 +73,20 @@ final class FriendListSub implements EmortalCommandExecutor {
 
     private @NotNull Component createMessage(@NotNull List<FriendStatus> statuses, int page, int maxPage) {
         TextComponent.Builder message = Component.text()
-                .append(ChatMessages.FRIEND_LIST_HEADER.parse(Component.text(page), Component.text(maxPage)))
+                .append(ChatMessages.FRIEND_LIST_HEADER.get(page, maxPage))
                 .appendNewline();
 
         for (FriendStatus status : statuses) {
-            ChatMessages line = status.online() ? ChatMessages.FRIEND_LIST_ONLINE_LINE : ChatMessages.FRIEND_LIST_OFFLINE_LINE;
+            ChatMessages.Args2<String, String> line = status.online() ? ChatMessages.FRIEND_LIST_ONLINE_LINE : ChatMessages.FRIEND_LIST_OFFLINE_LINE;
 
-            Component secondArgument;
+            String secondArgument;
             if (status.online()) {
-                secondArgument = Component.text(this.createActivityForServer(status.serverId()));
+                secondArgument = this.createActivityForServer(status.serverId());
             } else {
-                secondArgument = Component.text(DurationFormatter.formatShortFromInstant(status.lastSeen()));
+                secondArgument = DurationFormatter.formatShortFromInstant(status.lastSeen());
             }
 
-            message.append(line.parse(Component.text(status.username()), secondArgument)).appendNewline();
+            message.append(line.get(status.username(), secondArgument)).appendNewline();
         }
 
         message.append(MESSAGE_FOOTER);

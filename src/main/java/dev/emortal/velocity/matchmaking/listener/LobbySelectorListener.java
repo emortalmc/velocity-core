@@ -57,7 +57,7 @@ public final class LobbySelectorListener {
             this.matchmaker.queueInitialLobby(player.getUniqueId());
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to connect '{}' to lobby", player.getUsername(), exception);
-            event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.parse());
+            event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.get());
         }
 
         this.pendingPlayers.put(player.getUniqueId(), new EventCallbackContext(event, continuation));
@@ -108,7 +108,7 @@ public final class LobbySelectorListener {
         }
 
         void disconnect() {
-            this.event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.parse());
+            this.event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.get());
             this.continuation.resume();
         }
     }

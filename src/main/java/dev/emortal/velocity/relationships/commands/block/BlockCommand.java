@@ -14,7 +14,6 @@ import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,7 @@ public final class BlockCommand extends EmortalCommand implements EmortalCommand
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(sender);
+            ChatMessages.PLAYER_NOT_FOUND.send(sender, targetUsername);
             return;
         }
 
@@ -72,9 +71,9 @@ public final class BlockCommand extends EmortalCommand implements EmortalCommand
         }
 
         switch (result) {
-            case SUCCESS -> ChatMessages.YOU_BLOCKED.send(sender, Component.text(targetUsername));
-            case ALREADY_BLOCKED -> ChatMessages.ERROR_ALREADY_BLOCKED.send(sender, Component.text(targetUsername));
-            case FAILED_FRIENDS -> ChatMessages.ERROR_CANNOT_BLOCK_FRIEND.send(sender, Component.text(targetUsername));
+            case SUCCESS -> ChatMessages.YOU_BLOCKED.send(sender, targetUsername);
+            case ALREADY_BLOCKED -> ChatMessages.ERROR_ALREADY_BLOCKED.send(sender, targetUsername);
+            case FAILED_FRIENDS -> ChatMessages.ERROR_CANNOT_BLOCK_FRIEND.send(sender, targetUsername);
         }
     }
 }

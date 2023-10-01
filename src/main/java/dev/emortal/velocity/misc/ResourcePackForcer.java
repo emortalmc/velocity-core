@@ -40,7 +40,7 @@ final class ResourcePackForcer {
             return;
         }
 
-        this.resourcePackInfo = resourcePackProvider.createResourcePack(PACK_URL, sha1, ChatMessages.RESOURCE_PACK_DOWNLOAD.parse(), true);
+        this.resourcePackInfo = resourcePackProvider.createResourcePack(PACK_URL, sha1, ChatMessages.RESOURCE_PACK_DOWNLOAD.get(), true);
         LOGGER.info("Update resource pack info with hash {}", byteArrayToHexString(sha1));
     }
 

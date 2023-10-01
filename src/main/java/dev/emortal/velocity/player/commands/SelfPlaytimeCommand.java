@@ -11,7 +11,6 @@ import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.SessionCache;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +38,14 @@ final class SelfPlaytimeCommand implements EmortalCommandExecutor {
             mcPlayer = this.playerService.getPlayerById(player.getUniqueId());
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to get playtime for player {}", player.getUsername(), exception);
-            player.sendMessage(Component.text("Failed to get playtime."));
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         SessionCache.CachedSession currentSession = this.sessionCache.get(player.getUniqueId());
         if (currentSession == null) {
             LOGGER.error("The session for {} who requested their own playtime could not be found!", player.getUniqueId());
-            player.sendMessage(Component.text("You do not exist. Please report this to an administrator."));
+            ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
@@ -54,6 +53,6 @@ final class SelfPlaytimeCommand implements EmortalCommandExecutor {
         Duration totalDuration = ProtoDurationConverter.fromProto(mcPlayer.getHistoricPlayTime()).plus(currentSessionDuration);
 
         String playtime = DurationFormatter.formatBigToSmall(totalDuration);
-        ChatMessages.YOUR_PLAYTIME.send(player, Component.text(playtime));
+        ChatMessages.YOUR_PLAYTIME.send(player, playtime);
     }
 }

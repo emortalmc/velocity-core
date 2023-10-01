@@ -11,7 +11,6 @@ import dev.emortal.velocity.player.resolver.CachedMcPlayer;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ public final class UserRoleAddSub implements EmortalCommandExecutor {
 
         PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
         if (role == null) {
-            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
+            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, roleId);
             return;
         }
 
@@ -53,7 +52,7 @@ public final class UserRoleAddSub implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(source, Component.text(targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(source, targetUsername);
             return;
         }
 
@@ -74,11 +73,11 @@ public final class UserRoleAddSub implements EmortalCommandExecutor {
                 PermissionCache.User user = this.permissionCache.getUser(targetId);
                 if (user != null) user.roleIds().add(role.id());
 
-                ChatMessages.USER_ROLE_ADDED.send(source, Component.text(roleId), Component.text(correctUsername));
+                ChatMessages.USER_ROLE_ADDED.send(source, roleId, correctUsername);
             }
-            case PLAYER_NOT_FOUND -> ChatMessages.PLAYER_NOT_FOUND.send(source, Component.text(correctUsername));
-            case ROLE_NOT_FOUND -> ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
-            case ALREADY_HAS_ROLE -> ChatMessages.ERROR_USER_ALREADY_HAS_ROLE.send(source, Component.text(correctUsername), Component.text(roleId));
+            case PLAYER_NOT_FOUND -> ChatMessages.PLAYER_NOT_FOUND.send(source, correctUsername);
+            case ROLE_NOT_FOUND -> ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, roleId);
+            case ALREADY_HAS_ROLE -> ChatMessages.ERROR_USER_ALREADY_HAS_ROLE.send(source, correctUsername, roleId);
         }
     }
 }

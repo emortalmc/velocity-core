@@ -12,7 +12,6 @@ import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.utils.DurationFormatter;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,7 @@ final class OtherPlaytimeCommand implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(player);
+            ChatMessages.PLAYER_NOT_FOUND.send(player, targetName);
             return;
         }
 
@@ -56,6 +55,6 @@ final class OtherPlaytimeCommand implements EmortalCommandExecutor {
 
         String correctedUsername = target.getCurrentUsername();
         String playtime = DurationFormatter.formatBigToSmall(totalDuration);
-        ChatMessages.OTHER_PLAYTIME.send(player, Component.text(playtime), Component.text(correctedUsername));
+        ChatMessages.OTHER_PLAYTIME.send(player, correctedUsername, playtime);
     }
 }

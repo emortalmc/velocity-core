@@ -106,7 +106,7 @@ final class FriendRequestsSub implements EmortalCommandExecutor {
         int limitedPage = Math.min(totalPages, page);
 
         TextComponent.Builder message = Component.text()
-                .append(this.context.title().parse(Component.text(limitedPage), Component.text(totalPages)))
+                .append(this.context.title().get(limitedPage, totalPages))
                 .appendNewline();
 
         for (int i = (page - 1) * 10; i < page * 10 && i < friendRequests.size(); i++) {
@@ -114,13 +114,14 @@ final class FriendRequestsSub implements EmortalCommandExecutor {
             String username = usernameMap.get(this.incoming ? requestedFriend.requesterId() : requestedFriend.targetId());
 
             String duration = DurationFormatter.formatShortFromInstant(requestedFriend.requestTime());
-            message.append(this.context.line().parse(Component.text(duration), Component.text(username))).appendNewline();
+            message.append(this.context.line().get(duration, username)).appendNewline();
         }
 
         message.append(this.context.footer());
         player.sendMessage(message.build());
     }
 
-    private record Context(@NotNull ChatMessages noMessages, @NotNull ChatMessages title, @NotNull ChatMessages line, @NotNull Component footer) {
+    private record Context(@NotNull ChatMessages.Args0 noMessages, @NotNull ChatMessages.Args2<Integer, Integer> title,
+                           @NotNull ChatMessages.Args2<String, String> line, @NotNull Component footer) {
     }
 }

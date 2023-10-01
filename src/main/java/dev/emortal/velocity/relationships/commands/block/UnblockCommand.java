@@ -14,7 +14,6 @@ import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,7 @@ public final class UnblockCommand extends EmortalCommand implements EmortalComma
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(sender);
+            ChatMessages.PLAYER_NOT_FOUND.send(sender, targetUsername);
             return;
         }
 
@@ -72,7 +71,7 @@ public final class UnblockCommand extends EmortalCommand implements EmortalComma
         }
 
         switch (result) {
-            case SUCCESS -> ChatMessages.YOU_UNBLOCKED.send(sender, Component.text(target.username()));
+            case SUCCESS -> ChatMessages.YOU_UNBLOCKED.send(sender, target.username());
             case NOT_BLOCKED -> ChatMessages.ERROR_NOT_BLOCKED.send(sender);
         }
     }

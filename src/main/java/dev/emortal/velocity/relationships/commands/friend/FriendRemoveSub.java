@@ -12,7 +12,6 @@ import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.relationships.FriendCache;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +46,7 @@ final class FriendRemoveSub implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(player);
+            ChatMessages.PLAYER_NOT_FOUND.send(player, targetUsername);
             return;
         }
 
@@ -66,9 +65,9 @@ final class FriendRemoveSub implements EmortalCommandExecutor {
         switch (result) {
             case REMOVED -> {
                 this.friendCache.remove(player.getUniqueId(), targetId);
-                ChatMessages.FRIEND_REMOVED.send(player, Component.text(correctedUsername));
+                ChatMessages.FRIEND_REMOVED.send(player, correctedUsername);
             }
-            case NOT_FRIENDS -> ChatMessages.ERROR_NOT_FRIENDS.send(player, Component.text(correctedUsername));
+            case NOT_FRIENDS -> ChatMessages.ERROR_NOT_FRIENDS.send(player, correctedUsername);
         }
     }
 }

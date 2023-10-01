@@ -10,7 +10,6 @@ import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +63,6 @@ public final class ListBlocksCommand extends EmortalCommand implements EmortalCo
                 .map(McPlayer::getCurrentUsername)
                 .toList());
 
-        ChatMessages.BLOCKED_PLAYERS.send(sender, Component.text(blockedPlayers.size()), Component.text(blockedNames));
+        ChatMessages.BLOCKED_PLAYERS.send(sender, blockedPlayers.size(), blockedNames);
     }
 }

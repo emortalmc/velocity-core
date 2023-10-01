@@ -12,7 +12,6 @@ import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.relationships.FriendCache;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,7 @@ final class FriendAddSub implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(player, Component.text(targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(player, targetUsername);
             return;
         }
 
@@ -70,17 +69,17 @@ final class FriendAddSub implements EmortalCommandExecutor {
         }
 
         switch (result) {
-            case AddFriendResult.RequestSent() -> ChatMessages.SENT_FRIEND_REQUEST.send(player, Component.text(correctedUsername));
+            case AddFriendResult.RequestSent() -> ChatMessages.SENT_FRIEND_REQUEST.send(player, correctedUsername);
             case AddFriendResult.FriendAdded(Instant friendsSince) -> {
                 this.friendCache.add(player.getUniqueId(), new FriendCache.CachedFriend(targetId, friendsSince));
-                ChatMessages.FRIEND_ADDED.send(player, Component.text(correctedUsername));
+                ChatMessages.FRIEND_ADDED.send(player, correctedUsername);
             }
             case AddFriendResult.Error error -> {
                 switch (error) {
-                    case ALREADY_FRIENDS -> ChatMessages.ERROR_ALREADY_FRIENDS.send(player, Component.text(correctedUsername));
-                    case PRIVACY_BLOCKED -> ChatMessages.ERROR_PRIVACY_BLOCKED.send(player, Component.text(correctedUsername));
-                    case ALREADY_REQUESTED -> ChatMessages.ERROR_FRIEND_ALREADY_REQUESTED.send(player, Component.text(correctedUsername));
-                    case YOU_BLOCKED -> ChatMessages.ERROR_CANNOT_FRIEND_BLOCKED.send(player, Component.text(correctedUsername));
+                    case ALREADY_FRIENDS -> ChatMessages.ERROR_ALREADY_FRIENDS.send(player, correctedUsername);
+                    case PRIVACY_BLOCKED -> ChatMessages.ERROR_PRIVACY_BLOCKED.send(player, correctedUsername);
+                    case ALREADY_REQUESTED -> ChatMessages.ERROR_FRIEND_ALREADY_REQUESTED.send(player, correctedUsername);
+                    case YOU_BLOCKED -> ChatMessages.ERROR_CANNOT_FRIEND_BLOCKED.send(player, correctedUsername);
                 }
             }
         }

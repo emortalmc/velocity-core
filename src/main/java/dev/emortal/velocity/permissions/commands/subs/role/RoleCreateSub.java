@@ -9,7 +9,6 @@ import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +40,11 @@ public final class RoleCreateSub implements EmortalCommandExecutor {
         switch (result) {
             case CreateRoleResult.Success(Role role) -> {
                 this.permissionCache.setRole(role);
-                ChatMessages.ROLE_CREATED.send(source, Component.text(roleId));
+                ChatMessages.ROLE_CREATED.send(source, roleId);
             }
             case CreateRoleResult.Error error -> {
                 switch (error) {
-                    case ROLE_ALREADY_EXISTS -> ChatMessages.ERROR_ROLE_ALREADY_EXISTS.send(source, Component.text(roleId));
+                    case ROLE_ALREADY_EXISTS -> ChatMessages.ERROR_ROLE_ALREADY_EXISTS.send(source, roleId);
                 }
             }
         }

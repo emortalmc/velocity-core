@@ -11,7 +11,6 @@ import dev.emortal.velocity.player.resolver.CachedMcPlayer;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +41,7 @@ public final class PartyKickSub implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(executor, Component.text(targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(executor, targetUsername);
             return;
         }
 
@@ -56,10 +55,10 @@ public final class PartyKickSub implements EmortalCommandExecutor {
         }
 
         switch (result) {
-            case SUCCESS -> ChatMessages.YOU_KICKED_PLAYER_FROM_PARTY.send(executor, Component.text(target.username()));
+            case SUCCESS -> ChatMessages.YOU_KICKED_PLAYER_FROM_PARTY.send(executor, target.username());
             case SELF_NOT_LEADER -> ChatMessages.ERROR_PARTY_NO_PERMISSION.send(executor);
             case TARGET_IS_LEADER -> ChatMessages.ERROR_CANNOT_KICK_LEADER.send(executor);
-            case TARGET_NOT_IN_PARTY -> ChatMessages.ERROR_PLAYER_NOT_IN_PARTY.send(executor, Component.text(target.username()));
+            case TARGET_NOT_IN_PARTY -> ChatMessages.ERROR_PLAYER_NOT_IN_PARTY.send(executor, target.username());
         }
     }
 }

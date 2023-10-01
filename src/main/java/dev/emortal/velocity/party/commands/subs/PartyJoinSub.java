@@ -2,7 +2,6 @@ package dev.emortal.velocity.party.commands.subs;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.model.party.Party;
 import dev.emortal.api.service.party.JoinPartyResult;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.velocity.command.ArgumentProvider;
@@ -12,7 +11,6 @@ import dev.emortal.velocity.player.resolver.CachedMcPlayer;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +41,12 @@ public final class PartyJoinSub implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(player, Component.text(targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(player, targetUsername);
             return;
         }
 
         if (!target.online()) {
-            ChatMessages.PLAYER_NOT_ONLINE.send(player, Component.text(target.username()));
+            ChatMessages.PLAYER_NOT_ONLINE.send(player, target.username());
             return;
         }
 
@@ -62,7 +60,7 @@ public final class PartyJoinSub implements EmortalCommandExecutor {
         }
 
         switch (result) {
-            case JoinPartyResult.Success(Party party) -> ChatMessages.YOU_JOINED_PARTY.send(player, Component.text(target.username()));
+            case JoinPartyResult.Success ignored -> ChatMessages.YOU_JOINED_PARTY.send(player, target.username());
             case JoinPartyResult.Error error -> {
                 switch (error) {
                     case ALREADY_IN_PARTY -> ChatMessages.ERROR_YOU_IN_THIS_PARTY.send(player);

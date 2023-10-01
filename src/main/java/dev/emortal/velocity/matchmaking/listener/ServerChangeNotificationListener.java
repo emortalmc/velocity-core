@@ -13,7 +13,6 @@ import dev.emortal.velocity.adapter.server.ServerProvider;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.adapter.player.PlayerProvider;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -63,7 +62,7 @@ public final class ServerChangeNotificationListener {
 
                 RegisteredServer server = this.serverProvider.createServerFromAssignment(assignment);
 
-                ChatMessages.SENDING_TO_SERVER.send(player, Component.text(serverId));
+                ChatMessages.SENDING_TO_SERVER.send(player, serverId);
                 player.createConnectionRequest(server).fireAndForget();
             }
         }

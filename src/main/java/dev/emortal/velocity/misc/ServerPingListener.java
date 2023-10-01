@@ -36,7 +36,7 @@ final class ServerPingListener {
     private static @NotNull Component createMessage() {
         String randomMessage = selectRandomMessage();
         return Component.text()
-                .append(ChatMessages.PING_MOTD.parse())
+                .append(ChatMessages.PING_MOTD.get())
                 .appendNewline()
                 .append(Component.text(randomMessage, NamedTextColor.YELLOW))
                 .build();

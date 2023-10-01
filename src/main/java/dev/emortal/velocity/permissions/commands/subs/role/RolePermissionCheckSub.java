@@ -6,7 +6,6 @@ import dev.emortal.velocity.command.ArgumentProvider;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.permissions.PermissionCache;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 public final class RolePermissionCheckSub implements EmortalCommandExecutor {
@@ -24,11 +23,11 @@ public final class RolePermissionCheckSub implements EmortalCommandExecutor {
 
         PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
         if (role == null) {
-            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
+            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, roleId);
             return;
         }
 
         Tristate permissionState = role.getPermissionState(permission);
-        ChatMessages.PERMISSION_STATE.send(source, Component.text(roleId), Component.text(permission), Component.text(permissionState.toString()));
+        ChatMessages.PERMISSION_STATE.send(source, roleId, permission, permissionState);
     }
 }

@@ -9,7 +9,6 @@ import dev.emortal.velocity.adapter.player.PlayerProvider;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.relationships.FriendCache;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -33,7 +32,7 @@ public final class FriendListener {
         Player player = this.playerProvider.getPlayer(UUID.fromString(request.getTargetId()));
         if (player == null) return;
 
-        ChatMessages.RECEIVED_FRIEND_REQUEST.send(player, Component.text(request.getSenderUsername()));
+        ChatMessages.RECEIVED_FRIEND_REQUEST.send(player, request.getSenderUsername());
     }
 
     private void onFriendAdded(@NotNull FriendAddedMessage message) {
@@ -42,7 +41,7 @@ public final class FriendListener {
         Player player = this.playerProvider.getPlayer(recipientId);
         if (player == null) return;
 
-        ChatMessages.FRIEND_ADDED.send(player, Component.text(message.getSenderUsername()));
+        ChatMessages.FRIEND_ADDED.send(player, message.getSenderUsername());
 
         UUID senderId = UUID.fromString(message.getSenderId());
         this.friendCache.add(recipientId, new FriendCache.CachedFriend(senderId, Instant.now()));

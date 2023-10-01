@@ -23,14 +23,11 @@ public final class RoleDescribeSub implements EmortalCommandExecutor {
 
         PermissionCache.CachedRole role = this.permissionCache.getRole(roleId);
         if (role == null) {
-            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, Component.text(roleId));
+            ChatMessages.ERROR_ROLE_NOT_FOUND.send(source, roleId);
             return;
         }
 
-        ChatMessages.ROLE_DESCRIPTION.send(source,
-                Component.text(roleId),
-                Component.text(role.priority()),
-                Component.text(role.permissions().size()),
-                MiniMessage.miniMessage().deserialize(role.displayName()));
+        Component displayName = MiniMessage.miniMessage().deserialize(role.displayName());
+        ChatMessages.ROLE_DESCRIPTION.send(source, roleId, role.priority(), role.permissions().size(), displayName);
     }
 }

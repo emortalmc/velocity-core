@@ -6,7 +6,6 @@ import dev.emortal.api.model.messagehandler.PrivateMessage;
 import dev.emortal.velocity.adapter.player.PlayerProvider;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -36,7 +35,7 @@ public final class PrivateMessageListener {
         Player recipient = this.playerProvider.getPlayer(recipientId);
         if (recipient == null) return;
 
-        ChatMessages.PRIVATE_MESSAGE_RECEIVED.send(recipient, Component.text(message.getSenderUsername()), Component.text(message.getMessage()));
+        ChatMessages.PRIVATE_MESSAGE_RECEIVED.send(recipient, message.getSenderUsername(), message.getMessage());
 
         // only update the message cache for the recipient if they are on this proxy
         this.lastMessageCache.setLastRecipient(recipientId, senderId);

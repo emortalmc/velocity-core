@@ -49,7 +49,7 @@ public final class PartyListSub implements EmortalCommandExecutor {
             return;
         }
 
-        ChatMessages.PARTY_LIST.send(executor, Component.text(party.getMembersCount()), this.createMessageContent(party));
+        ChatMessages.PARTY_LIST.send(executor, party.getMembersCount(), this.createMessageContent(party));
     }
 
     private @NotNull Component createMessageContent(@NotNull Party party) {

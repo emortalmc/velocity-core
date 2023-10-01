@@ -11,7 +11,6 @@ import dev.emortal.velocity.player.resolver.CachedMcPlayer;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +30,11 @@ final class FriendDenySub implements EmortalCommandExecutor {
 
     private final @NotNull RelationshipService relationshipService;
     private final @NotNull PlayerResolver playerResolver;
-    private final @NotNull ChatMessages denied;
-    private final @NotNull ChatMessages noRequest;
+    private final @NotNull ChatMessages.Args1<String> denied;
+    private final @NotNull ChatMessages.Args1<String> noRequest;
 
-    private FriendDenySub(@NotNull RelationshipService relationshipService, @NotNull PlayerResolver playerResolver, @NotNull ChatMessages denied,
-                          @NotNull ChatMessages noRequest) {
+    private FriendDenySub(@NotNull RelationshipService relationshipService, @NotNull PlayerResolver playerResolver,
+                          @NotNull ChatMessages.Args1<String> denied, @NotNull ChatMessages.Args1<String> noRequest) {
         this.relationshipService = relationshipService;
         this.playerResolver = playerResolver;
         this.denied = denied;
@@ -57,7 +56,7 @@ final class FriendDenySub implements EmortalCommandExecutor {
         }
 
         if (target == null) {
-            ChatMessages.PLAYER_NOT_FOUND.send(player, Component.text(targetUsername));
+            ChatMessages.PLAYER_NOT_FOUND.send(player, targetUsername);
             return;
         }
 
@@ -74,8 +73,8 @@ final class FriendDenySub implements EmortalCommandExecutor {
         }
 
         switch (result) {
-            case DENIED -> denied.send(player, Component.text(correctedUsername));
-            case NO_REQUEST -> noRequest.send(player, Component.text(correctedUsername));
+            case DENIED -> this.denied.send(player, correctedUsername);
+            case NO_REQUEST -> this.noRequest.send(player, correctedUsername);
         }
     }
 }
