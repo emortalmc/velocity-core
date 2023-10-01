@@ -9,6 +9,7 @@ import com.velocitypowered.api.util.GameProfile;
 import dev.emortal.api.message.common.PlayerConnectMessage;
 import dev.emortal.api.message.common.PlayerDisconnectMessage;
 import dev.emortal.api.message.common.PlayerSwitchServerMessage;
+import dev.emortal.api.model.common.PlayerSkin;
 import dev.emortal.api.utils.kafka.FriendlyKafkaProducer;
 import dev.emortal.velocity.Environment;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +34,7 @@ final class PlayerUpdateListener {
     private void onPlayerLogin(@NotNull PostLoginEvent event) {
         Player player = event.getPlayer();
 
-        PlayerConnectMessage.PlayerSkin skin = this.getSkin(player);
+        PlayerSkin skin = this.getSkin(player);
         if (skin == null) {
             LOGGER.warn("Player {} has no skin", player.getUsername());
         }
@@ -42,19 +43,19 @@ final class PlayerUpdateListener {
                 .setPlayerId(player.getUniqueId().toString())
                 .setPlayerUsername(player.getUsername())
                 .setServerId(Environment.getHostname())
-                .setSkin(skin)
+                .setPlayerSkin(skin)
                 .build();
 
         this.kafkaProducer.produceAndForget(KAFKA_CONNECTIONS_TOPIC, message);
     }
 
-    private @Nullable PlayerConnectMessage.PlayerSkin getSkin(@NotNull Player player) {
+    private @Nullable PlayerSkin getSkin(@NotNull Player player) {
         List<GameProfile.Property> properties = player.getGameProfileProperties();
 
         for (GameProfile.Property property : properties) {
             if (!property.getName().equals("textures")) continue;
 
-            return PlayerConnectMessage.PlayerSkin.newBuilder()
+            return PlayerSkin.newBuilder()
                     .setTexture(property.getValue())
                     .setSignature(property.getSignature())
                     .build();
