@@ -20,6 +20,8 @@ jobs:
     runs-on: "ubuntu-latest"
     if: "github.ref == 'refs/heads/main'"
     steps:
-      - uses: "emortalmc/actions/k8s-sync@main"
+      - uses: "emortalmc/actions/argo-sync@main"
         with:
-          manifest-path: "fleet.yaml"
+          deployment-name: "velocity"
+          values-path: "velocity/values.yaml"
+          deployments-repo-token: "${{ secrets.DEPLOYMENTS_REPO_TOKEN }}"
