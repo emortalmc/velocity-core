@@ -39,14 +39,14 @@ final class PlayerUpdateListener {
             LOGGER.warn("Player {} has no skin", player.getUsername());
         }
 
-        PlayerConnectMessage message = PlayerConnectMessage.newBuilder()
+        PlayerConnectMessage.Builder messageBuilder = PlayerConnectMessage.newBuilder()
                 .setPlayerId(player.getUniqueId().toString())
                 .setPlayerUsername(player.getUsername())
-                .setServerId(Environment.getHostname())
-                .setPlayerSkin(skin)
-                .build();
+                .setServerId(Environment.getHostname());
 
-        this.kafkaProducer.produceAndForget(KAFKA_CONNECTIONS_TOPIC, message);
+        if (skin != null) messageBuilder.setPlayerSkin(skin);
+
+        this.kafkaProducer.produceAndForget(KAFKA_CONNECTIONS_TOPIC, messageBuilder.build());
     }
 
     private @Nullable PlayerSkin getSkin(@NotNull Player player) {
