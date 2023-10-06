@@ -230,7 +230,7 @@ public interface ChatMessages {
     Args0 ERROR_CANNOT_UNBLOCK_SELF = () -> red("You can't unblock yourself");
     Args0 ERROR_NOT_BLOCKED = () -> red("You have not blocked the player");
 
-    Args1<String> FRIEND_ADDED = target -> lightPurple("You are now friends with").append(MessageColors.purpleName(target));
+    Args1<String> FRIEND_ADDED = target -> lightPurple("You are now friends with ").append(MessageColors.purpleName(target));
     Args1<String> SENT_FRIEND_REQUEST = target -> lightPurple("Sent a friend request to ").append(MessageColors.purpleName(target));
     Args1<String> RECEIVED_FRIEND_REQUEST = target -> {
         ClickEvent acceptClickEvent = ClickEvent.runCommand("/friend add " + target);
