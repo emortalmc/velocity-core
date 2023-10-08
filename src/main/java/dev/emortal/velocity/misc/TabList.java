@@ -1,7 +1,7 @@
 package dev.emortal.velocity.misc;
 
 import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.connection.PostLoginEvent;
+import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.proxy.Player;
 import dev.emortal.api.service.playertracker.PlayerTrackerService;
 import dev.emortal.velocity.adapter.player.PlayerProvider;
@@ -34,7 +34,7 @@ public final class TabList {
     }
 
     @Subscribe
-    public void onPlayerJoin(@NotNull PostLoginEvent event) {
+    public void onServerSwitch(@NotNull ServerConnectedEvent event) {
         event.getPlayer().sendPlayerListHeaderAndFooter(ChatMessages.TAB_LIST_HEADER.get(), this.currentFooter);
     }
 
