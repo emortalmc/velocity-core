@@ -18,7 +18,7 @@ public final class LobbyCommand extends EmortalCommand implements EmortalCommand
     private final @NotNull MatchmakerService matchmaker;
 
     public LobbyCommand(@NotNull MatchmakerService matchmaker) {
-        super("lobby");
+        super("lobby", "hub", "l");
         this.matchmaker = matchmaker;
 
         super.setPlayerOnly();

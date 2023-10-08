@@ -9,6 +9,7 @@ import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
+import dev.emortal.velocity.utils.CommandUtils;
 import org.jetbrains.annotations.NotNull;
 
 public final class MessageCommand extends EmortalCommand implements EmortalCommandExecutor {
@@ -30,7 +31,7 @@ public final class MessageCommand extends EmortalCommand implements EmortalComma
     }
 
     private void sendUsage(@NotNull CommandContext<CommandSource> context) {
-        ChatMessages.MESSAGE_USAGE.send(context.getSource());
+        ChatMessages.MESSAGE_USAGE.send(context.getSource(), CommandUtils.getCommandName(context.getInput()));
     }
 
     @Override

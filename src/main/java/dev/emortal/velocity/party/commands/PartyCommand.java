@@ -16,16 +16,18 @@ import dev.emortal.velocity.party.commands.subs.PartyOpenSub;
 import dev.emortal.velocity.party.commands.subs.PartySettingsSub;
 import dev.emortal.velocity.player.resolver.PlayerResolver;
 import dev.emortal.velocity.player.suggestions.UsernameSuggesterProvider;
+import dev.emortal.velocity.utils.CommandUtils;
 import org.jetbrains.annotations.NotNull;
 
 public final class PartyCommand extends EmortalCommand {
 
     public PartyCommand(@NotNull PartyService partyService, @NotNull PlayerResolver playerResolver,
                         @NotNull UsernameSuggesterProvider usernameSuggesterProvider) {
-        super("party");
+        super("party", "p");
 
         super.setPlayerOnly();
-        super.setDefaultExecutor(context -> ChatMessages.PARTY_HELP.send(context.getSource()));
+        super.setDefaultExecutor(context ->
+                ChatMessages.PARTY_HELP.send(context.getSource(), CommandUtils.getCommandName(context.getInput())));
 
         var playerArgument = argument("player", StringArgumentType.word(), usernameSuggesterProvider.online());
         super.addSyntax(new PartyInviteSub(partyService, playerResolver), literal("invite"), playerArgument);

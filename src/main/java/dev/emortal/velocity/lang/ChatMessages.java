@@ -66,20 +66,20 @@ public interface ChatMessages {
             /party settings
             /party settings <setting> <value>
             ---------------------------""");
-    Args0 PARTY_HELP = () -> lightPurple("""
+    Args1<String> PARTY_HELP = command -> lightPurple("""
             ------ Party Help ------
-            /party invite <player>
-            /party join <player>
-            /party leave
-            /party list
-            /party open
+            /%s invite <player>
+            /%<s join <player>
+            /%<s leave
+            /%<s list
+            /%<s open
 
-            /party kick <player>
-            /party leader <player>
-            /party disband
+            /%<s kick <player>
+            /%<s leader <player>
+            /%<s disband
 
-            /party settings
-            ----------------------""");
+            /%<s settings
+            ----------------------""".formatted(command));
 
     // Notifications
     Args0 PARTY_DISBANDED = () -> red("The party you were in has been disbanded");
@@ -209,8 +209,8 @@ public interface ChatMessages {
             .append(darkPurple("] "))
             .append(Component.text(message, NamedTextColor.GRAY))
             .build();
-    Args0 MESSAGE_USAGE = () -> red("Usage: /msg <player> <message>");
-    Args0 REPLY_USAGE = () -> red("Usage: /r <message>");
+    Args1<String> MESSAGE_USAGE = command -> red("Usage: /" + command + " <player> <message>");
+    Args1<String> REPLY_USAGE = command -> red("Usage: /" + command + " <message>");
 
     Args0 ERROR_CANNOT_MESSAGE_SELF = () -> red("You cannot send a message to yourself");
     Args0 ERROR_NO_ONE_TO_REPLY_TO = () -> red("You have not received any messages yet");
@@ -243,14 +243,14 @@ public interface ChatMessages {
                 .append(red("DENY").clickEvent(denyClickEvent))
                 .build();
     };
-    Args0 FRIEND_HELP = () -> miniMessage("""
+    Args1<String> FRIEND_HELP = command -> miniMessage("""
             <light_purple>------ Friend Help ------
-            <click:run_command:'/friend list'>/friend list</click>
-            <click:suggest_command:'/friend add '>/friend add <name></click>
-            <click:suggest_command:'/friend remove '>/friend remove <name></click>
-            <click:suggest_command:'/friend requests '>/friend requests <incoming/outgoing> [page]</click>
-            <click:suggest_command:'/friend purge requests '>/friend purge requests <incoming/outgoing></click>
-            -----------------------""");
+            <click:run_command:'/%s list'>/%<s list</click>
+            <click:suggest_command:'/%<s add '>/%<s add <name></click>
+            <click:suggest_command:'/%<s remove '>/%<s remove <name></click>
+            <click:suggest_command:'/%<s requests '>/%<s requests <incoming/outgoing> [page]</click>
+            <click:suggest_command:'/%<s purge requests '>/%<s purge requests <incoming/outgoing></click>
+            -----------------------""".formatted(command));
     Args1<String> FRIEND_REQUEST_DENIED = target -> lightPurple("Removed your friend request from ").append(MessageColors.purpleName(target));
     Args1<String> FRIEND_REQUEST_REVOKED = target -> lightPurple("Revoked your friend request to ").append(MessageColors.purpleName(target));
     Args2<Integer, Integer> FRIEND_LIST_HEADER = (currentPage, maxPage) -> lightPurple("----- Friends (Page " + currentPage + "/" + maxPage + ") -----");

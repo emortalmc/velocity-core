@@ -9,6 +9,7 @@ import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.privatemessages.LastMessageCache;
+import dev.emortal.velocity.utils.CommandUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -31,7 +32,7 @@ public final class ReplyCommand extends EmortalCommand implements EmortalCommand
     }
 
     private void sendUsage(@NotNull CommandContext<CommandSource> context) {
-        ChatMessages.REPLY_USAGE.send(context.getSource());
+        ChatMessages.REPLY_USAGE.send(context.getSource(), CommandUtils.getCommandName(context.getInput()));
     }
 
     @Override
