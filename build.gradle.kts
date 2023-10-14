@@ -36,6 +36,8 @@ dependencies {
 
     implementation("io.kubernetes:client-java:18.0.1")
 
+    implementation("io.micrometer:micrometer-registry-prometheus:1.11.4")
+
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
     compileOnly("org.jetbrains:annotations:24.0.1")
