@@ -1,6 +1,7 @@
 package dev.emortal.velocity.monitoring;
 
 import com.sun.net.httpserver.HttpServer;
+import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.velocity.Environment;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
@@ -26,12 +27,13 @@ import java.util.Objects;
 // Monitoring TODO
 // - Metrics for all the kinds of caches we have and their sizes (e.g. parties, mc-player)
 
-public class MonitoringModule extends VelocityModule {
+@ModuleData(name = "monitoring")
+public final class MonitoringModule extends VelocityModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(MonitoringModule.class);
 
     private static final String FLEET_NAME = Objects.requireNonNullElse(System.getenv("FLEET_NAME"), "unknown");
 
-    protected MonitoringModule(@NotNull VelocityModuleEnvironment environment) {
+    public MonitoringModule(@NotNull VelocityModuleEnvironment environment) {
         super(environment);
     }
 
@@ -57,7 +59,9 @@ public class MonitoringModule extends VelocityModule {
         new ProcessorMetrics().bindTo(registry);
 
         // Custom
-        new VelocityMetrics(this.adapters().playerProvider()).bindTo(registry);
+        VelocityMetrics velocityMetrics = new VelocityMetrics(this.adapters().playerProvider());
+        velocityMetrics.bindTo(registry);
+        super.registerEventListener(velocityMetrics);
 
         VelocityPacketMetrics packetMetrics = new VelocityPacketMetrics();
         packetMetrics.bindTo(registry);

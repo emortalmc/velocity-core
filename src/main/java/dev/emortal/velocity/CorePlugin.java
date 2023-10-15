@@ -17,6 +17,7 @@ import dev.emortal.velocity.misc.CoreListenersModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
 import dev.emortal.velocity.module.VelocityModuleEnvironmentProvider;
+import dev.emortal.velocity.monitoring.MonitoringModule;
 import dev.emortal.velocity.party.PartyModule;
 import dev.emortal.velocity.permissions.PermissionModule;
 import dev.emortal.velocity.player.PlayerModule;
@@ -53,6 +54,7 @@ public final class CorePlugin {
                 .module(PrivateMessageModule.class, velocityModule(PrivateMessageModule::new))
                 .module(RelationshipsModule.class, velocityModule(RelationshipsModule::new))
                 .module(PyroscopeModule.class, PyroscopeModule::new)
+                .module(MonitoringModule.class, velocityModule(MonitoringModule::new))
                 .module(PacketDebuggingModule.class, velocityModule(PacketDebuggingModule::new))
                 .build();
 
