@@ -1,4 +1,4 @@
-package dev.emortal.velocity.misc;
+package dev.emortal.velocity.misc.listener;
 
 import dev.emortal.api.modules.annotation.ModuleData;
 import dev.emortal.api.service.playertracker.PlayerTrackerService;

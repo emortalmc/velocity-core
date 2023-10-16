@@ -13,7 +13,8 @@ import dev.emortal.velocity.liveconfig.KubernetesModule;
 import dev.emortal.velocity.liveconfig.LiveConfigModule;
 import dev.emortal.velocity.matchmaking.MatchmakerModule;
 import dev.emortal.velocity.messaging.MessagingModule;
-import dev.emortal.velocity.misc.CoreListenersModule;
+import dev.emortal.velocity.misc.command.CoreCommandsModule;
+import dev.emortal.velocity.misc.listener.CoreListenersModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
 import dev.emortal.velocity.module.VelocityModuleEnvironmentProvider;
@@ -43,6 +44,7 @@ public final class CorePlugin {
                 .environmentProvider(new VelocityModuleEnvironmentProvider(this.proxy, this))
                 .module(AgonesModule.class, velocityModule(AgonesModule::new))
                 .module(CoreListenersModule.class, velocityModule(CoreListenersModule::new))
+                .module(CoreCommandsModule.class, velocityModule(CoreCommandsModule::new))
                 .module(KubernetesModule.class, KubernetesModule::new)
                 .module(LiveConfigModule.class, LiveConfigModule::new)
                 .module(MatchmakerModule.class, velocityModule(MatchmakerModule::new))

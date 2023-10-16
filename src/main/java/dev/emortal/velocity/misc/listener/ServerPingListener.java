@@ -1,4 +1,4 @@
-package dev.emortal.velocity.misc;
+package dev.emortal.velocity.misc.listener;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;

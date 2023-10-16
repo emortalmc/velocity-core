@@ -1,8 +1,11 @@
 package dev.emortal.velocity.lang;
 
 import com.velocitypowered.api.permission.Tristate;
+import dev.emortal.api.model.mcplayer.OnlinePlayer;
+import dev.emortal.velocity.misc.command.ListCommand;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -10,6 +13,10 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public interface ChatMessages {
 
@@ -193,6 +200,105 @@ public interface ChatMessages {
     Args1<String> YOUR_PLAYTIME = playtime -> lightPurple("Your playtime is " + playtime);
     Args2<String, String> OTHER_PLAYTIME = (player, playtime) -> lightPurple(player + "'s playtime is " + playtime);
 
+    Args0 LIST_USAGE = () -> Component.text()
+            .append(lightPurple("----- List Help -----")).appendNewline()
+            .append(lightPurple("/list fleet").clickEvent(ClickEvent.runCommand("/list fleet"))).appendNewline()
+            .append(lightPurple("/list fleet <id>").clickEvent(ClickEvent.suggestCommand("/list fleet "))).appendNewline()
+            .appendNewline()
+            .append(lightPurple("/list server").clickEvent(ClickEvent.runCommand("/list server"))).appendNewline()
+            .append(lightPurple("/list server <id>").clickEvent(ClickEvent.suggestCommand("/list server "))).appendNewline()
+            .append(lightPurple("---------------------"))
+            .build();
+
+    Args1<ListCommand.AllFleetsSummary> LIST_FLEET_ALL = summary -> {
+        TextComponent.Builder builder = Component.text()
+                .append(green(String.valueOf(summary.playerCount())))
+                .append(yellow(" players are currently online across "))
+                .append(green(String.valueOf(summary.fleetPlayers().size())))
+                .append(yellow(" fleets."));
+
+        for (Map.Entry<String, List<OnlinePlayer>> fleetEntry : summary.fleetPlayers().entrySet()) {
+            builder.appendNewline()
+                    .append(green("[" + fleetEntry.getKey() + "] (" + fleetEntry.getValue().size() + ")"))
+                    .append(yellow(" "));
+
+            List<String> usernames = new ArrayList<>();
+            for (OnlinePlayer player : fleetEntry.getValue()) {
+                usernames.add(player.getUsername());
+            }
+
+            builder.append(yellow(String.join(", ", usernames)));
+        }
+
+        return builder.build();
+    };
+
+    Args1<ListCommand.FleetSummary> LIST_FLEET = summary -> {
+        TextComponent.Builder builder = Component.text()
+                .append(green(String.valueOf(summary.playerCount())))
+                .append(yellow(" players online across "))
+                .append(green(String.valueOf(summary.serverPlayers().size())))
+                .append(yellow(" " + summary.fleetId() + " servers."));
+
+        for (Map.Entry<String, List<OnlinePlayer>> serverEntry : summary.serverPlayers().entrySet()) {
+            builder.appendNewline()
+                    .append(green("[" + serverEntry.getKey() + "] (" + serverEntry.getValue().size() + ")"))
+                    .append(yellow(" "));
+
+            List<String> usernames = new ArrayList<>();
+            for (OnlinePlayer player : serverEntry.getValue()) {
+                usernames.add(player.getUsername());
+            }
+
+            builder.append(yellow(String.join(", ", usernames)));
+        }
+
+        return builder.build();
+    };
+
+    Args1<ListCommand.AllServersSummary> LIST_SERVER_ALL = summary -> {
+        TextComponent.Builder builder = Component.text()
+                .append(green(String.valueOf(summary.playerCount())))
+                .append(yellow(" players online across "))
+                .append(green(String.valueOf(summary.serverPlayers().size())))
+                .append(yellow(" servers."));
+
+        for (Map.Entry<String, List<OnlinePlayer>> serverEntry : summary.serverPlayers().entrySet()) {
+            builder.appendNewline()
+                    .append(green("[" + serverEntry.getKey() + "] (" + serverEntry.getValue().size() + ")"))
+                    .append(yellow(" "));
+
+            List<String> usernames = new ArrayList<>();
+            for (OnlinePlayer player : serverEntry.getValue()) {
+                usernames.add(player.getUsername());
+            }
+
+            builder.append(yellow(String.join(", ", usernames)));
+        }
+
+        return builder.build();
+    };
+
+    Args1<ListCommand.ServerSummary> LIST_SERVER = summary -> {
+        List<OnlinePlayer> players = summary.players();
+
+        TextComponent.Builder builder = Component.text()
+                .append(green(String.valueOf(players.size())))
+                .append(yellow(" players online on "))
+                .append(green(summary.serverId()))
+                .append(yellow(":"))
+                .appendNewline().append(Component.text("  "));
+
+        List<String> usernames = new ArrayList<>();
+        for (OnlinePlayer player : players) {
+            usernames.add(player.getUsername());
+        }
+
+        builder.append(yellow(String.join(", ", usernames)));
+
+        return builder.build();
+    };
+
     Args2<String, String> PRIVATE_MESSAGE_SENT = (recipient, message) -> Component.text()
             .append(darkPurple("["))
             .append(Component.text("YOU", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
@@ -255,7 +361,7 @@ public interface ChatMessages {
     Args1<String> FRIEND_REQUEST_REVOKED = target -> lightPurple("Revoked your friend request to ").append(MessageColors.purpleName(target));
     Args2<Integer, Integer> FRIEND_LIST_HEADER = (currentPage, maxPage) -> lightPurple("----- Friends (Page " + currentPage + "/" + maxPage + ") -----");
     Args2<String, String> FRIEND_LIST_ONLINE_LINE = (friend, activity) ->
-            Component.text(friend + " - " + activity, NamedTextColor.GREEN).clickEvent(ClickEvent.suggestCommand("/message " + friend));
+            Component.text(friend + " - " + activity, NamedTextColor.GREEN).clickEvent(ClickEvent.suggestCommand("/message " + friend + " "));
     Args2<String, String> FRIEND_LIST_OFFLINE_LINE = (friend, lastSeen) -> red(friend + " - Seen " + lastSeen);
     Args1<String> FRIEND_REMOVED = target -> lightPurple("You are no longer friends with ").append(MessageColors.purpleName(target));
     Args1<Integer> PURGED_INCOMING_FRIEND_REQUESTS = count -> lightPurple("Purged " + count + " incoming friend requests");
@@ -393,6 +499,10 @@ public interface ChatMessages {
         default void send(@NotNull Audience audience, @NotNull A a, @NotNull B b, @NotNull C c, @NotNull D d, @NotNull E e) {
             audience.sendMessage(this.get(a, b, c, d, e));
         }
+    }
+
+    private static @NotNull Component yellow(@NotNull String text) {
+        return Component.text(text, NamedTextColor.YELLOW);
     }
 
     private static @NotNull Component green(@NotNull String text) {
