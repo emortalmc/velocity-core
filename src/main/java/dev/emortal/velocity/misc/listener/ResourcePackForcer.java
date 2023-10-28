@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 final class ResourcePackForcer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ResourcePackForcer.class);
 
-    private static final String PACK_URL = "https://github.com/EmortalMC/Resourcepack/releases/download/latest/pack.zip";
+    private static final String PACK_URL = "https://github.com/emortalmc/Resourcepack/releases/download/latest/pack.zip";
 
     private ResourcePackInfo resourcePackInfo;
 

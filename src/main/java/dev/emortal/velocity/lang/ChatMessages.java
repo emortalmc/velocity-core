@@ -102,7 +102,7 @@ public interface ChatMessages {
         return Component.text()
                 .append(Component.text("You have been invited to join ", TextColor.color(0x3db83d)))
                 .append(Component.text(username + "'s", NamedTextColor.GREEN))
-                .append(Component.text("party. ", TextColor.color(0x3db83d)))
+                .append(Component.text(" party. ", TextColor.color(0x3db83d)))
                 .append(miniMessage("<b><gradient:light_purple:gold>Click to accept</gradient></b>").clickEvent(clickEvent))
                 .build();
     };
