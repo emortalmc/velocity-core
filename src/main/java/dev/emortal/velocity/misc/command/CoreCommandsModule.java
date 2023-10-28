@@ -18,6 +18,7 @@ public class CoreCommandsModule extends VelocityModule {
     public boolean onLoad() {
         PlayerTrackerService playerTracker = GrpcStubCollection.getPlayerTrackerService().orElse(null);
         super.registerCommand(new ListCommand(playerTracker));
+
         return true;
     }
 

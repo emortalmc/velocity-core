@@ -28,7 +28,7 @@ final class ResourcePackForcer {
 
     ResourcePackForcer(@NotNull ResourcePackProvider resourcePackProvider, @NotNull EmortalScheduler scheduler) {
         this.updateResourcePackInfo(resourcePackProvider);
-        scheduler.repeat(() -> this.updateResourcePackInfo(resourcePackProvider), 15, TimeUnit.MINUTES);
+        scheduler.repeat(() -> this.updateResourcePackInfo(resourcePackProvider), 30, TimeUnit.SECONDS);
     }
 
     private void updateResourcePackInfo(@NotNull ResourcePackProvider resourcePackProvider) {

@@ -344,7 +344,7 @@ public interface ChatMessages {
         return Component.text()
                 .append(lightPurple("You have received a friend request from "))
                 .append(MessageColors.purpleName(target))
-                .append(green("ACCEPT").clickEvent(acceptClickEvent))
+                .append(green(" ACCEPT").clickEvent(acceptClickEvent))
                 .append(Component.text(" | ", NamedTextColor.GRAY))
                 .append(red("DENY").clickEvent(denyClickEvent))
                 .build();
