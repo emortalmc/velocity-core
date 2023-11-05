@@ -98,6 +98,6 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
         Player target = this.playerProvider.getPlayer(targetId);
         if (target == null) return;
 
-        ChatMessages.YOU_KICKED_PLAYER_FROM_PARTY.send(target, kickerName);
+        ChatMessages.YOU_KICKED_FROM_PARTY.send(target, kickerName);
     }
 }

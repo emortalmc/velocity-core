@@ -36,7 +36,7 @@ public final class PartyDisbandSub implements EmortalCommandExecutor {
 
         switch (result) {
             case SUCCESS -> ChatMessages.YOU_DISBANDED_PARTY.send(executor);
-            case NOT_LEADER -> ChatMessages.ERROR_NOT_PARTY_LEADER_DISBAND.send(executor);
+            case NOT_LEADER -> ChatMessages.ERROR_PARTY_NO_PERMISSION.send(executor);
         }
     }
 }

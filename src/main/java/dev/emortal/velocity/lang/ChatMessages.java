@@ -20,7 +20,7 @@ import java.util.Map;
 
 public interface ChatMessages {
 
-    Args0 GENERIC_ERROR = () -> red("An unknown error occurred");
+    Args0 GENERIC_ERROR = () -> red("An error occurred");
 
     Args1<String> PLAYER_NOT_FOUND = username -> red("Player " + username + " not found");
     Args1<String> PLAYER_NOT_ONLINE = username -> red("Player " + username + " is not online");
@@ -68,14 +68,14 @@ public interface ChatMessages {
                 .build();
     };
     Args0 YOU_OPENED_PARTY = () -> green("The party is now open");
-    Args0 PARTY_SETTINGS_HELP = () -> lightPurple("""
-            ----- Party Settings Help -----
-            /party settings
-            /party settings <setting> <value>
-            ---------------------------""");
-    Args1<String> PARTY_HELP = command -> lightPurple("""
-            ------ Party Help ------
-            /%s invite <player>
+    Args0 PARTY_SETTINGS_HELP = () -> MiniMessage.miniMessage().deserialize("""
+            <green><strikethrough>     </strikethrough> Party Settings Help <strikethrough>     </strikethrough></green>
+            <#36a136>/party settings
+            /party settings <setting> <value></#36a136>
+            <green><strikethrough>                           </strikethrough></green>""");
+    Args1<String> PARTY_HELP = command -> MiniMessage.miniMessage().deserialize("""
+            <green><strikethrough>      </strikethrough> Party Help <strikethrough>      </strikethrough></green>
+            <#36a136>/%s invite <player>
             /%<s join <player>
             /%<s leave
             /%<s list
@@ -85,37 +85,34 @@ public interface ChatMessages {
             /%<s leader <player>
             /%<s disband
 
-            /%<s settings
-            ----------------------""".formatted(command));
+            /%<s settings</#36a136>
+            <green><strikethrough>                      </strikethrough></green>""".formatted(command));
 
     // Notifications
-    Args0 PARTY_DISBANDED = () -> red("The party you were in has been disbanded");
+    Args0 PARTY_DISBANDED = () -> red("The party you were in was disbanded");
     Args1<String> PLAYER_JOINED_PARTY = username -> green(username + " has joined the party");
     Args1<String> PLAYER_LEFT_PARTY = username -> red(username + " has left the party");
     Args2<String, String> PLAYER_KICKED_FROM_PARTY = (target, sender) -> red(target + " has been kicked from the party by " + sender);
     Args1<String> YOU_KICKED_FROM_PARTY = username -> red("You have been kicked from the party by " + username);
     Args1<String> PARTY_LEADER_CHANGED = username -> green(username + " is now the party leader");
     Args2<String, String> PLAYER_INVITED_TO_PARTY = (sender, target) -> green(sender + " has invited " + target + " to the party");
-    // You have been invited to join <username>'s party. Click to accept
+    // You have been invited to join <username>'s party
+    // Click to accept
     Args1<String> YOU_INVITED_TO_PARTY = username -> {
         ClickEvent clickEvent = ClickEvent.runCommand("/party join " + username);
         return Component.text()
-                .append(Component.text("You have been invited to join ", TextColor.color(0x3db83d)))
-                .append(Component.text(username + "'s", NamedTextColor.GREEN))
-                .append(Component.text(" party. ", TextColor.color(0x3db83d)))
-                .append(miniMessage("<b><gradient:light_purple:gold>Click to accept</gradient></b>").clickEvent(clickEvent))
+                .append(Component.text(username, NamedTextColor.GREEN))
+                .append(Component.text(" has invited you to their party!", TextColor.color(0x3db83d)))
+                .appendNewline()
+                .append(miniMessage("<b><gradient:light_purple:gold>Click to join</gradient></b>").clickEvent(clickEvent))
                 .build();
     };
 
-    Args0 ERROR_PARTY_NO_PERMISSION = () -> red("You must be the leader of the party to do this");
-    Args0 ERROR_NOT_PARTY_LEADER_DISBAND = () -> Component.text()
-            .append(Component.text("You must be the leader of the party to do this", NamedTextColor.RED)).appendNewline()
-            .append(Component.text("Use '/party leave' to leave the party instead", NamedTextColor.AQUA)).appendNewline()
-            .build();
+    Args0 ERROR_PARTY_NO_PERMISSION = () -> red("You must be the leader of the party to do that");
     Args1<String> ERROR_PLAYER_INVITED_TO_PARTY = username -> red(username + " has already been invited to your party");
     Args1<String> ERROR_PLAYER_IN_THIS_PARTY = username -> red(username + " is already in the party");
-    Args0 ERROR_YOU_NOT_INVITED_TO_PARTY = () -> red("You were not invited to this party");
-    Args0 ERROR_YOU_IN_THIS_PARTY = () -> red("You are already in the party");
+    Args0 ERROR_YOU_NOT_INVITED_TO_PARTY = () -> red("You are not invited to this party");
+    Args0 ERROR_YOU_IN_THIS_PARTY = () -> red("You are already in that party");
     Args0 ERROR_CANNOT_KICK_LEADER = () -> red("You cannot kick the party leader");
     Args1<String> ERROR_PLAYER_NOT_IN_PARTY = username -> red(username + " is not in your party");
     Args0 ERROR_CANNOT_LEAVE_AS_LEADER = () -> Component.text()
@@ -197,8 +194,8 @@ public interface ChatMessages {
     Args2<String, String> ERROR_USER_ALREADY_HAS_ROLE = (user, role) -> red("User " + user + " already has role " + role);
     Args2<String, String> ERROR_USER_MISSING_ROLE = (user, role) -> red("User " + user + " does not have role " + role);
 
-    Args1<String> YOUR_PLAYTIME = playtime -> lightPurple("Your playtime is " + playtime);
-    Args2<String, String> OTHER_PLAYTIME = (player, playtime) -> lightPurple(player + "'s playtime is " + playtime);
+    Args1<String> YOUR_PLAYTIME = playtime -> lightPurple("You have been playing for " + playtime);
+    Args2<String, String> OTHER_PLAYTIME = (player, playtime) -> lightPurple(player + " has been playing for " + playtime);
 
     Args0 LIST_USAGE = () -> Component.text()
             .append(lightPurple("----- List Help -----")).appendNewline()
@@ -342,11 +339,12 @@ public interface ChatMessages {
         ClickEvent acceptClickEvent = ClickEvent.runCommand("/friend add " + target);
         ClickEvent denyClickEvent = ClickEvent.runCommand("/friend deny " + target);
         return Component.text()
-                .append(lightPurple("You have received a friend request from "))
                 .append(MessageColors.purpleName(target))
-                .append(green(" ACCEPT").clickEvent(acceptClickEvent))
+                .append(lightPurple(" wants to be your friend!"))
+                .appendNewline()
+                .append(Component.text("ACCEPT", NamedTextColor.GREEN, TextDecoration.BOLD).clickEvent(acceptClickEvent))
                 .append(Component.text(" | ", NamedTextColor.GRAY))
-                .append(red("DENY").clickEvent(denyClickEvent))
+                .append(Component.text("DENY", NamedTextColor.RED, TextDecoration.BOLD).clickEvent(denyClickEvent))
                 .build();
     };
     Args1<String> FRIEND_HELP = command -> miniMessage("""
@@ -357,19 +355,30 @@ public interface ChatMessages {
             <click:suggest_command:'/%<s requests '>/%<s requests <incoming/outgoing> [page]</click>
             <click:suggest_command:'/%<s purge requests '>/%<s purge requests <incoming/outgoing></click>
             -----------------------""".formatted(command));
-    Args1<String> FRIEND_REQUEST_DENIED = target -> lightPurple("Removed your friend request from ").append(MessageColors.purpleName(target));
-    Args1<String> FRIEND_REQUEST_REVOKED = target -> lightPurple("Revoked your friend request to ").append(MessageColors.purpleName(target));
-    Args2<Integer, Integer> FRIEND_LIST_HEADER = (currentPage, maxPage) -> lightPurple("----- Friends (Page " + currentPage + "/" + maxPage + ") -----");
+    Args1<String> FRIEND_REQUEST_DENIED = target -> Component.text()
+            .append(green("Denied friend request from "))
+            .append(MessageColors.purpleName(target))
+            .build();
+    Args1<String> FRIEND_REQUEST_REVOKED = target -> Component.text()
+            .append(green("Revoked your friend request to "))
+            .append(MessageColors.purpleName(target))
+            .build();
+    Args2<Integer, Integer> FRIEND_LIST_HEADER = (currentPage, maxPage) -> Component.text()
+            .append(Component.text("      ", NamedTextColor.LIGHT_PURPLE, TextDecoration.STRIKETHROUGH))
+            .append(Component.text(" ꜰʀɪᴇɴᴅѕ ", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
+            .append(Component.text("(" + currentPage + "/" + maxPage + ") "))
+            .append(Component.text("      ", NamedTextColor.LIGHT_PURPLE, TextDecoration.STRIKETHROUGH))
+            .build();
     Args2<String, String> FRIEND_LIST_ONLINE_LINE = (friend, activity) ->
             Component.text(friend + " - " + activity, NamedTextColor.GREEN).clickEvent(ClickEvent.suggestCommand("/message " + friend + " "));
-    Args2<String, String> FRIEND_LIST_OFFLINE_LINE = (friend, lastSeen) -> red(friend + " - Seen " + lastSeen);
-    Args1<String> FRIEND_REMOVED = target -> lightPurple("You are no longer friends with ").append(MessageColors.purpleName(target));
-    Args1<Integer> PURGED_INCOMING_FRIEND_REQUESTS = count -> lightPurple("Purged " + count + " incoming friend requests");
-    Args1<Integer> PURGED_OUTGOING_FRIEND_REQUESTS = count -> lightPurple("Purged " + count + " outgoing friend requests");
+    Args2<String, String> FRIEND_LIST_OFFLINE_LINE = (friend, lastOnline) -> red(friend + " - Last online " + lastOnline);
+    Args1<String> FRIEND_REMOVED = target -> green("You are no longer friends with ").append(MessageColors.purpleName(target));
+    Args1<Integer> PURGED_INCOMING_FRIEND_REQUESTS = count -> green("Purged " + count + " incoming friend requests");
+    Args1<Integer> PURGED_OUTGOING_FRIEND_REQUESTS = count -> green("Purged " + count + " outgoing friend requests");
     Args2<Integer, Integer> INCOMING_FRIEND_REQUESTS_HEADER = (currentPage, maxPage) ->
-            lightPurple("--- Incoming Requests (Page " + currentPage + "/" + maxPage + ") ---");
+            lightPurple("--- ɪɴᴄᴏᴍɪɴɢ ʀᴇǫᴜᴇѕᴛѕ (" + currentPage + "/" + maxPage + ") ---");
     Args2<Integer, Integer> OUTGOING_FRIEND_REQUESTS_HEADER = (currentPage, maxPage) ->
-            lightPurple("--- Outgoing Requests (Page " + currentPage + "/" + maxPage + ") ---");
+            lightPurple("--- ᴏᴜᴛɢᴏɪɴɢ ʀᴇǫᴜᴇѕᴛѕ (" + currentPage + "/" + maxPage + ") ---");
     Args2<String, String> INCOMING_FRIEND_REQUEST_LINE = (duration, player) -> Component.text()
             .append(lightPurple(duration + " ago "))
             .append(darkPurple("- "))
@@ -445,6 +454,8 @@ public interface ChatMessages {
             .append(Component.text("┘ ", NamedTextColor.GOLD))
             .appendNewline()
             .build();
+
+    Args0 DISCORD_COMMAND = () -> MiniMessage.miniMessage().deserialize("<gradient:#7289da:#51629c:#51629c>Click to join our</gradient> <#7289da><bold>Discord</bold><#51629c>!");
 
     @FunctionalInterface
     interface Args0 {
