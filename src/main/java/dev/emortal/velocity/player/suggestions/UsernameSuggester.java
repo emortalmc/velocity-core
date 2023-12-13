@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,10 +30,16 @@ final class UsernameSuggester implements SuggestionProvider<CommandSource> {
 
     private final @Nullable McPlayerService playerService;
     private final @NotNull FilterMethod filterMethod;
+    private final @Nullable Set<UUID> excludedPlayerIds;
 
-    UsernameSuggester(@Nullable McPlayerService playerService, @NotNull FilterMethod filterMethod) {
+    UsernameSuggester(@Nullable McPlayerService playerService, @NotNull FilterMethod filterMethod, @Nullable Set<UUID> excludedPlayerIds) {
         this.playerService = playerService;
         this.filterMethod = filterMethod;
+        this.excludedPlayerIds = excludedPlayerIds;
+    }
+
+    UsernameSuggester(@Nullable McPlayerService playerService, @NotNull FilterMethod filterMethod) {
+        this(playerService, filterMethod, null);
     }
 
     @Override
@@ -52,7 +59,7 @@ final class UsernameSuggester implements SuggestionProvider<CommandSource> {
 
         List<McPlayer> players;
         try {
-            players = this.playerService.searchPlayersByUsername(playerId, input, pageable, this.filterMethod);
+            players = this.playerService.searchPlayersByUsername(playerId, input, pageable, this.filterMethod, this.excludedPlayerIds);
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to retrieve player suggestions", exception);
             return EMPTY;
