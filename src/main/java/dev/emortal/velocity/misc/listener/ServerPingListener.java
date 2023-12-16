@@ -25,6 +25,7 @@ final class ServerPingListener {
             "Chuck Norris doesn't join, the server joins him",
             "private lobbies when?",
             "I heard SunriseMC was releasing soon...",
+            "This server is certified aladeen!",
     };
 
     @Subscribe
