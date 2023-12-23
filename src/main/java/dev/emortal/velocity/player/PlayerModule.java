@@ -7,6 +7,7 @@ import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
 import dev.emortal.velocity.player.commands.PlaytimeCommand;
 import dev.emortal.velocity.player.listener.McPlayerListener;
+import dev.emortal.velocity.player.listener.PlayerJoinQuitListener;
 import org.jetbrains.annotations.NotNull;
 
 @ModuleData(name = "player")
@@ -25,6 +26,7 @@ public final class PlayerModule extends VelocityModule {
 
         if (service != null) {
             super.registerCommand(new PlaytimeCommand(service, sessionCache, super.adapters().commandManager().usernameSuggesters()));
+            super.registerEventListener(new PlayerJoinQuitListener(super.adapters().audience()));
             super.registerEventListener(new McPlayerListener(service, sessionCache));
         }
 

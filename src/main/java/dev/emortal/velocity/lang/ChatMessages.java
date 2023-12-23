@@ -457,6 +457,17 @@ public interface ChatMessages {
 
     Args0 DISCORD_COMMAND = () -> MiniMessage.miniMessage().deserialize("<click:open_url:'https://discord.com/invite/TZyuMSha96'><gradient:#7289da:#51629c:#51629c>Click to join our</gradient> <#7289da><bold>Discord</bold><#51629c>!</click>");
 
+    Args1<String> JOIN = username -> Component.text()
+            .append(Component.text("JOIN", NamedTextColor.GREEN, TextDecoration.BOLD))
+            .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+            .append(Component.text(username, NamedTextColor.WHITE))
+            .build();
+    Args1<String> QUIT = username -> Component.text()
+            .append(Component.text("QUIT", NamedTextColor.RED, TextDecoration.BOLD))
+            .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+            .append(Component.text(username, NamedTextColor.WHITE))
+            .build();
+
     @FunctionalInterface
     interface Args0 {
 

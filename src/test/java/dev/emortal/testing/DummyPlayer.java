@@ -95,7 +95,7 @@ public class DummyPlayer implements Player {
     }
 
     @Override
-    public void clearHeaderAndFooter() {
+    public void clearPlayerListHeaderAndFooter() {
     }
 
     @Override

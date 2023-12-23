@@ -39,7 +39,8 @@ public final class VelocityModuleEnvironmentProvider implements ModuleEnvironmen
                 new VelocityPlayerProvider(proxy),
                 new VelocityEmortalScheduler(proxy.getScheduler(), plugin),
                 new VelocityServerProvider(proxy),
-                new VelocityResourcePackProvider(proxy)
+                new VelocityResourcePackProvider(proxy),
+                proxy
         );
     }
 
