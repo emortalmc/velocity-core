@@ -100,7 +100,7 @@ suppress-metadata-errors: false
 team-colour-fix: true
 tracking-max-kick-msg: You are sending too many packets, :(
 tracking-max-warnings: 4
-tracking-period: 6
+tracking-period: -1 # -1 is disabled, todo set back to 6
 tracking-warning-pps: 120
 truncate-1_14-books: false
 use-1_15-instant-respawn: false
