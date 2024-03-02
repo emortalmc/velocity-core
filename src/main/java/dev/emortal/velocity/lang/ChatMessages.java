@@ -112,7 +112,7 @@ public interface ChatMessages {
     Args1<String> ERROR_PLAYER_INVITED_TO_PARTY = username -> red(username + " has already been invited to your party");
     Args1<String> ERROR_PLAYER_IN_THIS_PARTY = username -> red(username + " is already in the party");
     Args0 ERROR_YOU_NOT_INVITED_TO_PARTY = () -> red("You are not invited to this party");
-    Args0 ERROR_YOU_IN_THIS_PARTY = () -> red("You are already in that party");
+    Args0 ERROR_ALREADY_IN_PARTY = () -> red("You are already in a party. Use <click:run_command:/party leave>/party leave</click> to leave");
     Args0 ERROR_CANNOT_KICK_LEADER = () -> red("You cannot kick the party leader");
     Args1<String> ERROR_PLAYER_NOT_IN_PARTY = username -> red(username + " is not in your party");
     Args0 ERROR_CANNOT_LEAVE_AS_LEADER = () -> Component.text()

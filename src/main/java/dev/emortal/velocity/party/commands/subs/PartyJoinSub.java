@@ -63,7 +63,7 @@ public final class PartyJoinSub implements EmortalCommandExecutor {
             case JoinPartyResult.Success ignored -> ChatMessages.YOU_JOINED_PARTY.send(player, target.username());
             case JoinPartyResult.Error error -> {
                 switch (error) {
-                    case ALREADY_IN_PARTY -> ChatMessages.ERROR_YOU_IN_THIS_PARTY.send(player);
+                    case ALREADY_IN_PARTY -> ChatMessages.ERROR_ALREADY_IN_PARTY.send(player);
                     case NOT_INVITED -> ChatMessages.ERROR_YOU_NOT_INVITED_TO_PARTY.send(player);
                 }
             }

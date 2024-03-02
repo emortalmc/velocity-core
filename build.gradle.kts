@@ -15,14 +15,16 @@ repositories {
 
     maven("https://repo.papermc.io/repository/maven-snapshots/")
     maven("https://packages.confluent.io/maven/")
+    maven("https://repo.viaversion.com")
 }
 
 dependencies {
     // Metrics
     implementation("io.pyroscope:agent:0.12.0")
 
-    compileOnly("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
+    compileOnly("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
     compileOnly("com.velocitypowered:velocity-proxy:3.2.0-SNAPSHOT")
+    compileOnly("com.viaversion:viaversion-api:4.9.2")
     annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 

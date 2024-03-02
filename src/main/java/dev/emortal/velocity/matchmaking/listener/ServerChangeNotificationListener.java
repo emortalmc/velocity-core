@@ -4,6 +4,8 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
+import com.viaversion.viaversion.api.Via;
+import com.viaversion.viaversion.api.platform.ViaServerProxyPlatform;
 import dev.emortal.api.message.gamesdk.GameReadyMessage;
 import dev.emortal.api.message.matchmaker.MatchCreatedMessage;
 import dev.emortal.api.model.matchmaker.Assignment;
@@ -13,6 +15,7 @@ import dev.emortal.velocity.adapter.server.ServerProvider;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.adapter.player.PlayerProvider;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -61,6 +64,16 @@ public final class ServerChangeNotificationListener {
                 }
 
                 RegisteredServer server = this.serverProvider.createServerFromAssignment(assignment);
+
+                // Weirdness required here. Register the server version with ViaVersion to allow for more seamless updates
+                // Some servers can be on old/new versions, and we need to handle that
+                ViaServerProxyPlatform platform = (ViaServerProxyPlatform) Via.getPlatform();
+
+                if (assignment.hasProtocolVersion()) {
+                    platform.protocolDetectorService().setProtocolVersion(assignment.getServerId(), (int) assignment.getProtocolVersion());
+                }
+
+                playerProvider.allPlayers().forEach(p -> p.sendMessage(Component.text("protocolVer: " + assignment.getProtocolVersion())));
 
                 ChatMessages.SENDING_TO_SERVER.send(player, serverId);
                 player.createConnectionRequest(server).fireAndForget();
