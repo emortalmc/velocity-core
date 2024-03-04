@@ -11,11 +11,10 @@ import dev.emortal.api.message.matchmaker.MatchCreatedMessage;
 import dev.emortal.api.model.matchmaker.Assignment;
 import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;
+import dev.emortal.velocity.adapter.player.PlayerProvider;
 import dev.emortal.velocity.adapter.server.ServerProvider;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.messaging.MessagingModule;
-import dev.emortal.velocity.adapter.player.PlayerProvider;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -65,15 +64,13 @@ public final class ServerChangeNotificationListener {
 
                 RegisteredServer server = this.serverProvider.createServerFromAssignment(assignment);
 
-                // Weirdness required here. Register the server version with ViaVersion to allow for more seamless updates
-                // Some servers can be on old/new versions, and we need to handle that
+                // Retrieve ViaVersion, set the protocol version if available.
+                // This allows us to run old server versions for *some* games.
                 ViaServerProxyPlatform platform = (ViaServerProxyPlatform) Via.getPlatform();
 
                 if (assignment.hasProtocolVersion()) {
                     platform.protocolDetectorService().setProtocolVersion(assignment.getServerId(), (int) assignment.getProtocolVersion());
                 }
-
-                playerProvider.allPlayers().forEach(p -> p.sendMessage(Component.text("protocolVer: " + assignment.getProtocolVersion())));
 
                 ChatMessages.SENDING_TO_SERVER.send(player, serverId);
                 player.createConnectionRequest(server).fireAndForget();
