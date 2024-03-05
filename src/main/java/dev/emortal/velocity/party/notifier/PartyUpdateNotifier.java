@@ -1,5 +1,6 @@
 package dev.emortal.velocity.party.notifier;
 
+import dev.emortal.api.model.party.Party;
 import dev.emortal.velocity.party.cache.LocalParty;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,4 +27,6 @@ public interface PartyUpdateNotifier {
     void playerKicked(@NotNull LocalParty party, @NotNull String targetName, @NotNull String kickerName);
 
     void selfKicked(@NotNull UUID targetId, @NotNull String kickerName);
+
+    void partyBroadcast(@NotNull Party party);
 }

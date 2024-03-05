@@ -22,7 +22,7 @@ WORKDIR /app/plugins
 RUN wget -O viaversion.jar $VIA_VERSION_JAR_URL
 COPY run/plugins/viaversion/config.yml viaversion/config.yml
 
-RUN wget -O viabackwards.jar https://github.com/ViaVersion/ViaBackwards/releases/download/4.9.1/ViaBackwards-4.9.1.jar
+RUN #wget -O viabackwards.jar https://github.com/ViaVersion/ViaBackwards/releases/download/4.9.1/ViaBackwards-4.9.1.jar
 COPY build/libs/*-all.jar velocity-core.jar
 # Go back to the base directory for our server
 WORKDIR /app

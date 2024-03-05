@@ -1,5 +1,6 @@
 package dev.emortal.velocity.party.cache;
 
+import dev.emortal.api.model.party.Party;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,4 +22,17 @@ public interface LocalParty {
     @NotNull Collection<? extends LocalPartyMember> members();
 
     @Nullable LocalPartyMember getMember(@NotNull UUID id);
+
+    default @NotNull Party toProto() {
+        Party.Builder builder = Party.newBuilder()
+                .setId(this.id())
+                .setLeaderId(this.leaderId().toString())
+                .setOpen(this.open());
+
+        for (LocalPartyMember member : this.members()) {
+            builder.addMembers(member.toProto());
+        }
+
+        return builder.build();
+    }
 }

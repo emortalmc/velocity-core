@@ -1,6 +1,7 @@
 package dev.emortal.velocity.party;
 
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.message.party.PartyBroadcastMessage;
 import dev.emortal.api.message.party.PartyCreatedMessage;
 import dev.emortal.api.message.party.PartyDeletedMessage;
 import dev.emortal.api.message.party.PartyEmptiedMessage;
@@ -42,6 +43,7 @@ final class PartyUpdateListener {
         messaging.addListener(PartyPlayerLeftMessage.class, this::handleLeaveParty);
         messaging.addListener(PartyLeaderChangedMessage.class, this::handleLeaderChange);
         messaging.addListener(PartyInviteCreatedMessage.class, this::handleInviteCreated);
+        messaging.addListener(PartyBroadcastMessage.class, this::handlePartyBroadcast);
     }
 
     void handleCreateParty(@NotNull PartyCreatedMessage message) {
@@ -178,5 +180,10 @@ final class PartyUpdateListener {
         String targetUsername = invite.getTargetUsername();
 
         this.updateNotifier.partyInviteCreated(party, senderId, invite.getSenderUsername(), targetUsername);
+    }
+
+    void handlePartyBroadcast(@NotNull PartyBroadcastMessage message) {
+        Party party = message.getParty();
+        this.updateNotifier.partyBroadcast(party);
     }
 }

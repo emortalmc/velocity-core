@@ -48,6 +48,11 @@ public final class MessagingModule extends VelocityModule implements MessageHand
         return true;
     }
 
+    public @NotNull FriendlyKafkaProducer getKafkaProducer() {
+        if (this.kafkaProducer == null) throw new IllegalStateException("Kafka producer not available");
+        return this.kafkaProducer;
+    }
+
     @Override
     public void onUnload() {
         if (this.kafkaProducer != null) this.kafkaProducer.shutdown();

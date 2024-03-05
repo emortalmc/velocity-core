@@ -2,8 +2,10 @@ package dev.emortal.velocity.party.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.emortal.api.service.party.PartyService;
+import dev.emortal.api.utils.kafka.FriendlyKafkaProducer;
 import dev.emortal.velocity.command.EmortalCommand;
 import dev.emortal.velocity.lang.ChatMessages;
+import dev.emortal.velocity.party.commands.subs.PartyBroadcastSub;
 import dev.emortal.velocity.party.commands.subs.PartyCloseSub;
 import dev.emortal.velocity.party.commands.subs.PartyDisbandSub;
 import dev.emortal.velocity.party.commands.subs.PartyInviteSub;
@@ -22,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 public final class PartyCommand extends EmortalCommand {
 
     public PartyCommand(@NotNull PartyService partyService, @NotNull PlayerResolver playerResolver,
-                        @NotNull UsernameSuggesterProvider usernameSuggesterProvider) {
+                        @NotNull UsernameSuggesterProvider usernameSuggesterProvider, @NotNull FriendlyKafkaProducer kafkaProducer) {
         super("party", "p");
 
         super.setPlayerOnly();
@@ -40,5 +42,8 @@ public final class PartyCommand extends EmortalCommand {
         super.addSyntax(new PartyCloseSub(partyService), literal("close"));
         super.addSyntax(new PartyListSub(partyService), literal("list"));
         super.addSyntax(new PartySettingsSub(), literal("settings"));
+
+        super.addConditionalSyntax(source -> source.hasPermission("command.party.broadcast"),
+                new PartyBroadcastSub(kafkaProducer, partyService), literal("broadcast"));
     }
 }

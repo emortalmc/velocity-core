@@ -112,7 +112,7 @@ public interface ChatMessages {
     Args1<String> ERROR_PLAYER_INVITED_TO_PARTY = username -> red(username + " has already been invited to your party");
     Args1<String> ERROR_PLAYER_IN_THIS_PARTY = username -> red(username + " is already in the party");
     Args0 ERROR_YOU_NOT_INVITED_TO_PARTY = () -> red("You are not invited to this party");
-    Args0 ERROR_ALREADY_IN_PARTY = () -> red("You are already in a party. Use <click:run_command:/party leave>/party leave</click> to leave");
+    Args0 ERROR_ALREADY_IN_PARTY = () -> miniMessage("<red>You are already in a party. Use <click:run_command:/party leave>/party leave</click> to leave");
     Args0 ERROR_CANNOT_KICK_LEADER = () -> red("You cannot kick the party leader");
     Args1<String> ERROR_PLAYER_NOT_IN_PARTY = username -> red(username + " is not in your party");
     Args0 ERROR_CANNOT_LEAVE_AS_LEADER = () -> Component.text()
@@ -120,6 +120,10 @@ public interface ChatMessages {
             .append(red("Use '/party disband' to disband the party or '/party leader <player>' to transfer leadership"))
             .build();
     Args0 ERROR_YOU_NOT_IN_PARTY = () -> red("You are not in a party");
+
+    // /party broadcast
+    Args0 PARTY_BROADCAST_PARTY_CLOSED = () -> miniMessage("<red>Your party must be open to broadcast a message. Use <click:run_command:/party open><u>/party open</u></click> to open your party");
+    Args1<String> PARTY_BROADCAST_MESSAGE = leaderUsername -> miniMessage("<green>" + leaderUsername + " is hosting a party. <click:run_command:/party join " + leaderUsername + ">Click <u>here</u> to join!</click>");
 
     Args1<String> ROLE_CREATED = role -> green("Role " + role + " created");
     Args4<String, Integer, Integer, Component> ROLE_DESCRIPTION = (id, priority, permissions, displayName) ->

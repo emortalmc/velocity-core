@@ -1,14 +1,19 @@
 package dev.emortal.velocity.party.notifier;
 
 import com.velocitypowered.api.proxy.Player;
+import dev.emortal.api.model.party.Party;
+import dev.emortal.api.model.party.PartyMember;
+import dev.emortal.velocity.adapter.player.PlayerProvider;
 import dev.emortal.velocity.lang.ChatMessages;
 import dev.emortal.velocity.party.cache.LocalParty;
-import dev.emortal.velocity.adapter.player.PlayerProvider;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
 public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChatPartyUpdateNotifier.class);
 
     private final @NotNull PlayerProvider playerProvider;
 
@@ -99,5 +104,20 @@ public final class ChatPartyUpdateNotifier implements PartyUpdateNotifier {
         if (target == null) return;
 
         ChatMessages.YOU_KICKED_FROM_PARTY.send(target, kickerName);
+    }
+
+    @Override
+    public void partyBroadcast(@NotNull Party party) {
+        String leaderId = party.getLeaderId();
+        PartyMember leader = party.getMembersList().stream()
+                .filter(member -> member.getId().equals(leaderId))
+                .findFirst().orElse(null);
+
+        if (leader == null) {
+            LOGGER.warn("Couldn't find leader for party {}", party.getId());
+            return;
+        }
+
+        this.playerProvider.allPlayers().forEach(player -> ChatMessages.PARTY_BROADCAST_MESSAGE.send(player, leader.getUsername()));
     }
 }
