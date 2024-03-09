@@ -33,6 +33,7 @@ public interface ChatMessages {
     Args0 SENDING_TO_LOBBY = () -> green("Sending you to the lobby...");
     Args0 ERROR_SENDING_TO_LOBBY = () -> red("Something went wrong while sending you to the lobby!");
     Args0 ERROR_CONNECTING_TO_LOBBY = () -> red("Failed to connect to lobby");
+    Args0 ERROR_CONNECTING_TO_FALLBACK_LOBBY = () -> red("Failed to connect to fallback lobby");
 
     Args1<String> SENDING_TO_SERVER = serverName -> Component.text()
             .append(green("Sending you to "))

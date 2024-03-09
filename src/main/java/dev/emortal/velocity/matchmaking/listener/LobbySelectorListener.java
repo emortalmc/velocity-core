@@ -5,11 +5,11 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.player.KickedFromServerEvent;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import dev.emortal.api.message.matchmaker.MatchCreatedMessage;
-import dev.emortal.api.model.matchmaker.Assignment;
 import dev.emortal.api.model.matchmaker.Match;
 import dev.emortal.api.model.matchmaker.Ticket;
 import dev.emortal.api.service.matchmaker.MatchmakerService;
@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public final class LobbySelectorListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(LobbySelectorListener.class);
@@ -32,7 +33,7 @@ public final class LobbySelectorListener {
     private final @NotNull MatchmakerService matchmaker;
 
     // NOTE: This is not cleaned up if there's a failed request, we may have problems :skull:
-    private final Cache<UUID, EventCallbackContext> pendingPlayers = Caffeine.newBuilder()
+    private final Cache<UUID, Consumer<@Nullable RegisteredServer>> pendingPlayers = Caffeine.newBuilder()
             .expireAfterWrite(10, TimeUnit.SECONDS)
             .evictionListener(this::onEvict)
             .build();
@@ -49,6 +50,24 @@ public final class LobbySelectorListener {
         this.sendToLobbyServer(event, continuation);
     }
 
+    @Subscribe
+    public void handleKickedFromServer(@NotNull KickedFromServerEvent event, @NotNull Continuation continuation) {
+        if (event.kickedDuringServerConnect()) return;
+
+        this.pendingPlayers.put(event.getPlayer().getUniqueId(), server -> {
+            if (server == null) {
+                LOGGER.error("Failed to find fallback lobby match for '{}'", event.getPlayer().getUsername());
+                event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_FALLBACK_LOBBY.get());
+                return;
+            }
+
+            event.setResult(KickedFromServerEvent.RedirectPlayer.create(server));
+            continuation.resume();
+        });
+
+        this.matchmaker.queueInitialLobby(event.getPlayer().getUniqueId());
+    }
+
     private void sendToLobbyServer(@NotNull PlayerChooseInitialServerEvent event, @NotNull Continuation continuation) {
         Player player = event.getPlayer();
         LOGGER.debug("Queueing initial lobby for '{}'", player.getUsername());
@@ -60,7 +79,16 @@ public final class LobbySelectorListener {
             event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.get());
         }
 
-        this.pendingPlayers.put(player.getUniqueId(), new EventCallbackContext(event, continuation));
+        this.pendingPlayers.put(player.getUniqueId(), server -> {
+            if (server == null) {
+                LOGGER.error("Failed to find initial lobby match for '{}'", player.getUsername());
+                player.disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.get());
+                return;
+            }
+
+            event.setInitialServer(server);
+            continuation.resume();
+        });
     }
 
     private void handleMatchCreated(@NotNull MatchCreatedMessage message) {
@@ -72,44 +100,18 @@ public final class LobbySelectorListener {
 
             UUID playerId = UUID.fromString(ticket.getPlayerIds(0));
 
-            EventCallbackContext context = this.pendingPlayers.getIfPresent(playerId);
-            if (context == null) continue; // Likely submitted by a different service.
+            Consumer<RegisteredServer> consumer = this.pendingPlayers.getIfPresent(playerId);
+            if (consumer == null) continue; // Likely submitted by a different service.
 
-            LOGGER.debug("Found initial lobby match for '{}': {}", context.playerName(), match);
             this.pendingPlayers.invalidate(playerId);
-            this.connectPlayerToAssignment(context, match.getAssignment());
+            consumer.accept(this.serverProvider.createServerFromAssignment(match.getAssignment()));
         }
     }
 
-    private void connectPlayerToAssignment(@NotNull EventCallbackContext context, @NotNull Assignment assignment) {
-        LOGGER.debug("Connecting '{}' to {}", context.playerName(), assignment);
-
-        RegisteredServer server = this.serverProvider.createServerFromAssignment(assignment);
-        context.setInitialServer(server);
-    }
-
-    private void onEvict(@Nullable UUID playerId, @Nullable EventCallbackContext context, @NotNull RemovalCause cause) {
+    private void onEvict(@Nullable UUID playerId, @Nullable Consumer<@Nullable RegisteredServer> consumer, @NotNull RemovalCause cause) {
         if (cause != RemovalCause.EXPIRED) return;
-        if (playerId == null || context == null) return;
+        if (playerId == null || consumer == null) return;
 
-        LOGGER.debug("Failed to find initial lobby match in time for '{}'", context.playerName());
-        context.disconnect();
-    }
-
-    private record EventCallbackContext(@NotNull PlayerChooseInitialServerEvent event, @NotNull Continuation continuation) {
-
-        @NotNull String playerName() {
-            return this.event.getPlayer().getUsername();
-        }
-
-        void setInitialServer(@NotNull RegisteredServer server) {
-            this.event.setInitialServer(server);
-            this.continuation.resume();
-        }
-
-        void disconnect() {
-            this.event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.get());
-            this.continuation.resume();
-        }
+        consumer.accept(null);
     }
 }
