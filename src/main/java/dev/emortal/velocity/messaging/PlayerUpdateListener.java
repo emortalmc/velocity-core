@@ -5,19 +5,16 @@ import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.util.GameProfile;
 import dev.emortal.api.message.common.PlayerConnectMessage;
 import dev.emortal.api.message.common.PlayerDisconnectMessage;
 import dev.emortal.api.message.common.PlayerSwitchServerMessage;
 import dev.emortal.api.model.common.PlayerSkin;
 import dev.emortal.api.utils.kafka.FriendlyKafkaProducer;
 import dev.emortal.velocity.Environment;
+import dev.emortal.velocity.utils.SkinUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 final class PlayerUpdateListener {
     private static final String KAFKA_CONNECTIONS_TOPIC = "mc-connections";
@@ -34,7 +31,7 @@ final class PlayerUpdateListener {
     private void onPlayerLogin(@NotNull PostLoginEvent event) {
         Player player = event.getPlayer();
 
-        PlayerSkin skin = this.getSkin(player);
+        PlayerSkin skin = SkinUtils.getProtoSkin(player);
         if (skin == null) {
             LOGGER.warn("Player {} has no skin", player.getUsername());
         }
@@ -47,21 +44,6 @@ final class PlayerUpdateListener {
         if (skin != null) messageBuilder.setPlayerSkin(skin);
 
         this.kafkaProducer.produceAndForget(KAFKA_CONNECTIONS_TOPIC, messageBuilder.build());
-    }
-
-    private @Nullable PlayerSkin getSkin(@NotNull Player player) {
-        List<GameProfile.Property> properties = player.getGameProfileProperties();
-
-        for (GameProfile.Property property : properties) {
-            if (!property.getName().equals("textures")) continue;
-
-            return PlayerSkin.newBuilder()
-                    .setTexture(property.getValue())
-                    .setSignature(property.getSignature())
-                    .build();
-        }
-
-        return null;
     }
 
     @Subscribe

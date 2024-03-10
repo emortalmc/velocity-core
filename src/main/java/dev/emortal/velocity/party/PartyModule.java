@@ -7,7 +7,8 @@ import dev.emortal.api.utils.GrpcStubCollection;
 import dev.emortal.velocity.messaging.MessagingModule;
 import dev.emortal.velocity.module.VelocityModule;
 import dev.emortal.velocity.module.VelocityModuleEnvironment;
-import dev.emortal.velocity.party.commands.PartyCommand;
+import dev.emortal.velocity.party.commands.event.EventCommand;
+import dev.emortal.velocity.party.commands.party.PartyCommand;
 import dev.emortal.velocity.party.notifier.ChatPartyUpdateNotifier;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ public final class PartyModule extends VelocityModule {
         new PartyUpdateListener(cache, super.adapters().playerProvider(), new ChatPartyUpdateNotifier(super.adapters().playerProvider()), messaging);
 
         super.registerCommand(new PartyCommand(service, super.playerResolver(), super.adapters().commandManager().usernameSuggesters(), messaging.getKafkaProducer()));
+        super.registerCommand(new EventCommand(service));
         return true;
     }
 

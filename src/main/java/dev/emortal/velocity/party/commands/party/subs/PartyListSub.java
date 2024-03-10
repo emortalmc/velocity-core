@@ -1,4 +1,4 @@
-package dev.emortal.velocity.party.commands.subs;
+package dev.emortal.velocity.party.commands.party.subs;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;

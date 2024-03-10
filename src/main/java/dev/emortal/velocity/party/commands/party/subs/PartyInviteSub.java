@@ -1,8 +1,8 @@
-package dev.emortal.velocity.party.commands.subs;
+package dev.emortal.velocity.party.commands.party.subs;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.emortal.api.service.party.JoinPartyResult;
+import dev.emortal.api.service.party.InvitePlayerToPartyResult;
 import dev.emortal.api.service.party.PartyService;
 import dev.emortal.velocity.command.ArgumentProvider;
 import dev.emortal.velocity.command.EmortalCommandExecutor;
@@ -15,13 +15,13 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartyJoinSub implements EmortalCommandExecutor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PartyJoinSub.class);
+public final class PartyInviteSub implements EmortalCommandExecutor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PartyInviteSub.class);
 
     private final @NotNull PartyService partyService;
     private final @NotNull PlayerResolver playerResolver;
 
-    public PartyJoinSub(@NotNull PartyService partyService, @NotNull PlayerResolver playerResolver) {
+    public PartyInviteSub(@NotNull PartyService partyService, @NotNull PlayerResolver playerResolver) {
         this.partyService = partyService;
         this.playerResolver = playerResolver;
     }
@@ -50,21 +50,22 @@ public final class PartyJoinSub implements EmortalCommandExecutor {
             return;
         }
 
-        JoinPartyResult result;
+        InvitePlayerToPartyResult result;
         try {
-            result = this.partyService.joinParty(player.getUniqueId(), player.getUsername(), target.uuid());
+            result = this.partyService.invitePlayer(player.getUniqueId(), player.getUsername(), target.uuid(), target.username());
         } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to join '{}' to party of '{}'", target.uuid(), player.getUniqueId(), exception);
+            LOGGER.error("Failed to invite '{}' to party of '{}'", target.uuid(), player.getUniqueId(), exception);
             ChatMessages.GENERIC_ERROR.send(player);
             return;
         }
 
         switch (result) {
-            case JoinPartyResult.Success ignored -> ChatMessages.YOU_JOINED_PARTY.send(player, target.username());
-            case JoinPartyResult.Error error -> {
+            case InvitePlayerToPartyResult.Success ignored -> ChatMessages.YOU_INVITED_PLAYER_TO_PARTY.send(player, target.username());
+            case InvitePlayerToPartyResult.Error error -> {
                 switch (error) {
-                    case ALREADY_IN_PARTY -> ChatMessages.ERROR_ALREADY_IN_PARTY.send(player);
-                    case NOT_INVITED -> ChatMessages.ERROR_YOU_NOT_INVITED_TO_PARTY.send(player);
+                    case NO_PERMISSION -> ChatMessages.ERROR_PARTY_NO_PERMISSION.send(player);
+                    case TARGET_ALREADY_INVITED -> ChatMessages.ERROR_PLAYER_INVITED_TO_PARTY.send(player, target.username());
+                    case TARGET_IN_THIS_PARTY -> ChatMessages.ERROR_PLAYER_IN_THIS_PARTY.send(player, target.username());
                 }
             }
         }

@@ -2,6 +2,8 @@ package dev.emortal.velocity.lang;
 
 import com.velocitypowered.api.permission.Tristate;
 import dev.emortal.api.model.mcplayer.OnlinePlayer;
+import dev.emortal.api.model.party.EventData;
+import dev.emortal.api.utils.ProtoTimestampConverter;
 import dev.emortal.velocity.misc.command.ListCommand;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -14,13 +16,20 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 public interface ChatMessages {
+    SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
     Args0 GENERIC_ERROR = () -> red("An error occurred");
+    Args0 ERROR_NO_SKIN = () -> red("You don't have a skin. This doesn't work???");
+    Args0 ERROR_INVALID_TIME_FORMAT = () -> red("Invalid time format. Must be in ISO-8601 format (yyyy-MM-ddTHH:mm:ss e.g. 2022-01-01T12:00:00)");
+    Args1<String> ERROR_INVALID_TIME_FORMAT_ARG = arg -> red("Invalid time format at %s. Must be in ISO-8601 format (yyyy-MM-ddTHH:mm:ss e.g. 2022-01-01T12:00:00)".formatted(arg));
+    Args1<String> ERROR_TIME_IN_PAST_ARG = arg -> red("Invalid time. %s is in the past".formatted(arg));
 
     Args1<String> PLAYER_NOT_FOUND = username -> red("Player " + username + " not found");
     Args1<String> PLAYER_NOT_ONLINE = username -> red("Player " + username + " is not online");
@@ -113,18 +122,41 @@ public interface ChatMessages {
     Args1<String> ERROR_PLAYER_INVITED_TO_PARTY = username -> red(username + " has already been invited to your party");
     Args1<String> ERROR_PLAYER_IN_THIS_PARTY = username -> red(username + " is already in the party");
     Args0 ERROR_YOU_NOT_INVITED_TO_PARTY = () -> red("You are not invited to this party");
-    Args0 ERROR_ALREADY_IN_PARTY = () -> miniMessage("<red>You are already in a party. Use <click:run_command:/party leave>/party leave</click> to leave");
+    Args0 ERROR_ALREADY_IN_SAME_PARTY = () -> miniMessage("<red>You are already in the same party.");
     Args0 ERROR_CANNOT_KICK_LEADER = () -> red("You cannot kick the party leader");
     Args1<String> ERROR_PLAYER_NOT_IN_PARTY = username -> red(username + " is not in your party");
-    Args0 ERROR_CANNOT_LEAVE_AS_LEADER = () -> Component.text()
-            .append(red("You are the leader of the party")).appendNewline()
-            .append(red("Use '/party disband' to disband the party or '/party leader <player>' to transfer leadership"))
-            .build();
     Args0 ERROR_YOU_NOT_IN_PARTY = () -> red("You are not in a party");
 
     // /party broadcast
     Args0 PARTY_BROADCAST_PARTY_CLOSED = () -> miniMessage("<red>Your party must be open to broadcast a message. Use <click:run_command:/party open><u>/party open</u></click> to open your party");
     Args1<String> PARTY_BROADCAST_MESSAGE = leaderUsername -> miniMessage("<green>" + leaderUsername + " is hosting a party. <click:run_command:/party join " + leaderUsername + ">Click <u>here</u> to join!</click>");
+
+    // Event
+    Args0 ERROR_EVENT_INVALID_ID = () -> red("Invalid event ID. Must satisfy the following: (3 <= id.length() <= 16)");
+    Args0 EVENT_CREATE_USAGE = () -> red("""
+            "Usage: /event create <id> <showTime> <startTime>
+            showTime and startTime must be in ISO-8601 format (yyyy-MM-ddTHH:mm:ss e.g. 2022-01-01T12:00:00)""");
+    Args1<EventData> EVENT_VALUE = event -> miniMessage("""
+            <light_purple>ID: </light_purple>%s
+            <light_purple>Owner ID: </light_purple>%s
+            <light_purple>Owner Username: </light_purple>%s
+            <light_purple>Display At: </light_purple>%s
+            <light_purple>Start At: </light_purple>%s
+            <light_purple>---""".formatted(event.getId(), event.getOwnerId(), event.getOwnerUsername(),
+            DATE_FORMAT.format(Date.from(ProtoTimestampConverter.fromProto(event.getDisplayTime()))),
+            DATE_FORMAT.format(Date.from(ProtoTimestampConverter.fromProto(event.getStartTime())))));
+    Args1<List<EventData>> EVENT_DATA_LIST = events -> {
+        TextComponent.Builder builder = Component.text()
+                .append(Component.text("Events (" + events.size() + "):", NamedTextColor.LIGHT_PURPLE)).appendNewline();
+
+        for (EventData event : events) {
+            builder.append(Component.text("  " + event.getId(), NamedTextColor.LIGHT_PURPLE).hoverEvent(HoverEvent.showText(EVENT_VALUE.get(event)))).appendNewline();
+        }
+
+        return builder.build();
+    };
+    Args1<EventData> EVENT_CREATED = event -> green("Event created:").appendNewline().append(EVENT_VALUE.get(event));
+    Args1<String> ERROR_EVENT_ALREADY_EXISTS = id -> red("And event with the ID '" + id + "' already exists");
 
     Args1<String> ROLE_CREATED = role -> green("Role " + role + " created");
     Args4<String, Integer, Integer, Component> ROLE_DESCRIPTION = (id, priority, permissions, displayName) ->
