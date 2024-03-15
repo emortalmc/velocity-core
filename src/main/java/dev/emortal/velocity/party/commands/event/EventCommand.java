@@ -26,7 +26,7 @@ public class EventCommand extends EmortalCommand {
         super.addSyntax(this::createUsage, literal("create"));
         super.addSyntax(this::createUsage, literal("create"), literal("help"));
         super.addSyntax(new CreateSub(partyService), literal("create"), argument("id", StringArgumentType.word()),
-                argument("showTime", StringArgumentType.word()), argument("startTime", StringArgumentType.word()));
+                argument("showTime", StringArgumentType.string()), argument("startTime", StringArgumentType.string()));
 
         // Delete
         DeleteSub deleteSub = new DeleteSub(partyService);
