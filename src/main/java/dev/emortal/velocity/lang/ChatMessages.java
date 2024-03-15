@@ -157,6 +157,10 @@ public interface ChatMessages {
     };
     Args1<EventData> EVENT_CREATED = event -> green("Event created:").appendNewline().append(EVENT_VALUE.get(event));
     Args1<String> ERROR_EVENT_ALREADY_EXISTS = id -> red("And event with the ID '" + id + "' already exists");
+    Args1<String> EVENT_DELETED = id -> green("Event '" + id + "' deleted");
+    Args0 CURRENT_EVENT_DELETED = () -> green("Ongoing event deleted");
+    Args0 ERROR_NO_CURRENT_EVENT_DELETE = () -> green("There is no ongoing event to delete. Use /event delete <id> to delete by ID.");
+    Args1<String> ERROR_EVENT_NOT_FOUND = id -> red("Event not found with id '" + id + "'");
 
     Args1<String> ROLE_CREATED = role -> green("Role " + role + " created");
     Args4<String, Integer, Integer, Component> ROLE_DESCRIPTION = (id, priority, permissions, displayName) ->
