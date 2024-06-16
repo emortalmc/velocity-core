@@ -20,9 +20,21 @@ import org.jetbrains.annotations.NotNull;
 import java.util.UUID;
 
 public final class ServerChangeNotificationListener {
+    private static final boolean VIA_VERSION_EXISTS;
 
     private final @NotNull PlayerProvider playerProvider;
     private final @NotNull ServerProvider serverProvider;
+
+    static {
+        boolean viaExists = true;
+        try {
+            Class.forName("com.viaversion.viaversion.api.Via");
+        } catch (ClassNotFoundException e) {
+            viaExists = false;
+        }
+
+        VIA_VERSION_EXISTS = viaExists;
+    }
 
     public ServerChangeNotificationListener(@NotNull PlayerProvider playerProvider, @NotNull ServerProvider serverProvider,
                                             @NotNull MessagingModule messaging) {
@@ -55,7 +67,7 @@ public final class ServerChangeNotificationListener {
                 UUID uuid = UUID.fromString(playerId);
 
                 Player player = this.playerProvider.getPlayer(uuid);
-                if (player == null) continue;
+                if (player == null) continue; // Player is on a different proxy
 
                 if (this.isPlayerOnTargetServer(player, serverId)) {
                     // Don't move players already on the target server
@@ -64,17 +76,19 @@ public final class ServerChangeNotificationListener {
 
                 RegisteredServer server = this.serverProvider.createServerFromAssignment(assignment);
 
-                // Retrieve ViaVersion, set the protocol version if available.
-                // This allows us to run old server versions for *some* games.
-                ViaServerProxyPlatform platform = (ViaServerProxyPlatform) Via.getPlatform();
-
-                if (assignment.hasProtocolVersion()) {
-                    platform.protocolDetectorService().setProtocolVersion(assignment.getServerId(), (int) assignment.getProtocolVersion());
-                }
-
                 ChatMessages.SENDING_TO_SERVER.send(player, serverId);
                 player.createConnectionRequest(server).fireAndForget();
             }
+        }
+
+        if (!VIA_VERSION_EXISTS) return;
+
+        // Retrieve ViaVersion, set the protocol version if available.
+        // This allows us to run old server versions for *some* games.
+        ViaServerProxyPlatform platform = (ViaServerProxyPlatform) Via.getPlatform();
+
+        if (assignment.hasProtocolVersion()) {
+            platform.protocolDetectorService().setProtocolVersion(assignment.getServerId(), (int) assignment.getProtocolVersion());
         }
     }
 
