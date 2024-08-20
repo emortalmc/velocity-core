@@ -29,7 +29,7 @@ dependencies {
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
     implementation("dev.emortal.api:common-proto-sdk:44913ed")
-    implementation("dev.emortal.api:agones-sdk:1.0.7")
+    implementation("dev.emortal.api:agones-sdk:1.1.0")
     implementation("dev.emortal.api:live-config-parser:8f566b9")
     implementation("dev.emortal.api:module-system:1.0.0")
     implementation("dev.emortal.api:command-system:1.0.0") {

@@ -46,7 +46,7 @@ public interface ChatMessages {
 
     Args1<String> SENDING_TO_SERVER = serverName -> Component.text()
             .append(green("Sending you to "))
-            .append(Component.text(serverName, NamedTextColor.GOLD))
+            .append(Component.text(serverName, NamedTextColor.GOLD).clickEvent(ClickEvent.copyToClipboard(serverName)))
             .append(green("..."))
             .build();
 

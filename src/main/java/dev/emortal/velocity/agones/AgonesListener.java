@@ -7,6 +7,7 @@ import com.velocitypowered.api.event.proxy.ListenerBoundEvent;
 import dev.agones.sdk.AgonesSDKProto;
 import dev.agones.sdk.SDKGrpc;
 import dev.agones.sdk.alpha.AlphaAgonesSDKProto;
+import dev.agones.sdk.beta.BetaAgonesSDKProto;
 import dev.emortal.api.agonessdk.AgonesUtils;
 import io.grpc.StatusRuntimeException;
 import org.jetbrains.annotations.NotNull;
@@ -21,12 +22,12 @@ final class AgonesListener {
 
     private final SDKGrpc.SDKBlockingStub agonesService;
     private final SDKGrpc.SDKStub standardAgonesService;
-    private final dev.agones.sdk.alpha.SDKGrpc.SDKBlockingStub alphaAgonesService;
+    private final dev.agones.sdk.beta.SDKGrpc.SDKBlockingStub betaSdk;
 
     AgonesListener(@NotNull AgonesGrpcStubCollection stubManager) {
         this.agonesService = stubManager.getAgonesService();
         this.standardAgonesService = stubManager.getStandardAgonesService();
-        this.alphaAgonesService = stubManager.getAlphaAgonesService();
+        this.betaSdk = stubManager.getBetaAgonesService();
     }
 
     @Subscribe(async = true)
@@ -45,15 +46,8 @@ final class AgonesListener {
         UUID id = event.getPlayer().getUniqueId();
         AlphaAgonesSDKProto.PlayerID playerId = AlphaAgonesSDKProto.PlayerID.newBuilder().setPlayerID(id.toString()).build();
 
-        boolean success;
-        try {
-            success = this.alphaAgonesService.playerConnect(playerId).getBool();
-        } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to set player to connected: ", exception);
-            return;
-        }
-
-        if (!success) LOGGER.warn("Failed to register player {} with Agones (already marked as logged in)", id);
+        this.updateAgonesCounter("players", 1);
+        this.addToAgonesList("players", id.toString());
     }
 
     @Subscribe(async = true)
@@ -61,14 +55,41 @@ final class AgonesListener {
         UUID id = event.getPlayer().getUniqueId();
         AlphaAgonesSDKProto.PlayerID playerId = AlphaAgonesSDKProto.PlayerID.newBuilder().setPlayerID(id.toString()).build();
 
-        boolean success;
-        try {
-            success = this.alphaAgonesService.playerDisconnect(playerId).getBool();
-        } catch (StatusRuntimeException exception) {
-            LOGGER.error("Failed to set player to disconnected: ", exception);
-            return;
-        }
+        this.updateAgonesCounter("players", -1);
+        this.removeFromAgonesList("players", id.toString());
+    }
 
-        if (!success) LOGGER.warn("Failed to unregister player {} with Agones (not marked as logged in)", id);
+    public void updateAgonesCounter(String name, long diff) {
+        try {
+            this.betaSdk.updateCounter(BetaAgonesSDKProto.UpdateCounterRequest.newBuilder()
+                    .setCounterUpdateRequest(BetaAgonesSDKProto.CounterUpdateRequest.newBuilder()
+                            .setName(name)
+                            .setCountDiff(diff))
+                    .build());
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to update counter: ", exception);
+        }
+    }
+
+    public void addToAgonesList(String listName, String value) {
+        try {
+            this.betaSdk.addListValue(BetaAgonesSDKProto.AddListValueRequest.newBuilder()
+                    .setName(listName)
+                    .setValue(value)
+                    .build());
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to add to list: ", exception);
+        }
+    }
+
+    public void removeFromAgonesList(String listName, String value) {
+        try {
+            this.betaSdk.removeListValue(BetaAgonesSDKProto.RemoveListValueRequest.newBuilder()
+                    .setName(listName)
+                    .setValue(value)
+                    .build());
+        } catch (StatusRuntimeException exception) {
+            LOGGER.error("Failed to remove from list: ", exception);
+        }
     }
 }
