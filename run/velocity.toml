@@ -89,7 +89,7 @@ compression-threshold = 256
 
 # How much compression should be done (from 0-9). The default is -1, which uses the
 # default level of 6.
-compression-level = 4
+compression-level = 6
 
 # How fast (in milliseconds) are clients allowed to connect after the last connection? By
 # default, this is three seconds. Disable this by setting this to 0.
@@ -109,7 +109,7 @@ haproxy-protocol = false
 tcp-fast-open = true
 
 # Enables BungeeCord plugin messaging channel support on Velocity.
-bungee-plugin-message-channel = true
+bungee-plugin-message-channel = false
 
 # Shows ping requests to the proxy from clients.
 show-ping-requests = false
