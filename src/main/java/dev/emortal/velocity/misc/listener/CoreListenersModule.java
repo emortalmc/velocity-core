@@ -24,6 +24,9 @@ public final class CoreListenersModule extends VelocityModule {
         // server list
         eventManager.register(new ServerPingListener());
 
+        // transfer cookie verification
+        eventManager.register(new LoginCookieVerification());
+
         // tablist
         PlayerTrackerService playerTracker = GrpcStubCollection.getPlayerTrackerService().orElse(null);
         eventManager.register(new TabList(scheduler, super.adapters().playerProvider(), playerTracker));

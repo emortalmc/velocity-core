@@ -65,7 +65,7 @@ public final class LobbySelectorListener {
             continuation.resume();
         });
 
-        this.matchmaker.queueInitialLobby(event.getPlayer().getUniqueId());
+        this.matchmaker.loginQueue(event.getPlayer().getUniqueId(), false);
     }
 
     private void sendToLobbyServer(@NotNull PlayerChooseInitialServerEvent event, @NotNull Continuation continuation) {
@@ -73,7 +73,7 @@ public final class LobbySelectorListener {
         LOGGER.debug("Queueing initial lobby for '{}'", player.getUsername());
 
         try {
-            this.matchmaker.queueInitialLobby(player.getUniqueId());
+            this.matchmaker.loginQueue(player.getUniqueId(), false);
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to connect '{}' to lobby", player.getUsername(), exception);
             event.getPlayer().disconnect(ChatMessages.ERROR_CONNECTING_TO_LOBBY.get());
@@ -93,6 +93,7 @@ public final class LobbySelectorListener {
 
     private void handleMatchCreated(@NotNull MatchCreatedMessage message) {
         Match match = message.getMatch();
+        if (!match.getGameModeId().equals("lobby")) return;
 
         for (Ticket ticket : match.getTicketsList()) {
             if (ticket.getAutoTeleport()) continue; // We don't care about auto teleport tickets

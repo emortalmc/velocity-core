@@ -2,7 +2,7 @@ package dev.emortal.velocity.agones;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
-import com.velocitypowered.api.event.connection.LoginEvent;
+import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.proxy.ListenerBoundEvent;
 import dev.agones.sdk.AgonesSDKProto;
 import dev.agones.sdk.SDKGrpc;
@@ -42,7 +42,7 @@ final class AgonesListener {
     }
 
     @Subscribe(async = true)
-    void onLogin(@NotNull LoginEvent event) {
+    void onLogin(@NotNull PostLoginEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         AlphaAgonesSDKProto.PlayerID playerId = AlphaAgonesSDKProto.PlayerID.newBuilder().setPlayerID(id.toString()).build();
 
@@ -52,6 +52,8 @@ final class AgonesListener {
 
     @Subscribe(async = true)
     void onDisconnect(@NotNull DisconnectEvent event) {
+        if (event.getLoginStatus() != DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN) return;
+
         UUID id = event.getPlayer().getUniqueId();
         AlphaAgonesSDKProto.PlayerID playerId = AlphaAgonesSDKProto.PlayerID.newBuilder().setPlayerID(id.toString()).build();
 

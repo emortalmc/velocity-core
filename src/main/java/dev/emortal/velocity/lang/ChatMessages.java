@@ -28,6 +28,7 @@ public interface ChatMessages {
     Args0 GENERIC_ERROR = () -> red("An error occurred");
     Args0 ERROR_NO_SKIN = () -> red("You don't have a skin. This doesn't work???");
     Args0 ERROR_INVALID_TIME_FORMAT = () -> red("Invalid time format. Must be in ISO-8601 format (yyyy-MM-ddTHH:mm:ss e.g. 2022-01-01T12:00:00)");
+    Args1<String> ERROR_INVALID_TRANSFER_COOKIE = reason -> red("Invalid transfer cookie (%s)".formatted(reason));
     Args1<String> ERROR_INVALID_TIME_FORMAT_ARG = arg -> red("Invalid time format at %s. Must be in ISO-8601 format (yyyy-MM-ddTHH:mm:ss e.g. 2022-01-01T12:00:00)".formatted(arg));
     Args1<String> ERROR_TIME_IN_PAST_ARG = arg -> red("Invalid time. %s is in the past".formatted(arg));
 
