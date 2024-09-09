@@ -21,9 +21,6 @@ public final class CoreListenersModule extends VelocityModule {
         EmortalEventManager eventManager = super.adapters().eventManager();
         EmortalScheduler scheduler = super.adapters().scheduler();
 
-        // server list
-        eventManager.register(new ServerPingListener());
-
         // transfer cookie verification
         eventManager.register(new LoginCookieVerification());
 
