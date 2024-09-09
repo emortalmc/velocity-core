@@ -7,6 +7,7 @@ import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.LoginEvent;
 import com.velocitypowered.api.event.player.CookieReceiveEvent;
+import com.velocitypowered.api.proxy.Player;
 import dev.emortal.velocity.lang.ChatMessages;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -43,32 +44,35 @@ public class LoginCookieVerification {
 
     @Subscribe
     public void onLogin(@NotNull LoginEvent event, Continuation continuation) {
-        event.getPlayer().requestCookie(COOKIE_NAME);
+        Player player = event.getPlayer();
+        player.requestCookie(COOKIE_NAME);
 
-        this.pendingPlayers.put(event.getPlayer().getUniqueId(), result -> {
+        this.pendingPlayers.put(player.getUniqueId(), result -> {
             if (result == null) {
-                event.getPlayer().disconnect(ChatMessages.ERROR_INVALID_TRANSFER_COOKIE.get(CookieResult.INVALID_JWT.name()));
+                player.disconnect(ChatMessages.ERROR_INVALID_TRANSFER_COOKIE.get(CookieResult.INVALID_JWT.name()));
             } else if (!result.isValid()) {
-                event.getPlayer().disconnect(ChatMessages.ERROR_INVALID_TRANSFER_COOKIE.get(result.name()));
+                player.disconnect(ChatMessages.ERROR_INVALID_TRANSFER_COOKIE.get(result.name()));
             }
 
+            this.pendingPlayers.invalidate(player.getUniqueId());
             continuation.resume();
         });
     }
 
     @Subscribe
     public void onCookieReceived(@NotNull CookieReceiveEvent event) {
-        System.out.println("Received cookie event " + event.getOriginalKey());
         if (!event.getOriginalKey().equals(COOKIE_NAME)) return;
 
-        Consumer<CookieResult> consumer = this.pendingPlayers.getIfPresent(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+
+        Consumer<CookieResult> consumer = this.pendingPlayers.getIfPresent(player.getUniqueId());
         if (consumer == null) {
-            LOGGER.warn("Received cookie for player '{}' without pending request", event.getPlayer().getUsername());
+            LOGGER.warn("Received cookie for player '{}' without pending request", player.getUsername());
             return;
         }
 
         event.setResult(CookieReceiveEvent.ForwardResult.handled());
-        CookieResult result = this.isCookieValid(event.getPlayer().getUsername(), event.getOriginalData());
+        CookieResult result = this.isCookieValid(player.getUsername(), event.getOriginalData());
         consumer.accept(result);
     }
 
