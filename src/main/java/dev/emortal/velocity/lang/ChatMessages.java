@@ -494,7 +494,6 @@ public interface ChatMessages {
             .append(Component.text("ᴍᴄ.ᴇᴍᴏʀᴛᴀʟ.ᴅᴇᴠ", MessageColors.TAB_LIST_FOOTER_IP)).appendNewline()
             .append(Component.text("└                                                  ", NamedTextColor.LIGHT_PURPLE))
             .append(Component.text("┘ ", NamedTextColor.GOLD))
-            .appendNewline()
             .build();
 
     Args0 DISCORD_COMMAND = () -> MiniMessage.miniMessage().deserialize("<click:open_url:'https://discord.com/invite/TZyuMSha96'><gradient:#7289da:#51629c:#51629c>Click to join our</gradient> <#7289da><bold>Discord</bold><#51629c>!</click>");
