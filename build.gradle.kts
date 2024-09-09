@@ -28,7 +28,7 @@ dependencies {
     annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
-    implementation("dev.emortal.api:common-proto-sdk:44913ed")
+    implementation("dev.emortal.api:common-proto-sdk:b05808d")
     implementation("dev.emortal.api:agones-sdk:1.1.0")
     implementation("dev.emortal.api:live-config-parser:8f566b9")
     implementation("dev.emortal.api:module-system:1.0.0")
@@ -39,6 +39,11 @@ dependencies {
     implementation("io.kubernetes:client-java:18.0.1")
 
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+
+    // JWT
+    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+    implementation("io.jsonwebtoken:jjwt-impl:0.12.6")
+    implementation("io.jsonwebtoken:jjwt-gson:0.12.6")
 
     compileOnly("org.jetbrains:annotations:24.0.1")
 

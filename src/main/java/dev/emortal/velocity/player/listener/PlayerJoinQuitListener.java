@@ -2,7 +2,7 @@ package dev.emortal.velocity.player.listener;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
-import com.velocitypowered.api.event.connection.LoginEvent;
+import com.velocitypowered.api.event.connection.PostLoginEvent;
 import dev.emortal.velocity.lang.ChatMessages;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
@@ -19,13 +19,15 @@ public final class PlayerJoinQuitListener {
     }
 
     @Subscribe
-    public void onJoin(@NotNull LoginEvent event) {
+    public void onJoin(@NotNull PostLoginEvent event) {
         ChatMessages.JOIN.send(this.audience, event.getPlayer().getUsername());
         this.audience.playSound(Sound.sound(JOIN_QUIT_SOUND, Sound.Source.MASTER, 1F, 1.2F));
     }
 
     @Subscribe
     public void onQuit(@NotNull DisconnectEvent event) {
+        if (event.getLoginStatus() != DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN) return;
+
         ChatMessages.QUIT.send(this.audience, event.getPlayer().getUsername());
         this.audience.playSound(Sound.sound(JOIN_QUIT_SOUND, Sound.Source.MASTER, 1F, 0.5F));
     }
