@@ -1,5 +1,6 @@
 package dev.emortal.testing.party;
 
+import dev.emortal.api.model.party.Party;
 import dev.emortal.velocity.party.cache.LocalParty;
 import dev.emortal.velocity.party.notifier.PartyUpdateNotifier;
 import org.jetbrains.annotations.NotNull;
@@ -46,5 +47,9 @@ public class DummyPartyUpdateNotifier implements PartyUpdateNotifier {
 
     @Override
     public void selfKicked(@NotNull UUID targetId, @NotNull String kickerName) {
+    }
+
+    @Override
+    public void partyBroadcast(@NotNull Party party) {
     }
 }

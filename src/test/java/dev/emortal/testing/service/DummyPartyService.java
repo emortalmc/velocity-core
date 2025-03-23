@@ -1,18 +1,15 @@
 package dev.emortal.testing.service;
 
 import dev.emortal.api.model.common.Pageable;
+import dev.emortal.api.model.common.PlayerSkin;
+import dev.emortal.api.model.party.EventData;
 import dev.emortal.api.model.party.Party;
 import dev.emortal.api.model.party.PartyInvite;
-import dev.emortal.api.service.party.InvitePlayerToPartyResult;
-import dev.emortal.api.service.party.JoinPartyResult;
-import dev.emortal.api.service.party.KickPlayerFromPartyResult;
-import dev.emortal.api.service.party.LeavePartyResult;
-import dev.emortal.api.service.party.ModifyPartyResult;
-import dev.emortal.api.service.party.PartyService;
-import dev.emortal.api.service.party.SetPartyLeaderResult;
+import dev.emortal.api.service.party.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -76,5 +73,25 @@ public class DummyPartyService implements PartyService {
     @Override
     public @NotNull SetPartyLeaderResult setPartyLeader(@NotNull UUID uuid, @NotNull String s, @NotNull UUID uuid1) {
         return SetPartyLeaderResult.SUCCESS;
+    }
+
+    @Override
+    public @NotNull EventData createEvent(@NotNull String s, @NotNull UUID uuid, @NotNull String s1, @NotNull PlayerSkin playerSkin, @Nullable Instant instant, @Nullable Instant instant1) {
+        return null;
+    }
+
+    @Override
+    public @NotNull EventData updateEvent(@NotNull String s, @Nullable Instant instant, @Nullable Instant instant1) {
+        return null;
+    }
+
+    @Override
+    public @NotNull List<EventData> listEvents() {
+        return List.of();
+    }
+
+    @Override
+    public DeleteEventResult deleteEvent(@Nullable String s) {
+        return null;
     }
 }
