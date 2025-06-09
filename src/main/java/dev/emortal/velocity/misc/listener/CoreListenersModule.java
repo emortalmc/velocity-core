@@ -29,7 +29,7 @@ public final class CoreListenersModule extends VelocityModule {
         eventManager.register(new TabList(scheduler, super.adapters().playerProvider(), playerTracker));
 
         // resource pack
-        eventManager.register(new ResourcePackForcer(super.adapters().resourcePackProvider(), scheduler));
+        eventManager.register(new ResourcePackSender(super.adapters().resourcePackProvider(), scheduler));
 
         // fuck lunar
         eventManager.register(new LunarKicker());

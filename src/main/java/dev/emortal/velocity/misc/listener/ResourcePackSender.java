@@ -19,14 +19,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
 
-final class ResourcePackForcer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ResourcePackForcer.class);
+final class ResourcePackSender {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResourcePackSender.class);
 
     private static final String PACK_URL = "https://github.com/emortalmc/Resourcepack/releases/download/latest/pack.zip";
 
     private ResourcePackInfo resourcePackInfo;
 
-    ResourcePackForcer(@NotNull ResourcePackProvider resourcePackProvider, @NotNull EmortalScheduler scheduler) {
+    ResourcePackSender(@NotNull ResourcePackProvider resourcePackProvider, @NotNull EmortalScheduler scheduler) {
         this.updateResourcePackInfo(resourcePackProvider);
         scheduler.repeat(() -> this.updateResourcePackInfo(resourcePackProvider), 30, TimeUnit.SECONDS);
     }
@@ -40,7 +40,7 @@ final class ResourcePackForcer {
             return;
         }
 
-        this.resourcePackInfo = resourcePackProvider.createResourcePack(PACK_URL, sha1, ChatMessages.RESOURCE_PACK_DOWNLOAD.get(), true);
+        this.resourcePackInfo = resourcePackProvider.createResourcePack(PACK_URL, sha1, ChatMessages.RESOURCE_PACK_DOWNLOAD.get(), false);
         LOGGER.info("Update resource pack info with hash {}", byteArrayToHexString(sha1));
     }
 
