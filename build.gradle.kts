@@ -1,6 +1,6 @@
 plugins {
     java
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.0.0-beta15"
     jacoco
 }
 
@@ -75,5 +75,11 @@ tasks {
     }
     jacocoTestReport {
         dependsOn(test)
+    }
+    build {
+        dependsOn(shadowJar)
+    }
+    withType<JavaCompile> {
+        options.encoding = "UTF-8"
     }
 }
