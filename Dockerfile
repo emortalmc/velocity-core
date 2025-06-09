@@ -4,7 +4,7 @@ FROM --platform=$TARGETPLATFORM azul/zulu-openjdk:21-jre
 RUN apt-get update && apt-get install -y wget
 
 # We manually set the Velocity version to avoid bugs
-ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.4.0-SNAPSHOT/builds/483/downloads/velocity-3.4.0-SNAPSHOT-509.jar"
+ENV VELOCITY_JAR_URL "https://api.papermc.io/v2/projects/velocity/versions/3.4.0-SNAPSHOT/builds/509/downloads/velocity-3.4.0-SNAPSHOT-509.jar"
 
 RUN mkdir /app
 WORKDIR /app
