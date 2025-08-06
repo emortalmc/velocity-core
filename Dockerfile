@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-alpin
+FROM eclipse-temurin:21-jre-alpine
 
 # Download packages
 RUN apk add --no-cache wget
