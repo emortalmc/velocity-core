@@ -1,10 +1,10 @@
-FROM --platform=$TARGETPLATFORM azul/zulu-openjdk:21-jre
+FROM eclipse-temurin:21-jre-alpin
 
 # Download packages
-RUN apt-get update && apt-get install -y wget
+RUN apk add --no-cache wget
 
 # We manually set the Velocity version to avoid bugs
-ENV VELOCITY_JAR_URL "https://fill-data.papermc.io/v1/objects/f82780ce33035ebe3d6ea7981f0e6e8a3e41a64f2080ef5c0f1266fada03cbee/velocity-3.4.0-SNAPSHOT-522.jar"
+ENV VELOCITY_JAR_URL "https://fill-data.papermc.io/v1/objects/61249fa5b9b33bc7e3223581eab6aedad790a295caf0e39da2ff3c8ec9d9117f/velocity-3.4.0-SNAPSHOT-523.jar"
 
 RUN mkdir /app
 WORKDIR /app

@@ -1,8 +1,9 @@
 package dev.emortal.velocity.misc.listener;
 
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.PlayerResourcePackStatusEvent;
-import com.velocitypowered.api.event.player.ServerPostConnectEvent;
+import com.velocitypowered.api.event.player.configuration.PlayerConfigurationEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.player.ResourcePackInfo;
 import dev.emortal.velocity.adapter.resourcepack.ResourcePackProvider;
@@ -17,6 +18,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 final class ResourcePackSender {
@@ -25,6 +29,8 @@ final class ResourcePackSender {
     private static final String PACK_URL = "https://github.com/emortalmc/Resourcepack/releases/download/latest/pack.zip";
 
     private ResourcePackInfo resourcePackInfo;
+
+    private final Set<UUID> rpAcceptedPlayers = new HashSet<>();
 
     ResourcePackSender(@NotNull ResourcePackProvider resourcePackProvider, @NotNull EmortalScheduler scheduler) {
         this.updateResourcePackInfo(resourcePackProvider);
@@ -70,10 +76,10 @@ final class ResourcePackSender {
     }
 
     @Subscribe
-    void onPlayerJoin(@NotNull ServerPostConnectEvent event) {
-        if (event.getPreviousServer() != null) return; // Don't send the resource pack if the player is switching servers
+    void onPlayerConfiguration(PlayerConfigurationEvent event) {
+        if (this.rpAcceptedPlayers.contains(event.player().getUniqueId())) return; // Don't send the resource pack if the player has already got it
 
-        event.getPlayer().sendResourcePackOffer(this.resourcePackInfo);
+        event.player().sendResourcePackOffer(this.resourcePackInfo);
     }
 
     @Subscribe
@@ -81,8 +87,15 @@ final class ResourcePackSender {
         LOGGER.info("Player {} resource pack status {}", event.getPlayer().getUsername(), event.getStatus());
         Player player = event.getPlayer();
         switch (event.getStatus()) {
+            case SUCCESSFUL ->  this.rpAcceptedPlayers.add(player.getUniqueId());
             case DECLINED -> ChatMessages.RESOURCE_PACK_DECLINED.send(player);
             case FAILED_DOWNLOAD -> ChatMessages.RESOURCE_PACK_FAILED.send(player);
         }
     }
+
+    @Subscribe
+    void onPlayerDisconnect(DisconnectEvent event) {
+        this.rpAcceptedPlayers.remove(event.getPlayer().getUniqueId());
+    }
+
 }
