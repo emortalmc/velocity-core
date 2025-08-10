@@ -1,5 +1,6 @@
 package dev.emortal.velocity.misc.listener;
 
+import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.PlayerResourcePackStatusEvent;
@@ -21,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 final class ResourcePackSender {
@@ -31,6 +33,7 @@ final class ResourcePackSender {
     private ResourcePackInfo resourcePackInfo;
 
     private final Set<UUID> rpAcceptedPlayers = new HashSet<>();
+    private final ConcurrentHashMap<UUID, Continuation> pendingPack = new ConcurrentHashMap<>();
 
     ResourcePackSender(@NotNull ResourcePackProvider resourcePackProvider, @NotNull EmortalScheduler scheduler) {
         this.updateResourcePackInfo(resourcePackProvider);
@@ -76,10 +79,14 @@ final class ResourcePackSender {
     }
 
     @Subscribe
-    void onPlayerConfiguration(PlayerConfigurationEvent event) {
-        if (this.rpAcceptedPlayers.contains(event.player().getUniqueId())) return; // Don't send the resource pack if the player has already got it
+    void onPlayerConfiguration(PlayerConfigurationEvent event, Continuation continuation) {
+        if (this.rpAcceptedPlayers.contains(event.player().getUniqueId())) {
+            continuation.resume();
+            return; // Don't send the resource pack if the player has already got it
+        }
 
         event.player().sendResourcePackOffer(this.resourcePackInfo);
+        pendingPack.put(event.player().getUniqueId(), continuation);
     }
 
     @Subscribe
@@ -87,10 +94,20 @@ final class ResourcePackSender {
         LOGGER.info("Player {} resource pack status {}", event.getPlayer().getUsername(), event.getStatus());
         Player player = event.getPlayer();
         switch (event.getStatus()) {
-            case SUCCESSFUL ->  this.rpAcceptedPlayers.add(player.getUniqueId());
-            case DECLINED -> ChatMessages.RESOURCE_PACK_DECLINED.send(player);
-            case FAILED_DOWNLOAD -> ChatMessages.RESOURCE_PACK_FAILED.send(player);
+            case ACCEPTED -> {
+                this.rpAcceptedPlayers.add(event.getPlayer().getUniqueId());
+                this.pendingPack.get(player.getUniqueId()).resume();
+            }
+            case DECLINED -> {
+                player.disconnect(ChatMessages.RESOURCE_PACK_DECLINED.get());
+                this.pendingPack.get(player.getUniqueId()).resume();
+            }
+            case FAILED_DOWNLOAD, INVALID_URL, DISCARDED -> {
+                ChatMessages.RESOURCE_PACK_FAILED.send(player);
+                this.pendingPack.get(player.getUniqueId()).resume();
+            }
         }
+        this.pendingPack.remove(player.getUniqueId());
     }
 
     @Subscribe

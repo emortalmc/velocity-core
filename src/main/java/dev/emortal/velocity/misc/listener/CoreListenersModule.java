@@ -22,7 +22,10 @@ public final class CoreListenersModule extends VelocityModule {
         EmortalScheduler scheduler = super.adapters().scheduler();
 
         // transfer cookie verification
-        eventManager.register(new LoginCookieVerification());
+//        eventManager.register(new LoginCookieVerification()); no more edging
+
+        // server list ping
+        eventManager.register(new ServerPingListener());
 
         // tablist
         PlayerTrackerService playerTracker = GrpcStubCollection.getPlayerTrackerService().orElse(null);

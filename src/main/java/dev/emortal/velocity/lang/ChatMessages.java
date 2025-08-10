@@ -463,10 +463,7 @@ public interface ChatMessages {
     Args0 ERROR_NO_OUTGOING_FRIEND_REQUESTS = () -> lightPurple("You have no outgoing friend requests");
 
     Args0 RESOURCE_PACK_DOWNLOAD = () -> Component.text("We love you");
-    Args0 RESOURCE_PACK_DECLINED = () -> Component.text().color(NamedTextColor.GRAY)
-            .append(Component.text("Using the resource pack is heavily recommended. It isn't big and only has to be downloaded once.")).appendNewline()
-            .append(Component.text("If the dialog is annoying, you can enable 'Server Resource Packs' when adding the server and the prompt will disappear."))
-            .build();
+    Args0 RESOURCE_PACK_DECLINED = () -> Component.text("Using the resource pack is required.", NamedTextColor.RED);
     Args0 RESOURCE_PACK_FAILED = () -> Component.text().color(NamedTextColor.RED)
             .append(Component.text("The resource pack download failed.")).appendNewline()
             .append(Component.text("If the issue persists, contact a staff member"))
