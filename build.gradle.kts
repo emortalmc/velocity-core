@@ -69,6 +69,7 @@ tasks {
         ))
     }
     shadowJar {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
         mergeServiceFiles()
     }
     test {
