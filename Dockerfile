@@ -4,7 +4,7 @@ FROM eclipse-temurin:25-jre-alpine
 RUN apk add --no-cache wget
 
 # We manually set the Velocity version to avoid bugs
-ENV VELOCITY_JAR_URL "https://fill-data.papermc.io/v1/objects/ef1a852bfae7397e84907837925e7ad21c6312066290edaae401b77f6f423ac3/velocity-3.4.0-SNAPSHOT-558.jar"
+ENV VELOCITY_JAR_URL "https://fill-data.papermc.io/v1/objects/728d8408102fd5fc7477d8b21c0dc60efc713404167cc24a95665cf72111d070/velocity-3.5.0-SNAPSHOT-574.jar"
 
 RUN mkdir /app
 WORKDIR /app

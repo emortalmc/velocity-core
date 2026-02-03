@@ -25,7 +25,7 @@ dependencies {
     compileOnly("com.velocitypowered:velocity-api:3.5.0-SNAPSHOT")
     compileOnly("com.velocitypowered:velocity-proxy:3.2.0-SNAPSHOT")
     compileOnly("com.viaversion:viaversion-api:4.9.2")
-    annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+    annotationProcessor("com.velocitypowered:velocity-api:3.5.0-SNAPSHOT")
     implementation("net.kyori:adventure-text-minimessage:4.14.0")
 
     implementation("dev.emortal.api:common-proto-sdk:b05808d")
