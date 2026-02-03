@@ -40,16 +40,12 @@ public interface ChatMessages {
 
             Please consider using a more capable client, such as Fabric""");
 
-    Args0 SENDING_TO_LOBBY = () -> green("Sending you to the lobby...");
     Args0 ERROR_SENDING_TO_LOBBY = () -> red("Something went wrong while sending you to the lobby!");
     Args0 ERROR_CONNECTING_TO_LOBBY = () -> red("Failed to connect to lobby");
     Args0 ERROR_CONNECTING_TO_FALLBACK_LOBBY = () -> red("Failed to connect to fallback lobby");
 
-    Args1<String> SENDING_TO_SERVER = serverName -> Component.text()
-            .append(green("Sending you to "))
-            .append(Component.text(serverName, NamedTextColor.GOLD).clickEvent(ClickEvent.copyToClipboard(serverName)))
-            .append(green("..."))
-            .build();
+    Args1<String> SENDING_TO_SERVER = serverName -> Component.text("Joining " + serverName, NamedTextColor.GRAY)
+            .clickEvent(ClickEvent.copyToClipboard(serverName));
 
     // Command responses
     Args0 YOU_CLOSED_PARTY = () -> green("The party is now closed");
@@ -405,12 +401,25 @@ public interface ChatMessages {
             .append(green("Revoked your friend request to "))
             .append(MessageColors.purpleName(target))
             .build();
-    Args2<Integer, Integer> FRIEND_LIST_HEADER = (currentPage, maxPage) -> Component.text()
-            .append(Component.text("      ", NamedTextColor.LIGHT_PURPLE, TextDecoration.STRIKETHROUGH))
-            .append(Component.text(" ꜰʀɪᴇɴᴅѕ ", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
-            .append(Component.text("(" + currentPage + "/" + maxPage + ") "))
-            .append(Component.text("      ", NamedTextColor.LIGHT_PURPLE, TextDecoration.STRIKETHROUGH))
-            .build();
+    Args3<Integer, Integer, Component> FRIEND_LIST = (page, totalPages, members) -> {
+        Component beforeAndAfterHeader = Component.text("          ", NamedTextColor.LIGHT_PURPLE, TextDecoration.STRIKETHROUGH);
+        Component header = Component.text()
+                .append(beforeAndAfterHeader)
+                .append(Component.text(" ꜰʀɪᴇɴᴅѕ ", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
+                .append(Component.text("(" + page + "/" + totalPages + ") ", NamedTextColor.LIGHT_PURPLE))
+                .append(beforeAndAfterHeader)
+                .build();
+        Component footer = Component.text("                                            ", NamedTextColor.LIGHT_PURPLE, TextDecoration.STRIKETHROUGH);
+        return Component.text()
+                .append(header)
+                .appendNewline()
+                .appendNewline()
+                .append(members)
+                .appendNewline()
+                .appendNewline()
+                .append(footer)
+                .build();
+    };
     Args2<String, String> FRIEND_LIST_ONLINE_LINE = (friend, activity) ->
             Component.text(friend + " - " + activity, NamedTextColor.GREEN).clickEvent(ClickEvent.suggestCommand("/message " + friend + " "));
     Args2<String, String> FRIEND_LIST_OFFLINE_LINE = (friend, lastOnline) -> red(friend + " - Last online " + lastOnline);

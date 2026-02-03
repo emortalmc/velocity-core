@@ -1,12 +1,16 @@
 package dev.emortal.velocity.player.listener;
 
+import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.connection.LoginEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
+import com.velocitypowered.api.network.ProtocolVersion;
 import dev.emortal.velocity.lang.ChatMessages;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 public final class PlayerJoinQuitListener {
@@ -16,6 +20,16 @@ public final class PlayerJoinQuitListener {
 
     public PlayerJoinQuitListener(@NotNull Audience audience) {
         this.audience = audience;
+    }
+
+    @Subscribe
+    public void onLogin(LoginEvent event) {
+        if (event.getPlayer().getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_21_11)) {
+            event.setResult(ResultedEvent.ComponentResult.denied(
+                    Component.text("EmortalMC requires Minecraft version 1.21.11")
+            ));
+        }
+
     }
 
     @Subscribe

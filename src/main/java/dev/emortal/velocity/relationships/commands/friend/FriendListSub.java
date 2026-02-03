@@ -68,13 +68,11 @@ final class FriendListSub implements EmortalCommandExecutor {
                 .skip((page - 1) * 8L)
                 .limit(8)
                 .toList();
-        player.sendMessage(this.createMessage(pageFriends, page, maxPage));
+        ChatMessages.FRIEND_LIST.send(player, page, maxPage, this.createMessageContent(pageFriends));
     }
 
-    private @NotNull Component createMessage(@NotNull List<FriendStatus> statuses, int page, int maxPage) {
-        TextComponent.Builder message = Component.text()
-                .append(ChatMessages.FRIEND_LIST_HEADER.get(page, maxPage))
-                .appendNewline();
+    private @NotNull Component createMessageContent(@NotNull List<FriendStatus> statuses) {
+        TextComponent.Builder result = Component.text();
 
         for (FriendStatus status : statuses) {
             ChatMessages.Args2<String, String> line = status.online() ? ChatMessages.FRIEND_LIST_ONLINE_LINE : ChatMessages.FRIEND_LIST_OFFLINE_LINE;
@@ -86,11 +84,10 @@ final class FriendListSub implements EmortalCommandExecutor {
                 secondArgument = DurationFormatter.formatShortFromInstant(status.lastSeen());
             }
 
-            message.append(line.get(status.username(), secondArgument)).appendNewline();
+            result.append(line.get(status.username(), secondArgument)).appendNewline();
         }
 
-        message.append(MESSAGE_FOOTER);
-        return message.build();
+        return result.build();
     }
 
     private @NotNull List<FriendStatus> retrieveStatuses(@NotNull List<FriendCache.CachedFriend> friends) {

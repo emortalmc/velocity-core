@@ -1,6 +1,6 @@
 plugins {
     java
-    id("com.gradleup.shadow") version "9.0.0-beta15"
+    id("com.gradleup.shadow") version "9.3.1"
     jacoco
 }
 
@@ -22,7 +22,7 @@ dependencies {
     // Metrics
     implementation("io.pyroscope:agent:0.12.0")
 
-    compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+    compileOnly("com.velocitypowered:velocity-api:3.5.0-SNAPSHOT")
     compileOnly("com.velocitypowered:velocity-proxy:3.2.0-SNAPSHOT")
     compileOnly("com.viaversion:viaversion-api:4.9.2")
     annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")

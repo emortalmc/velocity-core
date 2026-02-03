@@ -31,7 +31,6 @@ public final class LobbyCommand extends EmortalCommand implements EmortalCommand
 
         try {
             this.matchmaker.sendPlayerToLobby(sender.getUniqueId(), false);
-            ChatMessages.SENDING_TO_LOBBY.send(sender);
         } catch (StatusRuntimeException exception) {
             LOGGER.error("Failed to send '{}' to lobby", sender.getUsername(), exception);
             ChatMessages.ERROR_SENDING_TO_LOBBY.send(sender);
