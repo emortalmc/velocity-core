@@ -12,6 +12,7 @@ jobs:
       - uses: "emortalmc/actions/java/build@main"
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
+          project: "velocity"
           java-version: "25"
           java-distribution: "zulu"
 
