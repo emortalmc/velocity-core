@@ -402,7 +402,7 @@ public interface ChatMessages {
             .append(MessageColors.purpleName(target))
             .build();
     Args3<Integer, Integer, Component> FRIEND_LIST = (page, totalPages, members) -> {
-        Component beforeAndAfterHeader = Component.text("          ", NamedTextColor.LIGHT_PURPLE, TextDecoration.STRIKETHROUGH);
+        Component beforeAndAfterHeader = Component.text("           ", NamedTextColor.LIGHT_PURPLE, TextDecoration.STRIKETHROUGH);
         Component header = Component.text()
                 .append(beforeAndAfterHeader)
                 .append(Component.text(" ꜰʀɪᴇɴᴅѕ ", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
@@ -415,7 +415,6 @@ public interface ChatMessages {
                 .appendNewline()
                 .appendNewline()
                 .append(members)
-                .appendNewline()
                 .appendNewline()
                 .append(footer)
                 .build();
